@@ -1,24 +1,25 @@
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withErrorMonitoring } from "@/lib/monitoring/api-wrap";
 
-export async function GET(
+async function getHandler(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
+  const admin = createAdminClient();
 
-  const { data: session, error } = await supabase
+  const { data: session, error } = await admin
     .from("sessions")
     .select("*")
     .eq("id", id)
     .single();
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 404 });
+  if (error || !session) {
+    return NextResponse.json({ error: error?.message ?? "Session not found" }, { status: 404 });
   }
 
-  const { count } = await supabase
+  const { count } = await admin
     .from("session_registrations")
     .select("*", { count: "exact", head: true })
     .eq("session_id", id);
@@ -29,3 +30,5 @@ export async function GET(
     poolCents: session.total_pool_cents,
   });
 }
+
+export const GET = withErrorMonitoring("session", getHandler);

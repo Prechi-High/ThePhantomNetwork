@@ -99,7 +99,8 @@ If you upgrade later, you can add `vercel.json` crons back for built-in scheduli
 
 In Supabase SQL editor, run:
 
-`supabase/migrations/002_mvp2_admin_camp.sql`
+- `supabase/migrations/002_mvp2_admin_camp.sql`
+- `supabase/migrations/003_error_monitoring.sql` (error logging for Admin → Errors)
 
 ### Admin login (separate from player Telegram auth)
 

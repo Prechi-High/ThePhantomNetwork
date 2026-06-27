@@ -1,9 +1,10 @@
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withErrorMonitoring } from "@/lib/monitoring/api-wrap";
 
-export async function GET() {
-  const supabase = await createClient();
-  const { data, error } = await supabase
+async function getHandler() {
+  const admin = createAdminClient();
+  const { data, error } = await admin
     .from("sessions")
     .select("*")
     .in("status", ["open", "locked", "active"])
@@ -13,5 +14,7 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ sessions: data });
+  return NextResponse.json({ sessions: data ?? [] });
 }
+
+export const GET = withErrorMonitoring("session", getHandler);

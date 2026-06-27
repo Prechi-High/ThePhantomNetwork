@@ -9,6 +9,7 @@ const publicPaths = [
   "/api/stripe/webhook",
   "/api/live-feed",
   "/api/cron",
+  "/api/monitoring",
   "/admin/login",
   "/api/admin/auth",
 ];

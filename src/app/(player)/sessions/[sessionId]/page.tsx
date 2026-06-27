@@ -5,38 +5,119 @@ import { useParams, useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { reportClientError } from "@/lib/monitoring/client-report";
 
-export default function SessionDetailPage() {
-  const { id } = useParams<{ id: string }>();
-  const router = useRouter();
-  const [session, setSession] = useState<Record<string, unknown> | null>(null);
-  const [joining, setJoining] = useState(false);
-
-  useEffect(() => {
-    fetch(`/api/sessions/${id}`)
-      .then((r) => r.json())
-      .then(setSession);
-  }, [id]);
-
-  const handleJoin = async () => {
-    setJoining(true);
-    const res = await fetch(`/api/sessions/${id}/join`, { method: "POST" });
-    if (res.ok) {
-      router.refresh();
-      fetch(`/api/sessions/${id}`).then((r) => r.json()).then(setSession);
-    }
-    setJoining(false);
-  };
-
-  if (!session?.session) return <p className="text-phantom-muted">Loading...</p>;
-
-  const s = session.session as {
+interface SessionDetailResponse {
+  session?: {
     title: string;
     status: string;
     starts_at: string;
     entry_fee_cents: number;
     registration_closes_at: string;
   };
+  poolCents?: number;
+  error?: string;
+}
+
+export default function SessionDetailPage() {
+  const { sessionId } = useParams<{ sessionId: string }>();
+  const router = useRouter();
+  const [data, setData] = useState<SessionDetailResponse | null>(null);
+  const [loadError, setLoadError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [joining, setJoining] = useState(false);
+  const [joinError, setJoinError] = useState("");
+
+  const loadSession = async () => {
+    if (!sessionId) return;
+    setLoading(true);
+    setLoadError("");
+
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}`, { credentials: "same-origin" });
+      const json = (await res.json()) as SessionDetailResponse;
+
+      if (!res.ok || !json.session) {
+        const msg = json.error ?? "Session not found";
+        setLoadError(msg);
+        reportClientError({
+          area: "session",
+          message: msg,
+          context: { sessionId, statusCode: res.status },
+          url: `/sessions/${sessionId}`,
+        });
+        setData(null);
+        return;
+      }
+
+      setData(json);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to load session";
+      setLoadError(msg);
+      reportClientError({
+        area: "session",
+        message: msg,
+        stack: err instanceof Error ? err.stack : undefined,
+        context: { sessionId },
+        url: `/sessions/${sessionId}`,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSession();
+  }, [sessionId]);
+
+  const handleJoin = async () => {
+    setJoining(true);
+    setJoinError("");
+
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}/join`, {
+        method: "POST",
+        credentials: "same-origin",
+      });
+      const json = await res.json();
+
+      if (!res.ok) {
+        const msg = json.error ?? "Failed to join session";
+        setJoinError(msg);
+        reportClientError({
+          area: "session",
+          message: msg,
+          context: { sessionId, statusCode: res.status, action: "join" },
+        });
+        return;
+      }
+
+      await loadSession();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Join failed";
+      setJoinError(msg);
+      reportClientError({ area: "session", message: msg, context: { sessionId, action: "join" } });
+    } finally {
+      setJoining(false);
+    }
+  };
+
+  if (loading) {
+    return <p className="text-phantom-muted">Loading session...</p>;
+  }
+
+  if (loadError || !data?.session) {
+    return (
+      <Card className="space-y-3">
+        <p className="text-phantom-danger">{loadError || "Session unavailable"}</p>
+        <Button variant="secondary" onClick={() => router.push("/sessions")}>
+          Back to Sessions
+        </Button>
+      </Card>
+    );
+  }
+
+  const s = data.session;
 
   return (
     <div className="space-y-6">
@@ -62,11 +143,13 @@ export default function SessionDetailPage() {
           <div className="flex justify-between">
             <span className="text-phantom-muted">Pool</span>
             <span className="font-mono text-lg text-phantom-gold">
-              ${((session.poolCents as number) / 100).toFixed(2)}
+              ${((data.poolCents ?? 0) / 100).toFixed(2)}
             </span>
           </div>
         </div>
       </Card>
+
+      {joinError && <p className="text-sm text-phantom-danger">{joinError}</p>}
 
       {s.status === "open" && (
         <div className="space-y-2">
@@ -76,11 +159,17 @@ export default function SessionDetailPage() {
           <Button
             variant="secondary"
             className="w-full"
-            onClick={() => router.push(`/shop?sessionId=${id}`)}
+            onClick={() => router.push(`/shop?sessionId=${sessionId}`)}
           >
             Visit Shop First
           </Button>
         </div>
+      )}
+
+      {s.status === "active" && (
+        <Button className="w-full" onClick={() => router.push(`/play/${sessionId}`)}>
+          Enter Gameplay
+        </Button>
       )}
     </div>
   );

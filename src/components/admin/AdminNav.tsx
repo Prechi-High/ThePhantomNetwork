@@ -11,6 +11,7 @@ const navItems = [
   { href: "/admin/camps", label: "Camps" },
   { href: "/admin/users", label: "Users" },
   { href: "/admin/analytics", label: "Analytics" },
+  { href: "/admin/errors", label: "Errors" },
 ];
 
 export function AdminNav() {
