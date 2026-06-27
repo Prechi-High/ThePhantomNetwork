@@ -3,7 +3,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { UserRole } from "@/types/gameplay";
 import { getAuthUser } from "./auth-helpers";
 import { requireAdminSession } from "./admin-auth";
-import { getAdminSession } from "@/lib/admin/session";
 
 export async function getProfileForUser(userId: string) {
   const admin = createAdminClient();
