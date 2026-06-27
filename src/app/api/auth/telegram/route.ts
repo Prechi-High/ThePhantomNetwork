@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { validateTelegramInitData, parseTelegramUser } from "@/lib/telegram/validateInitData";
+import { issueSessionForEmail } from "@/lib/supabase/issue-session";
 
 export async function POST(request: Request) {
   const { initData } = await request.json();
@@ -78,10 +79,9 @@ export async function POST(request: Request) {
     }
   }
 
-  const { data: sessionData, error: sessionError } =
-    await admin.auth.admin.createSession({ user_id: userId });
+  const { session, error: sessionError } = await issueSessionForEmail(email);
 
-  if (sessionError || !sessionData.session) {
+  if (sessionError || !session) {
     return NextResponse.json({ error: sessionError?.message ?? "Session failed" }, { status: 500 });
   }
 
@@ -96,8 +96,8 @@ export async function POST(request: Request) {
     isNew,
     onboardingComplete: profile?.onboarding_complete ?? false,
     session: {
-      access_token: sessionData.session.access_token,
-      refresh_token: sessionData.session.refresh_token,
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
     },
   });
 }
