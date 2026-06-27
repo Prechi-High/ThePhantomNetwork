@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { createClient } from "@/lib/supabase/client";
+import { establishSession } from "@/lib/auth/establish-session";
 
 declare global {
   interface Window {
@@ -20,11 +21,6 @@ declare global {
       execute: (siteKey: string, options: { action: string }) => Promise<string>;
     };
   }
-}
-
-async function setSupabaseSession(access_token: string, refresh_token: string) {
-  const supabase = createClient();
-  await supabase.auth.setSession({ access_token, refresh_token });
 }
 
 export default function LoginPage() {
@@ -52,7 +48,7 @@ export default function LoginPage() {
       if (!res.ok) throw new Error(data.error);
 
       if (data.session) {
-        await setSupabaseSession(data.session.access_token, data.session.refresh_token);
+        await establishSession(data.session.access_token, data.session.refresh_token);
       }
 
       router.push(data.onboardingComplete ? "/home" : "/onboarding");
@@ -117,7 +113,7 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/dev", { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      await setSupabaseSession(data.session.access_token, data.session.refresh_token);
+      await establishSession(data.session.access_token, data.session.refresh_token);
       router.push(data.onboardingComplete ? "/home" : "/onboarding");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Dev login failed");

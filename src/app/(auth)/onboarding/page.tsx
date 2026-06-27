@@ -1,30 +1,61 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { AVATARS } from "@/types/gameplay";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
+import { establishSession } from "@/lib/auth/establish-session";
 
 export default function OnboardingPage() {
   const router = useRouter();
   const [avatarId, setAvatarId] = useState<string>(AVATARS[0].id);
   const [referralCode, setReferralCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        establishSession(session.access_token, session.refresh_token).catch(() => {});
+      }
+    });
+  }, []);
 
   const handleComplete = async () => {
     setLoading(true);
-    const res = await fetch("/api/auth/onboarding", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ avatarId, referralCode: referralCode || undefined }),
-    });
+    setError("");
 
-    if (res.ok) {
-      router.push("/home");
+    try {
+      const res = await fetch("/api/auth/onboarding", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ avatarId, referralCode: referralCode || undefined }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        router.push("/home");
+        router.refresh();
+        return;
+      }
+
+      if (res.status === 401) {
+        setError("Session expired. Please log in again.");
+        return;
+      }
+
+      setError(data.error ?? "Could not complete onboarding. Try again.");
+    } catch {
+      setError("Network error. Check your connection and try again.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -60,6 +91,8 @@ export default function OnboardingPage() {
             placeholder="Enter camp referral code"
           />
         </div>
+
+        {error && <p className="text-sm text-phantom-danger">{error}</p>}
 
         <Button onClick={handleComplete} disabled={loading} className="w-full">
           {loading ? "Entering..." : "Enter THE PHANTOM"}
