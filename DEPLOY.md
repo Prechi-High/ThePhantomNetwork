@@ -49,11 +49,49 @@ Enable **Google** provider if using web login.
 
 Users open the bot → menu opens the Mini App → `initData` is sent → auto login.
 
-## 6. Vercel Cron
+## 6. External cron (Vercel Hobby — required)
 
-`vercel.json` runs `/api/cron/sessions` every minute to lock/start sessions and advance phases.
+Vercel Hobby does **not** allow minute-level crons. Session lock/start and phase advancement use an **external scheduler** that calls your API.
 
-Ensure `CRON_SECRET` is set. Vercel Cron sends `Authorization: Bearer <CRON_SECRET>` on Pro; on Hobby you may need an external cron hitting the endpoint with that header.
+### What it does
+
+`GET /api/cron/sessions` (with auth) every **1–5 minutes**:
+
+- Locks sessions when registration closes  
+- Starts sessions at `starts_at`  
+- Advances gameplay phases  
+- Marks sessions completed  
+
+### Setup with [cron-job.org](https://cron-job.org) (free)
+
+1. Create an account at [cron-job.org](https://cron-job.org)
+2. **Create cronjob**
+3. **URL:** `https://YOUR-VERCEL-URL.vercel.app/api/cron/sessions`
+4. **Schedule:** every 1 minute (or every 5 minutes for lighter usage)
+5. **Request method:** `GET`
+6. **Headers** (under Advanced):
+   - Name: `Authorization`
+   - Value: `Bearer YOUR_CRON_SECRET`  
+   (must match the `CRON_SECRET` env var in Vercel)
+7. Save and enable the job
+
+### Test manually
+
+```bash
+curl -H "Authorization: Bearer YOUR_CRON_SECRET" \
+  "https://YOUR-VERCEL-URL.vercel.app/api/cron/sessions"
+```
+
+Expected: JSON like `{ "locked": 0, "started": 0, "phasesAdvanced": 0 }`
+
+### Alternatives
+
+- [Uptime Robot](https://uptimerobot.com) — HTTP monitor every 5 min  
+- GitHub Actions `schedule` workflow calling the same URL with the header  
+
+### Vercel Pro (optional)
+
+If you upgrade later, you can add `vercel.json` crons back for built-in scheduling.
 
 ## 7. Create a test session
 
