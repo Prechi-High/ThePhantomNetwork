@@ -11,8 +11,15 @@ const publicPaths = [
   "/api/cron",
 ];
 
+/** Client-side AuthGate handles session sync for these (Telegram Mini App). */
+const clientAuthPaths = ["/admin", "/camp-owner"];
+
 function isPublicPath(pathname: string) {
   return publicPaths.some((p) => pathname.startsWith(p));
+}
+
+function isClientAuthPath(pathname: string) {
+  return clientAuthPaths.some((p) => pathname.startsWith(p));
 }
 
 function getSupabaseConfig() {
@@ -25,7 +32,7 @@ function getSupabaseConfig() {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (isPublicPath(pathname)) {
+  if (isPublicPath(pathname) || isClientAuthPath(pathname)) {
     return NextResponse.next();
   }
 

@@ -48,15 +48,31 @@ export async function requireAdmin() {
 }
 
 export async function requireCampOwner() {
-  const result = await requireRole(["camp_owner", "admin"]);
-  if (result.error) return result;
+  const user = await getAuthUser();
+  if (!user) {
+    return {
+      user: null,
+      profile: null,
+      camp: null,
+      error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+    };
+  }
+
+  const profile = await getProfileForUser(user.id);
+  if (!profile || profile.is_banned) {
+    return {
+      user: null,
+      profile: null,
+      camp: null,
+      error: NextResponse.json({ error: "Account restricted" }, { status: 403 }),
+    };
+  }
 
   const admin = createAdminClient();
-
   const { data: camp } = await admin
     .from("camps")
     .select("id, owner_id")
-    .eq("owner_id", result.user!.id)
+    .eq("owner_id", user.id)
     .maybeSingle();
 
   if (!camp) {
@@ -68,7 +84,7 @@ export async function requireCampOwner() {
     };
   }
 
-  return { ...result, camp };
+  return { user, profile, camp, error: null };
 }
 
 export async function verifyAdminOrCron(request: Request) {

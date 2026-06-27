@@ -18,6 +18,7 @@ interface Transaction {
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [hasCampAccess, setHasCampAccess] = useState(false);
   const [editing, setEditing] = useState(false);
   const [username, setUsername] = useState("");
   const [avatarId, setAvatarId] = useState<string>(AVATARS[0].id);
@@ -35,6 +36,9 @@ export default function ProfilePage() {
     fetch("/api/wallet", { credentials: "same-origin" })
       .then((r) => r.json())
       .then((d) => setTransactions(d.transactions ?? []));
+    fetch("/api/camp-owner/camp", { credentials: "same-origin" })
+      .then((r) => setHasCampAccess(r.ok))
+      .catch(() => setHasCampAccess(false));
   };
 
   useEffect(() => {
@@ -106,7 +110,7 @@ export default function ProfilePage() {
 
       <WalletDeposit onSuccess={loadProfile} />
 
-      {(role === "admin" || role === "camp_owner") && (
+      {(role === "admin" || hasCampAccess) && (
         <div className="grid grid-cols-2 gap-3">
           {role === "admin" && (
             <Link href="/admin">
@@ -115,7 +119,7 @@ export default function ProfilePage() {
               </Card>
             </Link>
           )}
-          {role === "camp_owner" && (
+          {hasCampAccess && (
             <Link href="/camp-owner">
               <Card className="text-center hover:border-phantom-gold/50">
                 <p className="text-sm">Camp Owner</p>
