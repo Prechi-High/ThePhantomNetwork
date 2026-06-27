@@ -14,6 +14,18 @@ export async function requireAuth() {
   if (!user) {
     return { user: null, error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }
+
+  const admin = await import("@/lib/supabase/admin").then((m) => m.createAdminClient());
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("is_banned")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.is_banned) {
+    return { user: null, error: NextResponse.json({ error: "Account restricted" }, { status: 403 }) };
+  }
+
   return { user, error: null };
 }
 

@@ -93,19 +93,53 @@ Expected: JSON like `{ "locked": 0, "started": 0, "phasesAdvanced": 0 }`
 
 If you upgrade later, you can add `vercel.json` crons back for built-in scheduling.
 
-## 7. Create a test session
+## 7. MVP2 setup (admin, camps, payments)
 
-After deploy, create an open session (replace URL and use your `CRON_SECRET` only from a secure terminal):
+### Run migration 002
 
-```bash
-curl -X PUT "https://YOUR-VERCEL-URL.vercel.app/api/admin/sessions" \
-  -H "Content-Type: application/json" \
-  -d "{\"title\":\"Phantom Night\",\"starts_at\":\"2026-06-28T22:00:00.000Z\",\"entry_fee_cents\":500}"
+In Supabase SQL editor, run:
+
+`supabase/migrations/002_mvp2_admin_camp.sql`
+
+### Promote yourself to admin
+
+```sql
+UPDATE profiles SET role = 'admin' WHERE id = 'YOUR-USER-UUID';
 ```
+
+Find your UUID in Supabase → Authentication → Users, or from `profiles` table.
+
+### Create sessions (admin UI)
+
+1. Log in to the app → **Profile** → **Admin Dashboard**
+2. **Sessions** → **+ New Session**
+3. Set title, start time, entry fee → **Create Session**
+
+Players see it under **Sessions** when status is `open`.
+
+### Assign a camp owner
+
+1. **Admin → Camps** → create camp or use existing
+2. Paste the user's profile UUID as **Owner user ID**
+3. User gets `camp_owner` role and access to `/camp-owner`
+
+### Stripe deposits
+
+Set in Vercel:
+
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET` (webhook URL: `https://YOUR-APP.vercel.app/api/stripe/webhook`)
+
+Without Stripe keys, profile deposits use dev-credit locally only.
+
+## 8. Create a test session (API alternative)
+
+Admin-authenticated only (log in as admin in browser, then use session cookie) — prefer the **Admin UI** above.
 
 Or insert a row in Supabase `sessions` with `status = open`.
 
-## 8. Why `.gitignore` does not break production
+## 9. Why `.gitignore` does not break production
 
 | Ignored | Why it's safe |
 |---------|----------------|

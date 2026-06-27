@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { requireAuth } from "@/lib/api/auth-helpers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { calculateSessionEconomy } from "@/lib/gameplay/economy";
 import type { EconomyConfig } from "@/types/gameplay";

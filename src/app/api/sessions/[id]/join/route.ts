@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/api/auth-helpers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { publishLiveFeed } from "@/lib/api/rate-limit";
+import { creditCampRevenueShare } from "@/lib/camps/revenue";
 
 export async function POST(
   request: Request,
@@ -92,6 +93,8 @@ export async function POST(
     `${userProfile?.username ?? "A player"} joined ${session.title}`,
     { sessionId, userId: user!.id }
   );
+
+  await creditCampRevenueShare(user!.id, sessionId, session.entry_fee_cents);
 
   return NextResponse.json({ success: true, poolCents: newPool });
 }

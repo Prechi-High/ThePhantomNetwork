@@ -7,14 +7,28 @@ import {
 } from "@/lib/gameplay/session-orchestrator";
 import { REGISTRATION_LOCK_MINUTES } from "@/types/gameplay";
 import type { PhaseConfig } from "@/types/gameplay";
+import { requireAdmin, verifyAdminOrCron } from "@/lib/api/role-helpers";
 
-function verifyCron(request: Request) {
-  const auth = request.headers.get("authorization");
-  return auth === `Bearer ${process.env.CRON_SECRET}`;
+export async function GET() {
+  const { error } = await requireAdmin();
+  if (error) return error;
+
+  const admin = createAdminClient();
+  const { data, error: dbError } = await admin
+    .from("sessions")
+    .select("*")
+    .order("starts_at", { ascending: false })
+    .limit(100);
+
+  if (dbError) {
+    return NextResponse.json({ error: dbError.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ sessions: data ?? [] });
 }
 
 export async function POST(request: Request) {
-  if (!verifyCron(request)) {
+  if (!(await verifyAdminOrCron(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -115,6 +129,9 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
+  const { error } = await requireAdmin();
+  if (error) return error;
+
   const body = await request.json();
   const admin = createAdminClient();
 
@@ -123,23 +140,24 @@ export async function PUT(request: Request) {
     startsAt.getTime() - REGISTRATION_LOCK_MINUTES * 60 * 1000
   );
 
-  const { data, error } = await admin
+  const { data, error: insertError } = await admin
     .from("sessions")
     .insert({
       title: body.title,
-      status: "open",
+      status: body.status ?? "open",
       starts_at: startsAt.toISOString(),
       registration_closes_at: registrationClosesAt.toISOString(),
       entry_fee_cents: body.entry_fee_cents ?? 500,
       max_players: body.max_players ?? 1000,
       phase_config: body.phase_config,
       platform_fee_pct: body.platform_fee_pct ?? 15,
+      economy_config: body.economy_config,
     })
     .select()
     .single();
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (insertError) {
+    return NextResponse.json({ error: insertError.message }, { status: 500 });
   }
 
   return NextResponse.json({ session: data });
