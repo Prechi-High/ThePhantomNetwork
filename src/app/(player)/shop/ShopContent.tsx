@@ -1,16 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { useShopStore } from "@/stores/useShopStore";
 
 export default function ShopContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("sessionId");
-  const { items, setItems, isLocked } = useShopStore();
+  const { items, setItems, isLocked, setLocked } = useShopStore();
   const [purchasing, setPurchasing] = useState<string | null>(null);
 
   useEffect(() => {
@@ -18,6 +19,20 @@ export default function ShopContent() {
       .then((r) => r.json())
       .then((d) => setItems(d.items ?? []));
   }, [setItems]);
+
+  useEffect(() => {
+    if (!sessionId) return;
+    fetch(`/api/sessions/${sessionId}`)
+      .then((r) => r.json())
+      .then((d) => {
+        const status = d.session?.status;
+        if (status === "active" || status === "locked") {
+          setLocked(true);
+          router.replace("/sessions");
+        }
+      })
+      .catch(() => {});
+  }, [sessionId, router, setLocked]);
 
   const handlePurchase = async (itemId: string) => {
     setPurchasing(itemId);

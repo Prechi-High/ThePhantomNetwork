@@ -9,7 +9,7 @@ Secrets are **not** in git. `.env.local` is gitignored. You add them in Vercel.
 ## 2. Vercel project
 
 1. Import `Prechi-High/ThePhantomNetwork` on [vercel.com](https://vercel.com)
-2. Framework: **Next.js** (auto-detected)
+2. Framework preset: **Next.js** (not "Other" — wrong preset causes `MIDDLEWARE_INVOCATION_FAILED`)
 3. Root directory: project root (default)
 
 ## 3. Environment variables (Vercel → Settings → Environment Variables)
