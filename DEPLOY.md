@@ -101,23 +101,23 @@ In Supabase SQL editor, run:
 
 `supabase/migrations/002_mvp2_admin_camp.sql`
 
-### Promote yourself to admin
+### Admin login (separate from player Telegram auth)
 
-```sql
-UPDATE profiles SET role = 'admin' WHERE id = 'YOUR-USER-UUID';
-```
+Set in Vercel:
 
-Find your UUID in Supabase → Authentication → Users, or from `profiles` table.
+| Variable | Purpose |
+|----------|---------|
+| `ADMIN_EMAIL` | Admin panel login email |
+| `ADMIN_PASSWORD` | Admin panel login password |
+| `ADMIN_SESSION_SECRET` | Optional; signs admin cookie (falls back to `CRON_SECRET`) |
 
-### Create sessions (admin UI)
+1. Open **`https://YOUR-APP.vercel.app/admin/login`**
+2. Sign in with `ADMIN_EMAIL` / `ADMIN_PASSWORD`
+3. **Sessions** → **+ New Session** to create games
 
-1. Log in to the app → **Profile** → **Admin Dashboard**
-2. **Sessions** → **+ New Session**
-3. Set title, start time, entry fee → **Create Session**
+Players see open sessions under **Sessions** in the player app.
 
-Players see it under **Sessions** when status is `open`.
-
-### Assign a camp owner
+### Assign a camp owner (optional, deferred)
 
 1. **Admin → Camps** → create camp or use existing
 2. Paste the user's profile UUID as **Owner user ID**

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { UserRole } from "@/types/gameplay";
 import { getAuthUser } from "./auth-helpers";
+import { requireAdminSession } from "./admin-auth";
+import { getAdminSession } from "@/lib/admin/session";
 
 export async function getProfileForUser(userId: string) {
   const admin = createAdminClient();
@@ -44,7 +46,7 @@ export async function requireRole(allowed: UserRole[]) {
 }
 
 export async function requireAdmin() {
-  return requireRole(["admin"]);
+  return requireAdminSession();
 }
 
 export async function requireCampOwner() {
@@ -90,6 +92,6 @@ export async function requireCampOwner() {
 export async function verifyAdminOrCron(request: Request) {
   const auth = request.headers.get("authorization");
   if (auth === `Bearer ${process.env.CRON_SECRET}`) return true;
-  const { error } = await requireAdmin();
+  const { error } = await requireAdminSession();
   return !error;
 }

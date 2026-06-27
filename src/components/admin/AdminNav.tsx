@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/Button";
 
 const navItems = [
   { href: "/admin", label: "Overview", exact: true },
@@ -14,6 +15,13 @@ const navItems = [
 
 export function AdminNav() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await fetch("/api/admin/auth/logout", { method: "POST", credentials: "same-origin" });
+    router.push("/admin/login");
+    router.refresh();
+  };
 
   return (
     <header className="border-b border-phantom-border bg-phantom-surface">
@@ -45,9 +53,14 @@ export function AdminNav() {
             );
           })}
         </nav>
-        <Link href="/home" className="text-sm text-phantom-muted hover:text-phantom-gold">
-          ← Player app
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/home" className="text-sm text-phantom-muted hover:text-phantom-gold">
+            Player app
+          </Link>
+          <Button size="sm" variant="ghost" onClick={handleLogout}>
+            Log out
+          </Button>
+        </div>
       </div>
     </header>
   );

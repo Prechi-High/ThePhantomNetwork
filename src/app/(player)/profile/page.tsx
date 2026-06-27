@@ -18,7 +18,6 @@ interface Transaction {
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [hasCampAccess, setHasCampAccess] = useState(false);
   const [editing, setEditing] = useState(false);
   const [username, setUsername] = useState("");
   const [avatarId, setAvatarId] = useState<string>(AVATARS[0].id);
@@ -36,9 +35,6 @@ export default function ProfilePage() {
     fetch("/api/wallet", { credentials: "same-origin" })
       .then((r) => r.json())
       .then((d) => setTransactions(d.transactions ?? []));
-    fetch("/api/camp-owner/camp", { credentials: "same-origin" })
-      .then((r) => setHasCampAccess(r.ok))
-      .catch(() => setHasCampAccess(false));
   };
 
   useEffect(() => {
@@ -59,7 +55,6 @@ export default function ProfilePage() {
   if (!profile) return <p className="text-phantom-muted">Loading...</p>;
 
   const avatar = AVATARS.find((a) => a.id === profile.avatar_id);
-  const role = profile.role as string;
 
   return (
     <div className="space-y-6">
@@ -110,24 +105,11 @@ export default function ProfilePage() {
 
       <WalletDeposit onSuccess={loadProfile} />
 
-      {(role === "admin" || hasCampAccess) && (
-        <div className="grid grid-cols-2 gap-3">
-          {role === "admin" && (
-            <Link href="/admin">
-              <Card className="text-center hover:border-phantom-gold/50">
-                <p className="text-sm">Admin Dashboard</p>
-              </Card>
-            </Link>
-          )}
-          {hasCampAccess && (
-            <Link href="/camp-owner">
-              <Card className="text-center hover:border-phantom-gold/50">
-                <p className="text-sm">Camp Owner</p>
-              </Card>
-            </Link>
-          )}
-        </div>
-      )}
+      <Link href="/admin/login">
+        <Card className="text-center hover:border-phantom-gold/50">
+          <p className="text-sm">Admin Login</p>
+        </Card>
+      </Link>
 
       <div className="grid grid-cols-2 gap-3">
         <Link href="/profile/sessions">
