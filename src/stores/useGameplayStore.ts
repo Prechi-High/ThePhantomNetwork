@@ -4,6 +4,7 @@ import type { SpinOutcome } from "@/types/gameplay";
 interface GameplayState {
   phase: number;
   round: number;
+  phaseEndsAt: number | null;
   tokens: number;
   isSpinning: boolean;
   spinLocked: boolean;
@@ -12,6 +13,7 @@ interface GameplayState {
   isRevivable: boolean;
   setPhase: (phase: number) => void;
   setRound: (round: number) => void;
+  setPhaseEndsAt: (phaseEndsAt: number | null) => void;
   setTokens: (tokens: number) => void;
   setSpinning: (spinning: boolean) => void;
   setSpinLocked: (locked: boolean) => void;
@@ -23,6 +25,7 @@ interface GameplayState {
 export const useGameplayStore = create<GameplayState>((set) => ({
   phase: 0,
   round: 0,
+  phaseEndsAt: null,
   tokens: 0,
   isSpinning: false,
   spinLocked: false,
@@ -31,6 +34,7 @@ export const useGameplayStore = create<GameplayState>((set) => ({
   isRevivable: false,
   setPhase: (phase) => set({ phase }),
   setRound: (round) => set({ round }),
+  setPhaseEndsAt: (phaseEndsAt) => set({ phaseEndsAt }),
   setTokens: (tokens) => set({ tokens }),
   setSpinning: (isSpinning) => set({ isSpinning }),
   setSpinLocked: (spinLocked) => set({ spinLocked }),

@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { SessionCountdown } from "@/components/session/SessionCountdown";
+import { useSessionPoll } from "@/hooks/useSessionPoll";
 import { reportClientError } from "@/lib/monitoring/client-report";
 
 interface SessionDetailResponse {
@@ -28,9 +30,9 @@ export default function SessionDetailPage() {
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState("");
 
-  const loadSession = async () => {
+  const loadSession = async (silent = false) => {
     if (!sessionId) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     setLoadError("");
 
     try {
@@ -62,13 +64,15 @@ export default function SessionDetailPage() {
         url: `/sessions/${sessionId}`,
       });
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     loadSession();
   }, [sessionId]);
+
+  useSessionPoll(() => loadSession(true), 8000, Boolean(sessionId));
 
   const handleJoin = async () => {
     setJoining(true);
@@ -122,6 +126,15 @@ export default function SessionDetailPage() {
   return (
     <div className="space-y-6">
       <h1 className="font-display text-2xl font-bold">{s.title}</h1>
+
+      <SessionCountdown
+        startsAt={s.starts_at}
+        registrationClosesAt={s.registration_closes_at}
+        status={s.status}
+        alwaysShow
+        className="rounded-lg border border-phantom-border bg-phantom-surface/50 py-4"
+      />
+
       <Card glow>
         <div className="space-y-2">
           <div className="flex justify-between">

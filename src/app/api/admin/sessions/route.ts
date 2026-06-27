@@ -8,6 +8,7 @@ import {
 import { REGISTRATION_LOCK_MINUTES } from "@/types/gameplay";
 import type { PhaseConfig } from "@/types/gameplay";
 import { requireAdmin, verifyAdminOrCron } from "@/lib/api/role-helpers";
+import { publishSessionStatus } from "@/lib/gameplay/realtime-events";
 
 export async function GET() {
   const { error } = await requireAdmin();
@@ -47,6 +48,7 @@ export async function POST(request: Request) {
 
   if (action === "lock" && session.status === "open") {
     await admin.from("sessions").update({ status: "locked" }).eq("id", sessionId);
+    await publishSessionStatus(sessionId, "locked");
 
     const { data: registrations } = await admin
       .from("session_registrations")
@@ -102,6 +104,7 @@ export async function POST(request: Request) {
 
   if (action === "start" && session.status === "locked") {
     await admin.from("sessions").update({ status: "active" }).eq("id", sessionId);
+    await publishSessionStatus(sessionId, "active");
     await applyInventoryAtSessionStart(sessionId);
 
     const phaseConfig = session.phase_config as PhaseConfig;

@@ -1,8 +1,9 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { classifyPhase1, classifyPercentileElimination } from "@/lib/gameplay/elimination";
 import type { PhaseConfig } from "@/types/gameplay";
-import { redisSet, redisGet } from "@/lib/redis/client";
+import { redisSet, redisGet, redisPublish } from "@/lib/redis/client";
 import { redisKeys } from "@/lib/redis/keys";
+import { publishPhaseChange } from "@/lib/gameplay/realtime-events";
 
 const PHASE_DURATIONS_MS = [6, 6, 5, 3].map((m) => m * 60 * 1000);
 
@@ -56,17 +57,27 @@ export async function initializeSubSessionState(
   subSessionId: string,
   phaseConfig: PhaseConfig
 ) {
+  const phaseStartedAt = Date.now();
+  const phaseEndsAt = phaseStartedAt + PHASE_DURATIONS_MS[0];
+
   await redisSet(
     redisKeys.subState(subSessionId),
     {
       phase: 1,
       round: 1,
-      phaseStartedAt: Date.now(),
-      phaseEndsAt: Date.now() + PHASE_DURATIONS_MS[0],
+      phaseStartedAt,
+      phaseEndsAt,
       phaseConfig,
     },
     3600
   );
+
+  await publishPhaseChange(subSessionId, {
+    phase: 1,
+    round: 1,
+    phaseStartedAt,
+    phaseEndsAt,
+  });
 }
 
 export async function runPhase1Elimination(
@@ -185,17 +196,27 @@ export async function advanceSubSessionPhase(subSessionId: string) {
     })
     .eq("id", subSessionId);
 
+  const phaseStartedAt = Date.now();
+  const phaseEndsAt = phaseStartedAt + PHASE_DURATIONS_MS[nextPhase - 1];
+
   await redisSet(
     redisKeys.subState(subSessionId),
     {
       phase: nextPhase,
       round: 1,
-      phaseStartedAt: Date.now(),
-      phaseEndsAt: Date.now() + PHASE_DURATIONS_MS[nextPhase - 1],
+      phaseStartedAt,
+      phaseEndsAt,
       phaseConfig,
     },
     3600
   );
+
+  await publishPhaseChange(subSessionId, {
+    phase: nextPhase,
+    round: 1,
+    phaseStartedAt,
+    phaseEndsAt,
+  });
 
   return { done: false, phase: nextPhase };
 }

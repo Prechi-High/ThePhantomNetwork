@@ -1,8 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
 import Link from "next/link";
 import type { Database } from "@/types/database";
+import { UpcomingSessions } from "@/components/session/UpcomingSessions";
 
 type SessionRow = Database["public"]["Tables"]["sessions"]["Row"];
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
@@ -62,32 +62,15 @@ export default async function HomePage() {
         </div>
       </Card>
 
-      <section>
-        <h2 className="mb-3 font-display text-xl font-semibold">Upcoming Sessions</h2>
-        <div className="space-y-3">
-          {sessions.length ? (
-            sessions.map((session) => (
-              <Link key={session.id} href={`/sessions/${session.id}`}>
-                <Card className="transition-colors hover:border-phantom-gold/50">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">{session.title}</p>
-                      <p className="text-xs text-phantom-muted">
-                        {new Date(session.starts_at).toLocaleString()}
-                      </p>
-                    </div>
-                    <Badge>{session.status}</Badge>
-                  </div>
-                </Card>
-              </Link>
-            ))
-          ) : (
-            <Card>
-              <p className="text-phantom-muted">No sessions scheduled. Check back soon.</p>
-            </Card>
-          )}
-        </div>
-      </section>
+      <UpcomingSessions
+        initialSessions={sessions.map((s) => ({
+          id: s.id,
+          title: s.title,
+          status: s.status,
+          starts_at: s.starts_at,
+          registration_closes_at: s.registration_closes_at,
+        }))}
+      />
 
       <div className="grid grid-cols-2 gap-3">
         <Link href="/rivals">

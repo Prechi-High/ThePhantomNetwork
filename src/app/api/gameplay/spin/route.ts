@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/api/auth-helpers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { rollSpinOutcome, applySpinTokens } from "@/lib/gameplay/spin";
-import { getRedis, redisPublish } from "@/lib/redis/client";
+import { getRedis, redisPublish, redisGet, redisSet } from "@/lib/redis/client";
 import { redisKeys } from "@/lib/redis/keys";
 import { checkRateLimit, acquireSpinLock } from "@/lib/api/rate-limit";
 import { SPIN_DURATION_MS } from "@/types/gameplay";
@@ -60,6 +60,16 @@ export async function POST(request: Request) {
     tokens: newTokens,
     animationSeed: result.animationSeed,
   });
+
+  const state = await redisGet<{ round: number; phase: number }>(redisKeys.subState(subSessionId));
+  if (state) {
+    const newRound = Math.min((state.round ?? 1) + 1, 3);
+    await redisSet(redisKeys.subState(subSessionId), { ...state, round: newRound }, 3600);
+    await redisPublish(redisKeys.realtimeChannel(subSessionId), {
+      type: "round_update",
+      round: newRound,
+    });
+  }
 
   return NextResponse.json({
     ...result,

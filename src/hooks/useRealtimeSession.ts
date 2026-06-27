@@ -1,11 +1,21 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useGameplayStore } from "@/stores/useGameplayStore";
 import { useStealStore } from "@/stores/useStealStore";
 
-export function useRealtimeSession(subSessionId: string | null) {
-  const { setTokens, setPhase, setLastOutcome, setEliminated } = useGameplayStore();
+interface PhaseChangePayload {
+  phase: number;
+  round?: number;
+  phaseEndsAt?: number;
+}
+
+export function useRealtimeSession(
+  subSessionId: string | null,
+  onPhaseChange?: (payload: PhaseChangePayload) => void
+) {
+  const { setTokens, setPhase, setRound, setPhaseEndsAt, setLastOutcome, setEliminated } =
+    useGameplayStore();
   const { setStealInProgress, incrementFireBoost, resetFireBoost } = useStealStore();
   const [connected, setConnected] = useState(false);
 
@@ -21,13 +31,22 @@ export function useRealtimeSession(subSessionId: string | null) {
         const event = JSON.parse(e.data);
         switch (event.type) {
           case "tokens_update":
-            setTokens(event.tokens);
+          case "spin_result":
+            if (event.tokens !== undefined) setTokens(event.tokens);
+            if (event.outcome !== undefined) setLastOutcome(event.outcome);
+            break;
+          case "round_update":
+            if (event.round !== undefined) setRound(event.round);
             break;
           case "phase_change":
             setPhase(event.phase);
-            break;
-          case "spin_result":
-            setLastOutcome(event.outcome);
+            if (event.round !== undefined) setRound(event.round);
+            if (event.phaseEndsAt) setPhaseEndsAt(event.phaseEndsAt);
+            onPhaseChange?.({
+              phase: event.phase,
+              round: event.round,
+              phaseEndsAt: event.phaseEndsAt,
+            });
             break;
           case "elimination":
             setEliminated(event.eliminated);
@@ -53,11 +72,14 @@ export function useRealtimeSession(subSessionId: string | null) {
     subSessionId,
     setTokens,
     setPhase,
+    setRound,
+    setPhaseEndsAt,
     setLastOutcome,
     setEliminated,
     setStealInProgress,
     incrementFireBoost,
     resetFireBoost,
+    onPhaseChange,
   ]);
 
   return { connected };
