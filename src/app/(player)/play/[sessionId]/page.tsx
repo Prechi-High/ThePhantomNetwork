@@ -12,6 +12,7 @@ import { useStealStore } from "@/stores/useStealStore";
 import { useSessionStore } from "@/stores/useSessionStore";
 import { useRealtimeSession, usePhaseTimer } from "@/hooks/useRealtimeSession";
 import type { StealTarget } from "@/types/gameplay";
+import { reportClientError } from "@/lib/monitoring/client-report";
 
 interface SquadMemberRow {
   user_id: string;
@@ -144,17 +145,39 @@ export default function PlayPage() {
 
   const refreshState = useCallback(async () => {
     if (!subSessionId) return;
-    const res = await fetch(`/api/gameplay/state?subSessionId=${subSessionId}`);
-    const data = (await res.json()) as GameplayStateResponse;
-    applyState(data);
-    return data;
-  }, [subSessionId, applyState]);
+    try {
+      const res = await fetch(`/api/gameplay/state?subSessionId=${subSessionId}`);
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
+      const data = (await res.json()) as GameplayStateResponse;
+      applyState(data);
+      return data;
+    } catch (err) {
+      reportClientError({
+        area: "gameplay",
+        severity: "high",
+        message: "Failed to refresh gameplay state",
+        cause: err instanceof Error ? err.message : String(err),
+        context: { sessionId, subSessionId },
+      });
+    }
+  }, [subSessionId, applyState, sessionId]);
 
   useEffect(() => {
     fetch(`/api/sessions/${sessionId}/my-sub-session`)
       .then((r) => r.json())
       .then((d) => {
         if (d.subSessionId) setSubSessionId(d.subSessionId);
+      })
+      .catch((err) => {
+        reportClientError({
+          area: "gameplay",
+          severity: "high",
+          message: "Failed to fetch sub-session",
+          cause: err instanceof Error ? err.message : String(err),
+          context: { sessionId },
+        });
       });
   }, [sessionId, setSubSessionId]);
 

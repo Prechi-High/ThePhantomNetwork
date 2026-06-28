@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { reportClientError } from "@/lib/monitoring/client-report";
 
 export interface NetworkPlayer {
   userId: string;
@@ -33,6 +34,15 @@ export function PhantomNetworkIntro({
   durationMs = 5000,
 }: PhantomNetworkIntroProps) {
   const [progress, setProgress] = useState(0);
+  const completedRef = useRef(false);
+  const safetyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const safeComplete = useRef(() => {
+    if (completedRef.current) return;
+    completedRef.current = true;
+    if (safetyTimeoutRef.current) clearTimeout(safetyTimeoutRef.current);
+    onComplete();
+  }).current;
 
   const nodes = useMemo(() => {
     const list = players.length
@@ -89,20 +99,38 @@ export function PhantomNetworkIntro({
   }, [nodes]);
 
   useEffect(() => {
+    completedRef.current = false;
     if (!visible) {
       setProgress(0);
+      if (safetyTimeoutRef.current) clearTimeout(safetyTimeoutRef.current);
       return;
     }
     const start = Date.now();
     const tick = () => {
       const p = Math.min(1, (Date.now() - start) / durationMs);
       setProgress(p);
-      if (p >= 1) onComplete();
+      if (p >= 1) safeComplete();
     };
     tick();
     const id = setInterval(tick, 50);
-    return () => clearInterval(id);
-  }, [visible, durationMs, onComplete]);
+
+    safetyTimeoutRef.current = setTimeout(() => {
+      if (!completedRef.current) {
+        reportClientError({
+          area: "gameplay",
+          severity: "high",
+          message: "PhantomNetworkIntro animation timed out - forcing completion",
+          context: { phase, durationMs, playersCount: players.length },
+        });
+        safeComplete();
+      }
+    }, durationMs + 500);
+
+    return () => {
+      clearInterval(id);
+      if (safetyTimeoutRef.current) clearTimeout(safetyTimeoutRef.current);
+    };
+  }, [visible, durationMs, phase, players.length, safeComplete]);
 
   const title = phase && phase > 0 ? `PHASE ${phase}` : "THE PHANTOM";
   const subtitle =
