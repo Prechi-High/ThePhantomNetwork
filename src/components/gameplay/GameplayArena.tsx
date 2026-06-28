@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { usePhaseTimer } from "@/hooks/useRealtimeSession";
 import type { SpinOutcome, StealTarget } from "@/types/gameplay";
-import { SPIN_DURATION_MS } from "@/types/gameplay";
 
 function formatPhaseTimer(ms: number) {
   const m = Math.floor(ms / 60000);

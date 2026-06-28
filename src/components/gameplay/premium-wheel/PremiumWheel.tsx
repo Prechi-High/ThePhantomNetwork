@@ -14,10 +14,8 @@ interface PremiumWheelProps {
 
 export function PremiumWheel({ isSpinning, outcome, onSpinComplete }: PremiumWheelProps) {
   const controls = useAnimation();
-  const [currentRotation, setCurrentRotation] = useState(0);
   const finalRotationRef = useRef(0);
 
-  const sectorAngle = getSectorAngle(WHEEL_SECTORS);
   const targetIndex = outcome ? WHEEL_SECTORS.findIndex((s) => s.id === outcome) : 0;
 
   useEffect(() => {

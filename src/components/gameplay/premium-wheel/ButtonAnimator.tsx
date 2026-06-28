@@ -36,8 +36,8 @@ export function ButtonAnimator({
   className,
 }: ButtonAnimatorProps) {
   const [frameIndex, setFrameIndex] = useState(0);
-  const requestRef = useRef<number>();
-  const previousTimeRef = useRef<number>();
+  const requestRef = useRef<number | null>(null);
+  const previousTimeRef = useRef<number | null>(null);
   const frameDurationRef = useRef(150);
 
   const getFrameData = (key: string): SpriteFrame | null => {
