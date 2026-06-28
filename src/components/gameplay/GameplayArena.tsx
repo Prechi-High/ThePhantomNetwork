@@ -11,6 +11,12 @@ import { usePhaseTimer } from "@/hooks/useRealtimeSession";
 import type { SpinOutcome, StealTarget } from "@/types/gameplay";
 import { SPIN_DURATION_MS } from "@/types/gameplay";
 
+function formatPhaseTimer(ms: number) {
+  const m = Math.floor(ms / 60000);
+  const s = Math.floor((ms % 60000) / 1000);
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
 interface SquadMember {
   user_id: string;
   session_tokens: number;
@@ -54,12 +60,6 @@ interface GameplayArenaProps {
   onResolveSteal: () => void;
   onFireBoost: () => void;
   onReviveContribute: (amount: number) => Promise<void>;
-}
-
-function formatTimer(ms: number) {
-  const m = Math.floor(ms / 60000);
-  const s = Math.floor((ms % 60000) / 1000);
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
 export function GameplayArena({
@@ -120,7 +120,7 @@ export function GameplayArena({
         <div className="text-center">
           <p className="text-[9px] uppercase tracking-widest text-phantom-muted">Session</p>
           <p className="font-mono text-lg font-bold text-phantom-gold">
-            {phaseEndsAt ? formatTimer(remaining) : "--:--"}
+            {phaseEndsAt != null ? formatPhaseTimer(remaining) : "—"}
           </p>
           <p className="font-display text-[10px] font-bold tracking-wider text-phantom-gold/80">
             THE PHANTOM
@@ -247,7 +247,7 @@ export function GameplayArena({
             />
           )}
 
-          {remaining === 0 && phaseEndsAt && (
+          {remaining === 0 && phaseEndsAt != null && (
             <p className="animate-pulse text-xs text-phantom-gold">
               Phase ending — syncing with network...
             </p>

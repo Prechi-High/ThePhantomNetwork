@@ -43,6 +43,7 @@ interface GameplayStateResponse {
   squadMembers?: SquadMemberRow[];
   leaderboard?: LeaderboardRow[];
   networkPlayers?: NetworkPlayer[];
+  sessionStatus?: string;
 }
 
 export default function PlayPage() {
@@ -67,6 +68,7 @@ export default function PlayPage() {
     setLastOutcome,
     setEliminated,
     setRevivable,
+    resetGameplay,
   } = useGameplayStore();
   const {
     targets,
@@ -90,9 +92,15 @@ export default function PlayPage() {
   const [currentUserId, setCurrentUserId] = useState<string>();
   const [showNetworkIntro, setShowNetworkIntro] = useState(false);
   const [introPhase, setIntroPhase] = useState(0);
-  const [ready, setReady] = useState(false);
+  const [sessionStatus, setSessionStatus] = useState<string>("active");
 
+  const [ready, setReady] = useState(false);
   const lastIntroPhaseRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    resetGameplay();
+    lastIntroPhaseRef.current = null;
+  }, [sessionId, resetGameplay]);
   const remaining = usePhaseTimer(phaseEndsAt);
 
   const triggerNetworkIntro = useCallback((forPhase: number) => {
@@ -122,13 +130,14 @@ export default function PlayPage() {
       }
       if (data.phase !== undefined) setPhase(data.phase);
       if (data.round !== undefined) setRound(data.round);
-      if (data.phaseEndsAt) setPhaseEndsAt(data.phaseEndsAt);
-      if (data.playerRank) setPlayerRank(data.playerRank);
-      if (data.totalPlayers) setTotalPlayers(data.totalPlayers);
+      if (data.phaseEndsAt != null) setPhaseEndsAt(data.phaseEndsAt);
+      if (data.playerRank != null) setPlayerRank(data.playerRank);
+      if (data.totalPlayers != null) setTotalPlayers(data.totalPlayers);
       if (data.maxRoundsPerPhase) setMaxRounds(data.maxRoundsPerPhase);
       if (data.squadMembers) setSquadMembers(data.squadMembers);
       if (data.leaderboard) setLeaderboard(data.leaderboard);
       if (data.networkPlayers) setNetworkPlayers(data.networkPlayers);
+      if (data.sessionStatus) setSessionStatus(data.sessionStatus);
     },
     [setPhase, setRound, setPhaseEndsAt, setTokens, setEliminated, setRevivable]
   );
@@ -241,6 +250,15 @@ export default function PlayPage() {
     });
     incrementFireBoost();
   };
+
+  if (sessionStatus === "completed") {
+    return (
+      <div className="fixed inset-0 flex flex-col items-center justify-center gap-4 bg-phantom-bg p-6 text-center">
+        <h2 className="font-display text-2xl font-bold text-phantom-gold">Session Complete</h2>
+        <p className="text-phantom-muted">This session has concluded. Check your profile for results.</p>
+      </div>
+    );
+  }
 
   if (!ready && !subSessionId) {
     return (

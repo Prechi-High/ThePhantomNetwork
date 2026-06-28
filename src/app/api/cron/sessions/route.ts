@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-import { checkAndAdvanceDuePhases } from "@/lib/gameplay/session-orchestrator";
+import { checkAndAdvanceDuePhases, forceCompleteStaleSessions } from "@/lib/gameplay/session-orchestrator";
+import { publishSessionStatus } from "@/lib/gameplay/realtime-events";
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -47,6 +48,7 @@ export async function GET(request: Request) {
   }
 
   const advanced = await checkAndAdvanceDuePhases();
+  const forceCompleted = await forceCompleteStaleSessions();
 
   const { data: activeSessions } = await admin
     .from("sessions")
@@ -62,6 +64,7 @@ export async function GET(request: Request) {
     const allDone = subs?.length && subs.every((s) => s.status === "completed");
     if (allDone) {
       await admin.from("sessions").update({ status: "completed" }).eq("id", session.id);
+      await publishSessionStatus(session.id, "completed");
     }
   }
 
@@ -69,5 +72,6 @@ export async function GET(request: Request) {
     locked: toLock?.length ?? 0,
     started: toStart?.length ?? 0,
     phasesAdvanced: advanced.length,
+    forceCompleted: forceCompleted.length,
   });
 }

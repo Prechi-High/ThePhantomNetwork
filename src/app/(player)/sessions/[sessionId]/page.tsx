@@ -129,9 +129,7 @@ export default function SessionDetailPage() {
 
       <SessionCountdown
         startsAt={s.starts_at}
-        registrationClosesAt={s.registration_closes_at}
         status={s.status}
-        alwaysShow
         className="rounded-lg border border-phantom-border bg-phantom-surface/50 py-4"
       />
 

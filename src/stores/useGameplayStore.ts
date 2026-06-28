@@ -20,6 +20,7 @@ interface GameplayState {
   setLastOutcome: (outcome: SpinOutcome | null) => void;
   setEliminated: (eliminated: boolean) => void;
   setRevivable: (revivable: boolean) => void;
+  resetGameplay: () => void;
 }
 
 export const useGameplayStore = create<GameplayState>((set) => ({
@@ -41,4 +42,16 @@ export const useGameplayStore = create<GameplayState>((set) => ({
   setLastOutcome: (lastOutcome) => set({ lastOutcome }),
   setEliminated: (isEliminated) => set({ isEliminated }),
   setRevivable: (isRevivable) => set({ isRevivable }),
+  resetGameplay: () =>
+    set({
+      phase: 0,
+      round: 0,
+      phaseEndsAt: null,
+      tokens: 0,
+      isSpinning: false,
+      spinLocked: false,
+      lastOutcome: null,
+      isEliminated: false,
+      isRevivable: false,
+    }),
 }));

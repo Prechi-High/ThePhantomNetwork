@@ -6,6 +6,7 @@ import { getRedis, redisPublish, redisGet, redisSet } from "@/lib/redis/client";
 import { redisKeys } from "@/lib/redis/keys";
 import { checkRateLimit, acquireSpinLock } from "@/lib/api/rate-limit";
 import { SPIN_DURATION_MS } from "@/types/gameplay";
+import { PHASE_STATE_TTL_SECONDS } from "@/lib/gameplay/phase-timing";
 
 export async function POST(request: Request) {
   const { user, error } = await requireAuth();
@@ -64,7 +65,7 @@ export async function POST(request: Request) {
   const state = await redisGet<{ round: number; phase: number }>(redisKeys.subState(subSessionId));
   if (state) {
     const newRound = Math.min((state.round ?? 1) + 1, 3);
-    await redisSet(redisKeys.subState(subSessionId), { ...state, round: newRound }, 3600);
+    await redisSet(redisKeys.subState(subSessionId), { ...state, round: newRound }, PHASE_STATE_TTL_SECONDS);
     await redisPublish(redisKeys.realtimeChannel(subSessionId), {
       type: "round_update",
       round: newRound,

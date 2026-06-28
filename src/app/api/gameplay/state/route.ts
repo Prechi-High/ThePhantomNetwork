@@ -3,6 +3,7 @@ import { requireAuth } from "@/lib/api/auth-helpers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redisGet } from "@/lib/redis/client";
 import { redisKeys } from "@/lib/redis/keys";
+import { resolvePhaseTiming } from "@/lib/gameplay/phase-timing";
 
 export async function GET(request: Request) {
   const { user, error } = await requireAuth();
@@ -39,6 +40,12 @@ export async function GET(request: Request) {
     round: number;
   }>(redisKeys.subState(subSessionId));
 
+  const timing = resolvePhaseTiming({
+    currentPhase: subSession?.current_phase,
+    phaseStartedAt: subSession?.phase_started_at,
+    redisState,
+  });
+
   const { data: allPlayers } = await admin
     .from("sub_session_players")
     .select("user_id, session_tokens, is_eliminated, squad_id, profiles(username, avatar_id)")
@@ -69,13 +76,16 @@ export async function GET(request: Request) {
     };
   });
 
+  const sessionStatus = (subSession?.sessions as { status?: string } | null)?.status;
+
   return NextResponse.json({
     player,
     subSession,
-    phase: redisState?.phase ?? subSession?.current_phase ?? 1,
-    phaseEndsAt: redisState?.phaseEndsAt ?? null,
-    phaseStartedAt: redisState?.phaseStartedAt ?? null,
-    round: redisState?.round ?? 1,
+    sessionStatus,
+    phase: timing.phase,
+    phaseEndsAt: timing.phaseEndsAt ?? null,
+    phaseStartedAt: timing.phaseStartedAtMs ?? null,
+    round: timing.round,
     maxRoundsPerPhase: 3,
     leaderboard,
     squadMembers,

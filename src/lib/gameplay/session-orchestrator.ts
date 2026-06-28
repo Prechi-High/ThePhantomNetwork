@@ -4,8 +4,11 @@ import type { PhaseConfig } from "@/types/gameplay";
 import { redisSet, redisGet, redisPublish } from "@/lib/redis/client";
 import { redisKeys } from "@/lib/redis/keys";
 import { publishPhaseChange } from "@/lib/gameplay/realtime-events";
-
-const PHASE_DURATIONS_MS = [6, 6, 5, 3].map((m) => m * 60 * 1000);
+import {
+  PHASE_DURATIONS_MS,
+  PHASE_STATE_TTL_SECONDS,
+  TOTAL_SESSION_DURATION_MS,
+} from "@/lib/gameplay/phase-timing";
 
 export async function applyInventoryAtSessionStart(sessionId: string) {
   const admin = createAdminClient();
@@ -69,7 +72,7 @@ export async function initializeSubSessionState(
       phaseEndsAt,
       phaseConfig,
     },
-    3600
+    PHASE_STATE_TTL_SECONDS
   );
 
   await publishPhaseChange(subSessionId, {
@@ -158,18 +161,18 @@ export async function advanceSubSessionPhase(subSessionId: string) {
     phaseEndsAt: number;
   }>(redisKeys.subState(subSessionId));
 
-  if (!state) return { done: true };
-
   const { data: subSession } = await admin
     .from("sub_sessions")
     .select("*, sessions(phase_config, economy_config, entry_fee_cents, platform_fee_pct, id)")
     .eq("id", subSessionId)
     .single();
 
-  if (!subSession) return { done: true };
+  if (!subSession || subSession.status === "completed") return { done: true };
 
-  const phaseConfig = (subSession.sessions as { phase_config: PhaseConfig }).phase_config;
-  const currentPhase = subSession.current_phase;
+  const phaseConfig =
+    state?.phaseConfig ??
+    (subSession.sessions as { phase_config: PhaseConfig }).phase_config;
+  const currentPhase = subSession.current_phase ?? 1;
 
   if (currentPhase === 1) {
     await runPhase1Elimination(subSessionId, phaseConfig);
@@ -208,7 +211,7 @@ export async function advanceSubSessionPhase(subSessionId: string) {
       phaseEndsAt,
       phaseConfig,
     },
-    3600
+    PHASE_STATE_TTL_SECONDS
   );
 
   await publishPhaseChange(subSessionId, {
@@ -247,21 +250,26 @@ async function finalizeSubSession(subSessionId: string) {
   }
 
   const winner = ranked[0];
-  if (winner) {
-    await admin
-      .from("sub_sessions")
-      .update({ winner_id: winner.user_id, status: "completed" })
-      .eq("id", subSessionId);
-  }
+  await admin
+    .from("sub_sessions")
+    .update({
+      winner_id: winner?.user_id ?? null,
+      status: "completed",
+    })
+    .eq("id", subSessionId);
 
-  await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/admin/payouts`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.CRON_SECRET}`,
-    },
-    body: JSON.stringify({ subSessionId }),
-  });
+  try {
+    await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/admin/payouts`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.CRON_SECRET}`,
+      },
+      body: JSON.stringify({ subSessionId }),
+    });
+  } catch {
+    // Payout failure should not block session completion
+  }
 
   for (const p of ranked) {
     const { data: sub } = await admin
@@ -310,4 +318,36 @@ export async function checkAndAdvanceDuePhases() {
   }
 
   return advanced;
+}
+
+/** Force-complete sub-sessions that exceeded total session duration (safety net). */
+export async function forceCompleteStaleSessions() {
+  const admin = createAdminClient();
+  const now = Date.now();
+  const completedSessionIds: string[] = [];
+
+  const { data: activeSessions } = await admin
+    .from("sessions")
+    .select("id, starts_at")
+    .eq("status", "active");
+
+  for (const session of activeSessions ?? []) {
+    const sessionStart = new Date(session.starts_at).getTime();
+    if (now < sessionStart + TOTAL_SESSION_DURATION_MS) continue;
+
+    const { data: subs } = await admin
+      .from("sub_sessions")
+      .select("id")
+      .eq("session_id", session.id)
+      .eq("status", "active");
+
+    for (const sub of subs ?? []) {
+      await finalizeSubSession(sub.id);
+    }
+
+    await admin.from("sessions").update({ status: "completed" }).eq("id", session.id);
+    completedSessionIds.push(session.id);
+  }
+
+  return completedSessionIds;
 }

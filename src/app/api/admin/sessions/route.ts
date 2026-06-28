@@ -122,6 +122,19 @@ export async function POST(request: Request) {
           phase_started_at: new Date().toISOString(),
         })
         .eq("id", sub.id);
+
+      await admin
+        .from("sub_session_players")
+        .update({
+          session_tokens: 0,
+          is_eliminated: false,
+          is_revivable: false,
+          elimination_phase: null,
+          final_tokens: null,
+          final_rank: null,
+        })
+        .eq("sub_session_id", sub.id);
+
       await initializeSubSessionState(sub.id, phaseConfig);
     }
 

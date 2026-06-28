@@ -52,7 +52,6 @@ export function UpcomingSessions({ initialSessions }: UpcomingSessionsProps) {
                     <Badge>{session.status}</Badge>
                     <SessionCountdown
                       startsAt={session.starts_at}
-                      registrationClosesAt={session.registration_closes_at}
                       status={session.status}
                       className="mt-1"
                     />
