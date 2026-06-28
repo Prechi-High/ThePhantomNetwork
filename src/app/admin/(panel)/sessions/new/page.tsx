@@ -174,8 +174,8 @@ export default function NewSessionPage() {
                   <label className="text-sm text-phantom-muted">Target Tokens</label>
                   <input
                     type="number"
-                    value={(phase.config as any).target}
-                    onChange={(e) => updatePhase(index, { config: { ...(phase.config as any), target: parseInt(e.target.value) } })}
+                    value={(phase.config as { target: number }).target}
+                    onChange={(e) => updatePhase(index, { config: { ...(phase.config as { target: number; revivable_min: number; revivable_max: number; eliminated_below: number }), target: parseInt(e.target.value) } })}
                     className="mt-1 w-full rounded-lg border border-phantom-border bg-phantom-bg px-3 py-2"
                   />
                 </div>
@@ -184,8 +184,8 @@ export default function NewSessionPage() {
                   <input
                     type="number"
                     step="0.1"
-                    value={(phase.config as any).revivable_min}
-                    onChange={(e) => updatePhase(index, { config: { ...(phase.config as any), revivable_min: parseFloat(e.target.value) } })}
+                    value={(phase.config as { revivable_min: number }).revivable_min}
+                    onChange={(e) => updatePhase(index, { config: { ...(phase.config as { target: number; revivable_min: number; revivable_max: number; eliminated_below: number }), revivable_min: parseFloat(e.target.value) } })}
                     className="mt-1 w-full rounded-lg border border-phantom-border bg-phantom-bg px-3 py-2"
                   />
                 </div>
@@ -194,8 +194,8 @@ export default function NewSessionPage() {
                   <input
                     type="number"
                     step="0.1"
-                    value={(phase.config as any).revivable_max}
-                    onChange={(e) => updatePhase(index, { config: { ...(phase.config as any), revivable_max: parseFloat(e.target.value) } })}
+                    value={(phase.config as { revivable_max: number }).revivable_max}
+                    onChange={(e) => updatePhase(index, { config: { ...(phase.config as { target: number; revivable_min: number; revivable_max: number; eliminated_below: number }), revivable_max: parseFloat(e.target.value) } })}
                     className="mt-1 w-full rounded-lg border border-phantom-border bg-phantom-bg px-3 py-2"
                   />
                 </div>
@@ -203,8 +203,8 @@ export default function NewSessionPage() {
                   <label className="text-sm text-phantom-muted">Eliminated Below</label>
                   <input
                     type="number"
-                    value={(phase.config as any).eliminated_below}
-                    onChange={(e) => updatePhase(index, { config: { ...(phase.config as any), eliminated_below: parseInt(e.target.value) } })}
+                    value={(phase.config as { eliminated_below: number }).eliminated_below}
+                    onChange={(e) => updatePhase(index, { config: { ...(phase.config as { target: number; revivable_min: number; revivable_max: number; eliminated_below: number }), eliminated_below: parseInt(e.target.value) } })}
                     className="mt-1 w-full rounded-lg border border-phantom-border bg-phantom-bg px-3 py-2"
                   />
                 </div>
@@ -215,8 +215,8 @@ export default function NewSessionPage() {
                 <label className="text-sm text-phantom-muted">Eliminate Bottom (%)</label>
                 <input
                   type="number"
-                  value={(phase.config as any).eliminate_bottom_pct}
-                  onChange={(e) => updatePhase(index, { config: { ...(phase.config as any), eliminate_bottom_pct: parseInt(e.target.value) } })}
+                  value={(phase.config as { eliminate_bottom_pct: number }).eliminate_bottom_pct}
+                  onChange={(e) => updatePhase(index, { config: { ...(phase.config as { eliminate_bottom_pct: number }), eliminate_bottom_pct: parseInt(e.target.value) } })}
                   className="mt-1 w-full rounded-lg border border-phantom-border bg-phantom-bg px-3 py-2"
                 />
               </div>
