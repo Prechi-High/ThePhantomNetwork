@@ -110,17 +110,6 @@ export default function PlayPage() {
     lastIntroPhaseRef.current = forPhase;
   }, []);
 
-  const handlePhaseChange = useCallback(
-    (payload: { phase: number; round?: number; phaseEndsAt?: number }) => {
-      if (payload.phase && payload.phase !== lastIntroPhaseRef.current) {
-        triggerNetworkIntro(payload.phase);
-      }
-    },
-    [triggerNetworkIntro]
-  );
-
-  useRealtimeSession(subSessionId, handlePhaseChange, refreshState);
-
   const applyState = useCallback(
     (data: GameplayStateResponse) => {
       if (data.player) {
@@ -163,6 +152,17 @@ export default function PlayPage() {
       });
     }
   }, [subSessionId, applyState, sessionId]);
+
+  const handlePhaseChange = useCallback(
+    (payload: { phase: number; round?: number; phaseEndsAt?: number }) => {
+      if (payload.phase && payload.phase !== lastIntroPhaseRef.current) {
+        triggerNetworkIntro(payload.phase);
+      }
+    },
+    [triggerNetworkIntro]
+  );
+
+  useRealtimeSession(subSessionId, handlePhaseChange, refreshState);
 
   useEffect(() => {
     fetch(`/api/sessions/${sessionId}/my-sub-session`)
