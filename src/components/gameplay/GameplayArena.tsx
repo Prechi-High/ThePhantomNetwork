@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { SpinWheel } from "@/components/gameplay/SpinWheel";
+import { PremiumWheel, ButtonAnimator } from "@/components/gameplay/premium-wheel";
 import { StealTargetPicker } from "@/components/gameplay/StealTargetPicker";
 import { FireBoostMeter } from "@/components/gameplay/FireBoostMeter";
 import { RevivePanel } from "@/components/gameplay/RevivePanel";
@@ -212,9 +212,7 @@ export function GameplayArena({
           )}
 
           <div className="relative">
-            <div className="absolute -inset-4 rounded-full border border-sky-500/20" />
-            <div className="absolute -inset-8 rounded-full border border-sky-500/10" />
-            <SpinWheel
+            <PremiumWheel
               isSpinning={isSpinning}
               outcome={lastOutcome}
               onSpinComplete={onSpinComplete}
@@ -299,18 +297,17 @@ export function GameplayArena({
             </div>
           ))}
         </div>
-        <Button
-          onClick={onSpin}
-          disabled={isSpinning || spinLocked || isEliminated}
-          className="w-full bg-gradient-to-b from-red-700 to-red-900 font-display uppercase tracking-widest"
-          size="lg"
-        >
-          {isSpinning
-            ? "Spinning..."
-            : spinLocked
-              ? `Wait ${SPIN_DURATION_MS / 1000}s`
-              : "Spin the Phantom"}
-        </Button>
+        <div className="flex justify-center">
+          <ButtonAnimator
+            state={
+              isEliminated ? "idle" :
+              isSpinning ? "cooldown" :
+              spinLocked ? "cooldown" : "idle"
+            }
+            disabled={isSpinning || spinLocked || isEliminated}
+            onClick={onSpin}
+          />
+        </div>
       </footer>
     </div>
   );
