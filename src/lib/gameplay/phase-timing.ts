@@ -1,4 +1,4 @@
-import type { PhaseConfig, PhaseEntry } from "@/types/gameplay";
+import type { PhaseConfig, PhaseEntry, TargetEliminationConfig, PercentageEliminationConfig } from "@/types/gameplay";
 
 /** Utility to find a phase entry by phase number in the config array */
 export function getPhaseEntry(phaseConfig: PhaseConfig, phaseNumber: number): PhaseEntry | undefined {
@@ -17,10 +17,18 @@ export function getTotalSessionDurationMs(phaseConfig: PhaseConfig): number {
 }
 
 /** Compute Redis TTL from phase config (total session + 1 hour buffer) */
-export function getPhaseStateTTLSeconds(phaseConfig: PhaseConfig): number {
+export function getPhaseStateTTLSeconds(phaseConfig?: PhaseConfig): number {
+  if (!phaseConfig) {
+    // Legacy default TTL for backward compatibility
+    const legacyTotal = LEGACY_PHASE_DURATIONS_MS.reduce((a, b) => a + b, 0);
+    return Math.ceil(legacyTotal / 1000) + 3600;
+  }
   const totalMs = getTotalSessionDurationMs(phaseConfig);
   return Math.ceil(totalMs / 1000) + 3600;
 }
+
+/** Legacy TTL constant for backward compatibility (exported for old code) */
+export const PHASE_STATE_TTL_SECONDS = getPhaseStateTTLSeconds();
 
 /** Legacy phase durations (for backward compatibility) */
 export const LEGACY_PHASE_DURATIONS_MS = [6, 6, 5, 3].map((m) => m * 60 * 1000);
@@ -82,12 +90,12 @@ export function formatPhaseAnnouncement(phaseEntry: PhaseEntry): string {
   }
 
   if (phaseEntry.elimination_rule === "target") {
-    const config = phaseEntry.config as any;
+    const config = phaseEntry.config as TargetEliminationConfig;
     return `Phase ${phaseEntry.phase} - Elimination rule: ${config.target}+ tokens advance, ${config.revivable_min}-${config.revivable_max} revivable, below ${config.eliminated_below} eliminated.`;
   }
 
   if (phaseEntry.elimination_rule === "percentage") {
-    const config = phaseEntry.config as any;
+    const config = phaseEntry.config as PercentageEliminationConfig;
     return `Phase ${phaseEntry.phase} - Elimination rule: Bottom ${config.eliminate_bottom_pct}% eliminated.`;
   }
 

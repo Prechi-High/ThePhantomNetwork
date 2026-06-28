@@ -1,7 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { classifyTargetElimination, classifyPercentileElimination } from "@/lib/gameplay/elimination";
-import type { PhaseConfig } from "@/types/gameplay";
-import { redisSet, redisGet, redisPublish } from "@/lib/redis/client";
+import type { PhaseConfig, TargetEliminationConfig, PercentageEliminationConfig } from "@/types/gameplay";
+import { redisSet, redisGet } from "@/lib/redis/client";
 import { redisKeys } from "@/lib/redis/keys";
 import { publishPhaseChange } from "@/lib/gameplay/realtime-events";
 import {
@@ -107,7 +107,7 @@ export async function initializeSubSessionState(
 export async function runTargetElimination(
   subSessionId: string,
   phaseNumber: number,
-  config: any
+  config: TargetEliminationConfig
 ) {
   const admin = createAdminClient();
 
@@ -199,9 +199,9 @@ export async function advanceSubSessionPhase(subSessionId: string) {
   // Run elimination for current phase if needed
   if (currentPhaseEntry) {
     if (currentPhaseEntry.elimination_rule === "target") {
-      await runTargetElimination(subSessionId, currentPhase, currentPhaseEntry.config);
+      await runTargetElimination(subSessionId, currentPhase, currentPhaseEntry.config as TargetEliminationConfig);
     } else if (currentPhaseEntry.elimination_rule === "percentage") {
-      const config = currentPhaseEntry.config as any;
+      const config = currentPhaseEntry.config as PercentageEliminationConfig;
       await runPercentileElimination(subSessionId, currentPhase, config.eliminate_bottom_pct);
     }
   }

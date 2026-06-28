@@ -1,6 +1,5 @@
-import type { PhaseConfig, PhaseEntry, PlayerState, TargetEliminationConfig } from "@/types/gameplay";
+import type { PlayerState, TargetEliminationConfig } from "@/types/gameplay";
 import { REVIVE_COST } from "@/types/gameplay";
-import { getPhaseEntry } from "@/lib/gameplay/phase-timing";
 
 export type Phase1Category = "passed" | "revivable" | "eliminated";
 
