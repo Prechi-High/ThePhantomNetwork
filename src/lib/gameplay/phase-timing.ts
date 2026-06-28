@@ -16,6 +16,9 @@ export function getTotalSessionDurationMs(phaseConfig: PhaseConfig): number {
   return phaseConfig.reduce((total, phase) => total + getPhaseDurationMs(phase), 0);
 }
 
+/** Legacy phase durations (for backward compatibility) */
+export const LEGACY_PHASE_DURATIONS_MS = [6, 6, 5, 3].map((m) => m * 60 * 1000);
+
 /** Compute Redis TTL from phase config (total session + 1 hour buffer) */
 export function getPhaseStateTTLSeconds(phaseConfig?: PhaseConfig): number {
   if (!phaseConfig) {
@@ -29,9 +32,6 @@ export function getPhaseStateTTLSeconds(phaseConfig?: PhaseConfig): number {
 
 /** Legacy TTL constant for backward compatibility (exported for old code) */
 export const PHASE_STATE_TTL_SECONDS = getPhaseStateTTLSeconds();
-
-/** Legacy phase durations (for backward compatibility) */
-export const LEGACY_PHASE_DURATIONS_MS = [6, 6, 5, 3].map((m) => m * 60 * 1000);
 
 /** Compute phase end time (supports both new phase config and legacy) */
 export function computePhaseEndsAt(
