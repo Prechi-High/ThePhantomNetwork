@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { motion, useAnimation } from "framer-motion";
 import type { SpinOutcome } from "@/types/gameplay";
 import { SPIN_DURATION_MS } from "@/types/gameplay";
-import { WHEEL_SECTORS, getSectorAngle, getTargetAngle } from "./config";
+import { WHEEL_SECTORS, getTargetAngle } from "./config";
 
 interface PremiumWheelProps {
   isSpinning: boolean;

@@ -52,10 +52,10 @@ export function ButtonAnimator({
   };
 
   const animate = useCallback((time: number) => {
-    if (previousTimeRef.current === undefined) {
+    if (previousTimeRef.current === undefined || previousTimeRef.current === null) {
       previousTimeRef.current = time;
     }
-    const delta = time - previousTimeRef.current;
+    const delta = time - previousTimeRef.current!;
 
     if (delta >= frameDurationRef.current) {
       setFrameIndex((prev) => {
