@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { rollSpinOutcome, applySpinTokens } from "@/lib/gameplay/spin";
-import { classifyPhase1 } from "@/lib/gameplay/elimination";
+import { classifyTargetElimination } from "@/lib/gameplay/elimination";
 import { buildStealTargets, computeStealAmount } from "@/lib/gameplay/steal";
 import { contributeToRevive, isReviveComplete } from "@/lib/gameplay/revive";
 import { validateSpecExample } from "@/lib/gameplay/economy";
@@ -21,10 +21,10 @@ describe("spin engine", () => {
 describe("elimination", () => {
   const config = { target: 38, revivable_min: 35, revivable_max: 37.5, eliminated_below: 35 };
 
-  it("classifies phase 1 correctly", () => {
-    expect(classifyPhase1(40, config)).toBe("passed");
-    expect(classifyPhase1(36, config)).toBe("revivable");
-    expect(classifyPhase1(30, config)).toBe("eliminated");
+  it("classifies target elimination correctly", () => {
+    expect(classifyTargetElimination(40, config)).toBe("passed");
+    expect(classifyTargetElimination(36, config)).toBe("revivable");
+    expect(classifyTargetElimination(30, config)).toBe("eliminated");
   });
 });
 

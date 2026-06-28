@@ -1,11 +1,12 @@
-import type { PhaseConfig, PlayerState } from "@/types/gameplay";
+import type { PhaseConfig, PhaseEntry, PlayerState, TargetEliminationConfig } from "@/types/gameplay";
 import { REVIVE_COST } from "@/types/gameplay";
+import { getPhaseEntry } from "@/lib/gameplay/phase-timing";
 
 export type Phase1Category = "passed" | "revivable" | "eliminated";
 
-export function classifyPhase1(
+export function classifyTargetElimination(
   tokens: number,
-  config: PhaseConfig["phase1"]
+  config: TargetEliminationConfig
 ): Phase1Category {
   if (tokens >= config.target) return "passed";
   if (tokens >= config.revivable_min && tokens <= config.revivable_max) return "revivable";

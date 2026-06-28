@@ -2,7 +2,30 @@ export type UserRole = "player" | "camp_owner" | "admin";
 export type SessionStatus = "draft" | "open" | "locked" | "active" | "completed" | "invalid";
 export type SpinOutcome = "ADVANCE" | "ACQUIRE" | "DISCOVER" | "STEAL" | "VOID";
 
-export interface PhaseConfig {
+export type EliminationRuleType = "target" | "percentage" | "none";
+
+export interface TargetEliminationConfig {
+  target: number;
+  revivable_min: number;
+  revivable_max: number;
+  eliminated_below: number;
+}
+
+export interface PercentageEliminationConfig {
+  eliminate_bottom_pct: number;
+}
+
+export interface PhaseEntry {
+  phase: number;
+  duration_minutes: number;
+  elimination_rule: EliminationRuleType;
+  config: TargetEliminationConfig | PercentageEliminationConfig | Record<string, never>;
+}
+
+export type PhaseConfig = PhaseEntry[];
+
+// For backward compatibility - still support old format for existing code
+export interface LegacyPhaseConfig {
   phase1: {
     target: number;
     revivable_min: number;

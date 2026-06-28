@@ -1,14 +1,18 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { classifyPhase1, classifyPercentileElimination } from "@/lib/gameplay/elimination";
+import { classifyTargetElimination, classifyPercentileElimination } from "@/lib/gameplay/elimination";
 import type { PhaseConfig } from "@/types/gameplay";
 import { redisSet, redisGet, redisPublish } from "@/lib/redis/client";
 import { redisKeys } from "@/lib/redis/keys";
 import { publishPhaseChange } from "@/lib/gameplay/realtime-events";
 import {
-  PHASE_DURATIONS_MS,
-  PHASE_STATE_TTL_SECONDS,
-  TOTAL_SESSION_DURATION_MS,
+  getPhaseEntry,
+  getPhaseDurationMs,
+  getPhaseStateTTLSeconds,
+  getTotalSessionDurationMs,
+  formatPhaseAnnouncement,
+  LEGACY_PHASE_DURATIONS_MS,
 } from "@/lib/gameplay/phase-timing";
+import { publishLiveFeed } from "@/lib/api/rate-limit";
 
 export async function applyInventoryAtSessionStart(sessionId: string) {
   const admin = createAdminClient();
@@ -61,7 +65,9 @@ export async function initializeSubSessionState(
   phaseConfig: PhaseConfig
 ) {
   const phaseStartedAt = Date.now();
-  const phaseEndsAt = phaseStartedAt + PHASE_DURATIONS_MS[0];
+  const initialPhaseEntry = getPhaseEntry(phaseConfig, 1);
+  const phaseEndsAt = phaseStartedAt + getPhaseDurationMs(initialPhaseEntry);
+  const ttlSeconds = getPhaseStateTTLSeconds(phaseConfig);
 
   await redisSet(
     redisKeys.subState(subSessionId),
@@ -72,7 +78,7 @@ export async function initializeSubSessionState(
       phaseEndsAt,
       phaseConfig,
     },
-    PHASE_STATE_TTL_SECONDS
+    ttlSeconds
   );
 
   await publishPhaseChange(subSessionId, {
@@ -81,14 +87,29 @@ export async function initializeSubSessionState(
     phaseStartedAt,
     phaseEndsAt,
   });
+
+  if (initialPhaseEntry) {
+    const { data: sub } = await createAdminClient()
+      .from("sub_sessions")
+      .select("session_id")
+      .eq("id", subSessionId)
+      .single();
+    if (sub) {
+      await publishLiveFeed(
+        "phase_start",
+        formatPhaseAnnouncement(initialPhaseEntry),
+        { sessionId: sub.session_id, subSessionId }
+      );
+    }
+  }
 }
 
-export async function runPhase1Elimination(
+export async function runTargetElimination(
   subSessionId: string,
-  phaseConfig: PhaseConfig
+  phaseNumber: number,
+  config: any
 ) {
   const admin = createAdminClient();
-  const p1 = phaseConfig.phase1;
 
   const { data: players } = await admin
     .from("sub_session_players")
@@ -97,7 +118,7 @@ export async function runPhase1Elimination(
 
   for (const player of players ?? []) {
     const tokens = Number(player.session_tokens);
-    const category = classifyPhase1(tokens, p1);
+    const category = classifyTargetElimination(tokens, config);
 
     if (category === "passed") continue;
     if (category === "revivable") {
@@ -105,7 +126,7 @@ export async function runPhase1Elimination(
         .from("sub_session_players")
         .update({ is_revivable: true, is_eliminated: true })
         .eq("id", player.id);
-    } else if (player.insurance_active && tokens >= p1.revivable_min && tokens < p1.target) {
+    } else if (player.insurance_active && tokens >= config.revivable_min && tokens < config.target) {
       await admin
         .from("sub_session_players")
         .update({ insurance_active: false })
@@ -113,7 +134,7 @@ export async function runPhase1Elimination(
     } else {
       await admin
         .from("sub_session_players")
-        .update({ is_eliminated: true, elimination_phase: 1 })
+        .update({ is_eliminated: true, elimination_phase: phaseNumber })
         .eq("id", player.id);
     }
   }
@@ -173,24 +194,28 @@ export async function advanceSubSessionPhase(subSessionId: string) {
     state?.phaseConfig ??
     (subSession.sessions as { phase_config: PhaseConfig }).phase_config;
   const currentPhase = subSession.current_phase ?? 1;
+  const currentPhaseEntry = getPhaseEntry(phaseConfig, currentPhase);
 
-  if (currentPhase === 1) {
-    await runPhase1Elimination(subSessionId, phaseConfig);
-  } else if (currentPhase === 2) {
-    await runPercentileElimination(subSessionId, 2, phaseConfig.phase2.eliminate_bottom_pct);
-  } else if (currentPhase === 3) {
-    await runPercentileElimination(subSessionId, 3, phaseConfig.phase3.eliminate_bottom_pct);
-  } else if (currentPhase === 4) {
-    await finalizeSubSession(subSessionId);
-    return { done: true };
+  // Run elimination for current phase if needed
+  if (currentPhaseEntry) {
+    if (currentPhaseEntry.elimination_rule === "target") {
+      await runTargetElimination(subSessionId, currentPhase, currentPhaseEntry.config);
+    } else if (currentPhaseEntry.elimination_rule === "percentage") {
+      const config = currentPhaseEntry.config as any;
+      await runPercentileElimination(subSessionId, currentPhase, config.eliminate_bottom_pct);
+    }
   }
 
+  // Check if this is the final phase (check if there's a next phase in config)
   const nextPhase = currentPhase + 1;
-  if (nextPhase > 4) {
+  const nextPhaseEntry = getPhaseEntry(phaseConfig, nextPhase);
+
+  if (!nextPhaseEntry) {
     await finalizeSubSession(subSessionId);
     return { done: true };
   }
 
+  // Advance to next phase
   await admin
     .from("sub_sessions")
     .update({
@@ -200,7 +225,8 @@ export async function advanceSubSessionPhase(subSessionId: string) {
     .eq("id", subSessionId);
 
   const phaseStartedAt = Date.now();
-  const phaseEndsAt = phaseStartedAt + PHASE_DURATIONS_MS[nextPhase - 1];
+  const phaseEndsAt = phaseStartedAt + getPhaseDurationMs(nextPhaseEntry);
+  const ttlSeconds = getPhaseStateTTLSeconds(phaseConfig);
 
   await redisSet(
     redisKeys.subState(subSessionId),
@@ -211,7 +237,7 @@ export async function advanceSubSessionPhase(subSessionId: string) {
       phaseEndsAt,
       phaseConfig,
     },
-    PHASE_STATE_TTL_SECONDS
+    ttlSeconds
   );
 
   await publishPhaseChange(subSessionId, {
@@ -220,6 +246,20 @@ export async function advanceSubSessionPhase(subSessionId: string) {
     phaseStartedAt,
     phaseEndsAt,
   });
+
+  // Publish phase start announcement
+  const { data: sub } = await admin
+    .from("sub_sessions")
+    .select("session_id")
+    .eq("id", subSessionId)
+    .single();
+  if (sub) {
+    await publishLiveFeed(
+      "phase_start",
+      formatPhaseAnnouncement(nextPhaseEntry),
+      { sessionId: sub.session_id, subSessionId }
+    );
+  }
 
   return { done: false, phase: nextPhase };
 }
@@ -305,10 +345,17 @@ export async function checkAndAdvanceDuePhases() {
   const advanced: string[] = [];
 
   for (const sub of activeSubs ?? []) {
-    const state = await redisGet<{ phaseEndsAt: number }>(redisKeys.subState(sub.id));
+    const state = await redisGet<{ phaseEndsAt: number; phaseConfig?: PhaseConfig }>(
+      redisKeys.subState(sub.id)
+    );
     const phaseStarted = sub.phase_started_at ? new Date(sub.phase_started_at).getTime() : 0;
-    const phaseIdx = (sub.current_phase ?? 1) - 1;
-    const duration = PHASE_DURATIONS_MS[phaseIdx] ?? 6 * 60 * 1000;
+    const currentPhase = sub.current_phase ?? 1;
+    const phaseConfig = state?.phaseConfig ??
+      (sub.sessions as { phase_config?: PhaseConfig }).phase_config;
+    const phaseEntry = phaseConfig ? getPhaseEntry(phaseConfig, currentPhase) : undefined;
+    const duration = phaseEntry
+      ? getPhaseDurationMs(phaseEntry)
+      : LEGACY_PHASE_DURATIONS_MS[Math.max(0, currentPhase - 1)] ?? 6 * 60 * 1000;
     const endsAt = state?.phaseEndsAt ?? phaseStarted + duration;
 
     if (now >= endsAt) {
@@ -328,12 +375,17 @@ export async function forceCompleteStaleSessions() {
 
   const { data: activeSessions } = await admin
     .from("sessions")
-    .select("id, starts_at")
+    .select("id, starts_at, phase_config")
     .eq("status", "active");
 
   for (const session of activeSessions ?? []) {
     const sessionStart = new Date(session.starts_at).getTime();
-    if (now < sessionStart + TOTAL_SESSION_DURATION_MS) continue;
+    const phaseConfig = session.phase_config as PhaseConfig | undefined;
+    const totalDuration = phaseConfig
+      ? getTotalSessionDurationMs(phaseConfig)
+      : LEGACY_PHASE_DURATIONS_MS.reduce((a, b) => a + b, 0);
+
+    if (now < sessionStart + totalDuration) continue;
 
     const { data: subs } = await admin
       .from("sub_sessions")
