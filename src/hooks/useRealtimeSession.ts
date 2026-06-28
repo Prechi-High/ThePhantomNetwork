@@ -84,6 +84,7 @@ export function useRealtimeSession(
     incrementFireBoost,
     resetFireBoost,
     onPhaseChange,
+    onTokensUpdated,
   ]);
 
   return { connected };

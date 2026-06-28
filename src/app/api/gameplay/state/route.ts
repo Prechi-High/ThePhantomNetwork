@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { redisGet } from "@/lib/redis/client";
 import { redisKeys } from "@/lib/redis/keys";
 import { resolvePhaseTiming } from "@/lib/gameplay/phase-timing";
+import type { PhaseConfig } from "@/types/gameplay";
 
 export async function GET(request: Request) {
   const { user, error } = await requireAuth();
@@ -40,7 +41,7 @@ export async function GET(request: Request) {
     round: number;
   }>(redisKeys.subState(subSessionId));
 
-  const sessionPhaseConfig = (subSession?.sessions as { phase_config?: any })?.phase_config;
+  const sessionPhaseConfig = (subSession?.sessions as { phase_config?: PhaseConfig })?.phase_config;
   const timing = resolvePhaseTiming({
     currentPhase: subSession?.current_phase,
     phaseStartedAt: subSession?.phase_started_at,
