@@ -119,7 +119,7 @@ export default function PlayPage() {
     [triggerNetworkIntro]
   );
 
-  useRealtimeSession(subSessionId, handlePhaseChange);
+  useRealtimeSession(subSessionId, handlePhaseChange, refreshState);
 
   const applyState = useCallback(
     (data: GameplayStateResponse) => {

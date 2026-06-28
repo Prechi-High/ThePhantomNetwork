@@ -62,6 +62,11 @@ export async function POST(request: Request) {
     animationSeed: result.animationSeed,
   });
 
+  // Publish a global event to refresh state for all clients (for leaderboard/squad tokens)
+  await redisPublish(redisKeys.realtimeChannel(subSessionId), {
+    type: "tokens_updated",
+  });
+
   const state = await redisGet<{ round: number; phase: number }>(redisKeys.subState(subSessionId));
   if (state) {
     const newRound = Math.min((state.round ?? 1) + 1, 3);

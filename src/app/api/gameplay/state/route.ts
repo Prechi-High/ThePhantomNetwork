@@ -29,7 +29,7 @@ export async function GET(request: Request) {
 
   const { data: subSession } = await admin
     .from("sub_sessions")
-    .select("*, sessions(title, status)")
+    .select("*, sessions(title, status, phase_config)")
     .eq("id", subSessionId)
     .single();
 
@@ -40,9 +40,11 @@ export async function GET(request: Request) {
     round: number;
   }>(redisKeys.subState(subSessionId));
 
+  const sessionPhaseConfig = (subSession?.sessions as { phase_config?: any })?.phase_config;
   const timing = resolvePhaseTiming({
     currentPhase: subSession?.current_phase,
     phaseStartedAt: subSession?.phase_started_at,
+    phaseConfig: sessionPhaseConfig,
     redisState,
   });
 

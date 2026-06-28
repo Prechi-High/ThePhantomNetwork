@@ -22,19 +22,36 @@ export default function ProfilePage() {
   const [username, setUsername] = useState("");
   const [avatarId, setAvatarId] = useState<string>(AVATARS[0].id);
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const loadProfile = () => {
-    fetch("/api/profile", { credentials: "same-origin" })
-      .then((r) => r.json())
-      .then((d) => {
-        setProfile(d.profile);
-        if (d.profile) {
-          setUsername(d.profile.username as string);
-          setAvatarId((d.profile.avatar_id as string) ?? AVATARS[0].id);
-        }
-      });
-    fetch("/api/wallet", { credentials: "same-origin" })
-      .then((r) => r.json())
-      .then((d) => setTransactions(d.transactions ?? []));
+    setLoading(true);
+    setError(null);
+    
+    Promise.all([
+      fetch("/api/profile", { credentials: "same-origin" })
+        .then((r) => {
+          if (!r.ok) throw new Error("Failed to load profile");
+          return r.json();
+        })
+        .then((d) => {
+          setProfile(d.profile);
+          if (d.profile) {
+            setUsername(d.profile.username as string);
+            setAvatarId((d.profile.avatar_id as string) ?? AVATARS[0].id);
+          }
+        }),
+      fetch("/api/wallet", { credentials: "same-origin" })
+        .then((r) => r.json())
+        .then((d) => setTransactions(d.transactions ?? []))
+    ])
+    .catch((err) => {
+      setError(err instanceof Error ? err.message : "Failed to load profile");
+    })
+    .finally(() => {
+      setLoading(false);
+    });
   };
 
   useEffect(() => {
@@ -52,7 +69,9 @@ export default function ProfilePage() {
     loadProfile();
   };
 
-  if (!profile) return <p className="text-phantom-muted">Loading...</p>;
+  if (loading) return <p className="text-phantom-muted">Loading...</p>;
+  if (error) return <p className="text-phantom-danger">{error}</p>;
+  if (!profile) return <p className="text-phantom-muted">Profile not found</p>;
 
   const avatar = AVATARS.find((a) => a.id === profile.avatar_id);
 

@@ -119,5 +119,10 @@ export async function POST(request: Request) {
     blocked,
   });
 
+  // Publish a global event to refresh state for all clients (for leaderboard/squad tokens)
+  await redisPublish(redisKeys.realtimeChannel(subSessionId), {
+    type: "tokens_updated",
+  });
+
   return NextResponse.json({ success: true, blocked });
 }

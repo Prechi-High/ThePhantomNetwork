@@ -12,7 +12,8 @@ interface PhaseChangePayload {
 
 export function useRealtimeSession(
   subSessionId: string | null,
-  onPhaseChange?: (payload: PhaseChangePayload) => void
+  onPhaseChange?: (payload: PhaseChangePayload) => void,
+  onTokensUpdated?: () => void
 ) {
   const { setTokens, setPhase, setRound, setPhaseEndsAt, setLastOutcome, setEliminated } =
     useGameplayStore();
@@ -60,6 +61,9 @@ export function useRealtimeSession(
           case "steal_resolved":
             setStealInProgress(false);
             resetFireBoost();
+            break;
+          case "tokens_updated":
+            onTokensUpdated?.();
             break;
         }
       } catch {
