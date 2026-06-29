@@ -48,8 +48,8 @@ export function PremiumWheel({ isSpinning, outcome, onSpinComplete }: PremiumWhe
       <div className="absolute -inset-6 rounded-full border border-amber-500/10 bg-gradient-radial from-amber-900/20 to-transparent" />
       
       {/* Static Outer Frame */}
-      <div className="absolute -inset-2 z-30 flex items-center justify-center overflow-hidden">
-        <div className="h-full w-full rounded-full" style={{
+      <div className="absolute inset-0 z-30 flex items-center justify-center overflow-hidden">
+        <div className="h-[105%] w-[105%] rounded-full" style={{
           backgroundImage: `url(/wheel-frame.png)`,
           backgroundSize: "contain",
           backgroundPosition: "center",
@@ -59,7 +59,7 @@ export function PremiumWheel({ isSpinning, outcome, onSpinComplete }: PremiumWhe
       
       {/* Rotating Sector Disc */}
       <motion.div
-        className="absolute inset-0 z-20"
+        className="absolute inset-4 z-20"
         animate={controls}
         onAnimationComplete={handleAnimationComplete}
         style={{
