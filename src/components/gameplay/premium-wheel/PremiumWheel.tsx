@@ -49,7 +49,7 @@ export function PremiumWheel({ isSpinning, outcome, onSpinComplete }: PremiumWhe
       
       {/* Static Outer Frame */}
       <div className="absolute inset-0 z-30 flex items-center justify-center overflow-hidden">
-        <div className="h-[105%] w-[105%] rounded-full" style={{
+        <div className="h-[110%] w-[110%] rounded-full" style={{
           backgroundImage: `url(/wheel-frame.png)`,
           backgroundSize: "contain",
           backgroundPosition: "center",
