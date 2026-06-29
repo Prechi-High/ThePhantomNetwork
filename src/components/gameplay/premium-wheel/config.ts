@@ -3,21 +3,32 @@ import type { SpinOutcome } from "@/types/gameplay";
 export interface WheelSector {
   id: SpinOutcome;
   label: string;
+  centerAngle: number; // Exact center angle in degrees from top (0°)
 }
 
+// Artwork calibration constants
+export const ARTWORK_ROTATION_OFFSET = 0; // Degrees - adjust after analyzing artwork
+export const SECTOR_WIDTH = 72; // Degrees per sector (360 / 5)
+
+// Sector order and exact center angles (from top, clockwise)
 export const WHEEL_SECTORS: WheelSector[] = [
-  { id: "ACQUIRE", label: "ACQUIRE" },
-  { id: "DISCOVER", label: "DISCOVER" },
-  { id: "VOID", label: "VOID" },
-  { id: "ADVANCE", label: "ADVANCE" },
-  { id: "STEAL", label: "STEAL" },
+  { id: "ADVANCE", label: "ADVANCE", centerAngle: 36 },
+  { id: "ACQUIRE", label: "ACQUIRE", centerAngle: 108 },
+  { id: "DISCOVER", label: "DISCOVER", centerAngle: 180 },
+  { id: "STEAL", label: "STEAL", centerAngle: 252 },
+  { id: "VOID", label: "VOID", centerAngle: 324 },
 ];
 
-export const getSectorAngle = (sectors: WheelSector[]) => 360 / sectors.length;
+// Helper to get the target rotation angle for a sector (clockwise)
+export const getTargetAngle = (targetIndex: number): number => {
+  const sector = WHEEL_SECTORS[targetIndex];
+  // Calculate target rotation such that sector center is at top (0°)
+  // Rotate wheel clockwise by (360 - sector.centerAngle) degrees
+  const targetRotation = (360 - sector.centerAngle + ARTWORK_ROTATION_OFFSET) % 360;
+  return targetRotation;
+};
 
-export const getTargetAngle = (targetIndex: number, sectors: WheelSector[]) => {
-  const sectorAngle = getSectorAngle(sectors);
-  // Start from 0 (top) and add random offset inside sector
-  const randomOffset = (Math.random() - 0.5) * (sectorAngle * 0.8);
-  return -targetIndex * sectorAngle - randomOffset;
+// Helper to find the index of a sector by id
+export const getSectorIndex = (id: SpinOutcome): number => {
+  return WHEEL_SECTORS.findIndex((s) => s.id === id);
 };

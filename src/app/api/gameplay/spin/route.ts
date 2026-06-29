@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/api/auth-helpers";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { rollSpinOutcome, applySpinTokens } from "@/lib/gameplay/spin";
-import { getRedis, redisPublish, redisGet, redisSet } from "@/lib/redis/client";
+import { rollSpinOutcome, applySpinTokens, type ProvablyFairSpin } from "@/lib/gameplay/spin";
+import { redisPublish, redisGet, redisSet } from "@/lib/redis/client";
 import { redisKeys } from "@/lib/redis/keys";
 import { checkRateLimit, acquireSpinLock } from "@/lib/api/rate-limit";
 import { SPIN_DURATION_MS } from "@/types/gameplay";
 import { PHASE_STATE_TTL_SECONDS } from "@/lib/gameplay/phase-timing";
+import { getTargetAngle } from "@/components/gameplay/premium-wheel/config";
 
 export async function POST(request: Request) {
   const { user, error } = await requireAuth();
@@ -36,11 +37,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Cannot spin" }, { status: 400 });
   }
 
-  const result = rollSpinOutcome();
+  const fairSpin: ProvablyFairSpin = rollSpinOutcome();
+  const targetAngle = getTargetAngle(fairSpin.winningIndex);
+  fairSpin.targetAngle = targetAngle;
+
   let newTokens = Number(player.session_tokens);
 
-  if (result.outcome !== "STEAL") {
-    newTokens = applySpinTokens(newTokens, result.outcome);
+  if (fairSpin.winningSector !== "STEAL") {
+    newTokens = applySpinTokens(newTokens, fairSpin.winningSector);
     await admin
       .from("sub_session_players")
       .update({ session_tokens: newTokens })
@@ -50,16 +54,30 @@ export async function POST(request: Request) {
       sub_session_id: subSessionId,
       user_id: user!.id,
       event_type: "spin",
-      payload: { outcome: result.outcome, tokenDelta: result.tokenDelta },
+      payload: {
+        outcome: fairSpin.winningSector,
+        spinId: fairSpin.spinId,
+        hashedServerSeed: fairSpin.hashedServerSeed,
+        clientSeed: fairSpin.clientSeed,
+        nonce: fairSpin.nonce,
+        randomFloat: fairSpin.randomFloat,
+        winningIndex: fairSpin.winningIndex,
+      },
     });
   }
 
   await redisPublish(redisKeys.realtimeChannel(subSessionId), {
-    type: result.outcome === "STEAL" ? "steal_spin" : "spin_result",
+    type: fairSpin.winningSector === "STEAL" ? "steal_spin" : "spin_result",
     userId: user!.id,
-    outcome: result.outcome,
+    outcome: fairSpin.winningSector,
     tokens: newTokens,
-    animationSeed: result.animationSeed,
+    spinId: fairSpin.spinId,
+    hashedServerSeed: fairSpin.hashedServerSeed,
+    clientSeed: fairSpin.clientSeed,
+    nonce: fairSpin.nonce,
+    randomFloat: fairSpin.randomFloat,
+    winningIndex: fairSpin.winningIndex,
+    targetAngle: targetAngle,
   });
 
   // Publish a global event to refresh state for all clients (for leaderboard/squad tokens)
@@ -78,8 +96,15 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({
-    ...result,
+    outcome: fairSpin.winningSector,
     tokens: newTokens,
-    requiresTargetSelection: result.outcome === "STEAL",
+    requiresTargetSelection: fairSpin.winningSector === "STEAL",
+    spinId: fairSpin.spinId,
+    hashedServerSeed: fairSpin.hashedServerSeed,
+    clientSeed: fairSpin.clientSeed,
+    nonce: fairSpin.nonce,
+    randomFloat: fairSpin.randomFloat,
+    winningIndex: fairSpin.winningIndex,
+    targetAngle: targetAngle,
   });
 }

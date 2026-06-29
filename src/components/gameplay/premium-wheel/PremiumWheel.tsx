@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { motion, useAnimation } from "framer-motion";
 import type { SpinOutcome } from "@/types/gameplay";
 import { SPIN_DURATION_MS } from "@/types/gameplay";
-import { WHEEL_SECTORS, getTargetAngle } from "./config";
+import { getTargetAngle, getSectorIndex } from "./config";
 
 interface PremiumWheelProps {
   isSpinning: boolean;
@@ -15,20 +15,30 @@ interface PremiumWheelProps {
 export function PremiumWheel({ isSpinning, outcome, onSpinComplete }: PremiumWheelProps) {
   const controls = useAnimation();
   const finalRotationRef = useRef(0);
-
-  const targetIndex = outcome ? WHEEL_SECTORS.findIndex((s) => s.id === outcome) : 0;
+  const targetIndex = outcome ? getSectorIndex(outcome) : 0;
 
   useEffect(() => {
     if (isSpinning && outcome !== null) {
-      const fullRotations = 5;
-      const targetAngle = getTargetAngle(targetIndex, WHEEL_SECTORS);
-      const finalRotation = finalRotationRef.current + fullRotations * 360 + targetAngle;
+      // Normalize accumulated rotation to prevent floating point drift
+      let normalizedCurrent = finalRotationRef.current % 360;
+      if (normalizedCurrent < 0) normalizedCurrent += 360;
+
+      const targetAngle = getTargetAngle(targetIndex);
+      const fullRotations = 5; // 5 full spins for visual effect
       
+      // Calculate how much we need to add to reach target while spinning forward
+      let additionalRotation = targetAngle - normalizedCurrent;
+      if (additionalRotation <= 0) {
+        additionalRotation += 360; // Ensure we always spin forward
+      }
+      
+      const finalRotation = finalRotationRef.current + (fullRotations * 360) + additionalRotation;
+
       controls.start({
         rotate: finalRotation,
         transition: {
           duration: SPIN_DURATION_MS / 1000,
-          ease: [0.25, 0.1, 0.25, 1],
+          ease: [0.25, 0.1, 0.25, 1], // Custom ease out curve
         },
       });
       
