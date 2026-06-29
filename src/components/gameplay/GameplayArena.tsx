@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { usePhaseTimer } from "@/hooks/useRealtimeSession";
 import type { SpinOutcome, StealTarget } from "@/types/gameplay";
+import { AnimatedAvatar } from "@/components/avatar";
+import type { ProfileSpriteState } from "@/lib/assets/types";
 
 function formatPhaseTimer(ms: number) {
   const m = Math.floor(ms / 60000);
@@ -98,6 +100,8 @@ export function GameplayArena({
   const liveSquad = squadMembers.filter((m) => !m.is_eliminated).length;
   const elimSquad = squadMembers.filter((m) => m.is_eliminated).length;
 
+  const highestTokens = Math.max(...leaderboard.map((p) => p.session_tokens), 0);
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-phantom-bg">
       <div className="pointer-events-none absolute inset-0 opacity-30">
@@ -168,6 +172,16 @@ export function GameplayArena({
               const name = m.profiles?.username ?? "Player";
               const eliminated = m.is_eliminated;
               const revivable = m.is_revivable;
+              const winning = m.session_tokens === highestTokens;
+              const lowTokens = m.session_tokens < 10;
+
+              const states: ProfileSpriteState[] = [];
+              if (eliminated) states.push("ELIMINATED");
+              if (revivable) states.push("REVIVING");
+              if (winning) states.push("WINNING");
+              if (lowTokens) states.push("LOW_TOKENS");
+              if (states.length === 0) states.push("DEFAULT");
+
               return (
                 <li
                   key={m.user_id}
@@ -177,10 +191,11 @@ export function GameplayArena({
                       : "border-phantom-border/60 bg-phantom-bg/40"
                   }`}
                 >
-                  <div
-                    className={`h-7 w-7 shrink-0 rounded-full border-2 ${
-                      eliminated ? "border-phantom-danger" : "border-emerald-500/60"
-                    } bg-phantom-border`}
+                  <AnimatedAvatar
+                    states={states}
+                    size="sm"
+                    tokens={eliminated ? undefined : m.session_tokens}
+                    online={!eliminated}
                   />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-medium">@{name}</p>
