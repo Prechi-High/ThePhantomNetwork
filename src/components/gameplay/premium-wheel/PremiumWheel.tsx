@@ -43,13 +43,13 @@ export function PremiumWheel({ isSpinning, outcome, onSpinComplete }: PremiumWhe
   };
 
   return (
-    <div className="relative mx-auto h-[min(80vw,320px)] w-[min(80vw,320px)] sm:h-80 sm:w-80">
+    <div className="relative mx-auto h-[min(90vw,360px)] w-[min(90vw,360px)] sm:h-[360px] sm:w-[360px]">
       {/* Background Shadow & Lighting */}
       <div className="absolute -inset-6 rounded-full border border-amber-500/10 bg-gradient-radial from-amber-900/20 to-transparent" />
       
       {/* Static Outer Frame */}
-      <div className="absolute inset-0 z-30 flex items-center justify-center">
-        <div className="h-full w-full rounded-full border-4 border-amber-800/60 shadow-[0_0_60px_rgba(212,168,83,0.25)]" style={{
+      <div className="absolute -inset-2 z-30 flex items-center justify-center overflow-hidden">
+        <div className="h-full w-full rounded-full" style={{
           backgroundImage: `url(/wheel-frame.png)`,
           backgroundSize: "contain",
           backgroundPosition: "center",
@@ -72,7 +72,7 @@ export function PremiumWheel({ isSpinning, outcome, onSpinComplete }: PremiumWhe
       
       {/* Static Center Emblem */}
       <div className="absolute inset-0 z-40 flex items-center justify-center">
-        <div className="h-24 w-24 sm:h-28 sm:w-28" style={{
+        <div className="h-20 w-20 sm:h-24 sm:w-24" style={{
           backgroundImage: `url(/center-emblem.png)`,
           backgroundSize: "contain",
           backgroundPosition: "center",
@@ -81,8 +81,8 @@ export function PremiumWheel({ isSpinning, outcome, onSpinComplete }: PremiumWhe
       </div>
       
       {/* Top Pointer (fixed to frame) */}
-      <div className="pointer-events-none absolute left-1/2 top-0 z-50 -translate-x-1/2 -translate-y-1">
-        <div className="h-0 w-0 border-l-[14px] border-r-[14px] border-b-[24px] border-l-transparent border-r-transparent border-b-amber-500 drop-shadow-xl" />
+      <div className="pointer-events-none absolute left-1/2 top-0 z-50 -translate-x-1/2 -translate-y-2">
+        <div className="h-0 w-0 border-l-[16px] border-r-[16px] border-b-[28px] border-l-transparent border-r-transparent border-b-amber-500 drop-shadow-xl" />
       </div>
 
       {/* Outcome Display */}
