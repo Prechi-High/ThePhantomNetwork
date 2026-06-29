@@ -19,7 +19,7 @@ export function useSpritesheetAnimation({
 
   const frameIndexRef = useRef(0);
   const lastTimestampRef = useRef<number>(0);
-  const animationIdRef = useRef<number>();
+  const animationIdRef = useRef<number | undefined>(undefined);
   const configRef = useRef(config);
 
   // Memoize frame order from config or metadata
@@ -58,14 +58,16 @@ export function useSpritesheetAnimation({
       if (!mounted) return;
       setMetadata(md);
       setImage(img);
-      setFrames(frameOrder.map((key) => md.frames[key]));
+      if (md) {
+        setFrames(frameOrder.map((key) => md.frames[key]));
+      }
       setLoading(false);
     });
 
     return () => {
       mounted = false;
     };
-  }, [config?.metadataPath, config?.spritePath, frameOrder]);
+  }, [config, frameOrder]);
 
   // Reset frame index when config changes
   useEffect(() => {
