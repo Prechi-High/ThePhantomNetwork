@@ -94,7 +94,7 @@ export function useSpritesheetAnimation({
 
       animationIdRef.current = requestAnimationFrame(animate);
     },
-    [fps, frames.length, metadata, paused]
+    [frameDuration, frames.length, metadata, paused]
   );
 
   useEffect(() => {

@@ -29,8 +29,4 @@ export const ProfileSprites: ProfileSpriteRegistry = {
     loop: true,
     priority: 8,
   },
-  DEFAULT: {
-    // For missing states we can just leave null/undefined and use CSS
-    priority: 1,
-  },
 };

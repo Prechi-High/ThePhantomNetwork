@@ -1,23 +1,23 @@
 import { ProfileSprites } from "./profileSprites";
-import type { ProfileSpriteRegistry, SpriteConfig } from "./types";
+import type { ProfileSpriteRegistry, SpriteConfig, SpritesheetMetadata } from "./types";
 
 export class AssetRegistry {
   private static profileSprites: ProfileSpriteRegistry = ProfileSprites;
-  private static loadedMetadata = new Map<string, any>();
+  private static loadedMetadata = new Map<string, SpritesheetMetadata | null>();
   private static loadedImages = new Map<string, HTMLImageElement>();
 
   static getProfileSprite(state: string): SpriteConfig | undefined {
     return this.profileSprites[state as keyof ProfileSpriteRegistry];
   }
 
-  static async getSpritesheetMetadata(path: string): Promise<any> {
+  static async getSpritesheetMetadata(path: string): Promise<SpritesheetMetadata | null> {
     if (this.loadedMetadata.has(path)) {
-      return this.loadedMetadata.get(path);
+      return this.loadedMetadata.get(path) ?? null;
     }
 
     try {
       const response = await fetch(path);
-      const metadata = await response.json();
+      const metadata = await response.json() as SpritesheetMetadata;
       this.loadedMetadata.set(path, metadata);
       return metadata;
     } catch (error) {

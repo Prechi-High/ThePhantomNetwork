@@ -46,6 +46,6 @@ export type ProfileSpriteState =
   | "STEAL_SUCCESS"
   | "DEFAULT";
 
-export interface ProfileSpriteRegistry {
+export type ProfileSpriteRegistry = {
   [key in ProfileSpriteState]?: SpriteConfig;
-}
+};

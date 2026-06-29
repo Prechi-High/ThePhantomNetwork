@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { motion } from "framer-motion";
+import Image from "next/image";
 import { AnimatedSprite } from "@/components/sprites/AnimatedSprite";
 import { AssetRegistry } from "@/lib/assets/AssetRegistry";
 import type { ProfileSpriteState } from "@/lib/assets/types";
@@ -101,10 +101,11 @@ export function AnimatedAvatar({
         style={{ width: sizePx, height: sizePx }}
       >
         {avatarUrl ? (
-          <img
+          <Image
             src={avatarUrl}
             alt="Avatar"
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
           />
         ) : (
           <div
