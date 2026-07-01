@@ -104,29 +104,31 @@ export function GameplayArena({
   const highestTokens = Math.max(...leaderboard.map((p) => p.session_tokens), 0);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-phantom-bg">
-      <div className="pointer-events-none absolute inset-0 opacity-30">
-        <div className="absolute bottom-0 left-0 h-40 w-40 bg-[radial-gradient(circle,_rgba(96,165,250,0.15)_0%,_transparent_70%)]" />
-        <div className="absolute bottom-0 right-0 h-40 w-40 bg-[radial-gradient(circle,_rgba(212,168,83,0.12)_0%,_transparent_70%)]" />
+    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden">
+      {/* Cinematic background layers */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute bottom-0 left-0 h-64 w-64 bg-[radial-gradient(circle,_rgba(139,92,246,0.2)_0%,_transparent_60%)] animate-float" />
+        <div className="absolute bottom-0 right-0 h-64 w-64 bg-[radial-gradient(circle,_rgba(212,168,83,0.15)_0%,_transparent_60%)] animate-float" style={{ animationDelay: "2s" }} />
+        <div className="absolute top-0 left-1/2 h-48 w-48 bg-[radial-gradient(circle,_rgba(16,185,129,0.1)_0%,_transparent_50%)] animate-float" style={{ animationDelay: "1s" }} />
       </div>
 
       {/* Header */}
-      <header className="relative z-10 grid grid-cols-3 gap-2 border-b border-phantom-border/80 bg-phantom-surface/60 px-3 py-2 backdrop-blur-sm">
+      <header className="relative z-10 grid grid-cols-3 gap-2 border-b border-phantom-border glass px-3 py-2">
         <div className="text-left">
           <p className="text-[10px] uppercase tracking-wider text-phantom-muted">
             Phase {phase} · Round {round}/{maxRounds}
           </p>
-          <p className="text-xs text-phantom-gold">
+          <p className="text-xs text-phantom-gold font-semibold">
             <span className="text-phantom-muted">TOK</span> {tokens}
           </p>
         </div>
 
         <div className="text-center">
           <p className="text-[9px] uppercase tracking-widest text-phantom-muted">Session</p>
-          <p className="font-mono text-lg font-bold text-phantom-gold">
+          <p className="font-mono text-xl font-bold text-phantom-purple-bright neon-text">
             {phaseEndsAt != null ? formatPhaseTimer(remaining) : "—"}
           </p>
-          <p className="font-display text-[10px] font-bold tracking-wider text-phantom-gold/80">
+          <p className="font-display text-[10px] font-bold tracking-wider text-phantom-purple/80">
             THE PHANTOM
           </p>
         </div>
@@ -145,14 +147,14 @@ export function GameplayArena({
         <button
           type="button"
           onClick={() => setShowSquad((v) => !v)}
-          className="flex-1 rounded border border-phantom-border py-1 text-[10px] uppercase tracking-wider text-phantom-muted"
+          className="flex-1 glass rounded border border-phantom-border py-1 text-[10px] uppercase tracking-wider text-phantom-muted hover:text-phantom-text hover:border-phantom-purple transition-all"
         >
           Squad
         </button>
         <button
           type="button"
           onClick={() => setShowBoard((v) => !v)}
-          className="flex-1 rounded border border-phantom-border py-1 text-[10px] uppercase tracking-wider text-phantom-muted"
+          className="flex-1 glass rounded border border-phantom-border py-1 text-[10px] uppercase tracking-wider text-phantom-muted hover:text-phantom-text hover:border-phantom-purple transition-all"
         >
           Leaderboard
         </button>
@@ -163,9 +165,9 @@ export function GameplayArena({
         <aside
           className={`${
             showSquad ? "absolute inset-x-0 top-0 z-30 max-h-[45%]" : "hidden"
-          } w-full shrink-0 overflow-y-auto border-r border-phantom-border/50 bg-transparent p-3 lg:relative lg:block lg:max-h-none lg:w-44 lg:bg-transparent xl:w-52`}
+          } w-full shrink-0 overflow-y-auto border-r border-phantom-border/50 p-3 lg:relative lg:block lg:max-h-none lg:w-44 xl:w-52`}
         >
-          <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-phantom-gold">
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-phantom-purple-bright">
             Your Squad
           </p>
           <ul className="space-y-2">
@@ -186,10 +188,10 @@ export function GameplayArena({
               return (
                 <li
                   key={m.user_id}
-                  className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 ${
+                  className={`flex items-center gap-2 glass rounded-lg px-2 py-1.5 ${
                     eliminated
-                      ? "border-phantom-danger/40 bg-phantom-danger/5"
-                      : "border-phantom-border/60 bg-phantom-bg/40"
+                      ? "border-phantom-danger/40"
+                      : "border-phantom-border/60"
                   }`}
                 >
                   <AnimatedAvatar
@@ -232,7 +234,7 @@ export function GameplayArena({
             </div>
           )}
 
-          <div className="relative">
+          <div className="relative animate-float">
             <PremiumWheel
               isSpinning={isSpinning}
               outcome={lastOutcome}
@@ -249,7 +251,7 @@ export function GameplayArena({
           )}
 
           {stealInProgress && attackerId && (
-            <div className="flex w-full max-w-sm flex-col items-center gap-3 rounded-lg border border-phantom-danger/40 bg-phantom-surface/80 p-3">
+            <div className="flex w-full max-w-sm flex-col items-center gap-3 glass rounded-lg p-3">
               <FireBoostMeter taps={fireBoostTaps} onTap={onFireBoost} />
               <Button onClick={onResolveSteal} variant="danger" size="sm">
                 Resolve Steal
@@ -267,7 +269,7 @@ export function GameplayArena({
           )}
 
           {remaining === 0 && phaseEndsAt != null && (
-            <p className="animate-pulse text-xs text-phantom-gold">
+            <p className="animate-glow-pulse text-xs text-phantom-purple-bright neon-text">
               Phase ending — syncing with network...
             </p>
           )}
@@ -277,9 +279,9 @@ export function GameplayArena({
         <aside
           className={`${
             showBoard ? "absolute inset-x-0 bottom-16 z-20 max-h-[40%]" : "hidden"
-          } w-full shrink-0 overflow-y-auto border-l border-phantom-border/50 bg-phantom-surface/95 p-3 lg:relative lg:block lg:max-h-none lg:w-44 lg:bg-phantom-surface/40 xl:w-52`}
+          } w-full shrink-0 overflow-y-auto border-l border-phantom-border/50 p-3 lg:relative lg:block lg:max-h-none lg:w-44 xl:w-52`}
         >
-          <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-phantom-gold">
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-phantom-purple-bright">
             Live Players
           </p>
           <ul className="space-y-1">
@@ -288,8 +290,8 @@ export function GameplayArena({
               return (
                 <li
                   key={p.user_id}
-                  className={`flex items-center justify-between rounded px-2 py-1 text-xs ${
-                    isYou ? "border border-phantom-gold/50 bg-phantom-gold/10" : ""
+                  className={`flex items-center justify-between glass rounded px-2 py-1 text-xs ${
+                    isYou ? "border border-phantom-purple/60 bg-phantom-purple/10" : ""
                   }`}
                 >
                   <span className="truncate text-phantom-muted">#{i + 1}</span>
@@ -306,12 +308,12 @@ export function GameplayArena({
       </div>
 
       {/* Power-ups bar + spin */}
-      <footer className="relative z-10 border-t border-phantom-border/80 bg-phantom-surface/80 px-3 py-3 backdrop-blur-sm">
+      <footer className="relative z-10 border-t border-phantom-border glass px-3 py-3">
         <div className="mb-3 flex justify-center gap-2 overflow-x-auto pb-1">
           {["Magnet", "Heart", "Insurance", "Shield", "Boost"].map((label) => (
             <div
               key={label}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-phantom-border/60 bg-phantom-bg/60 text-[8px] text-phantom-muted"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-phantom-border/60 glass text-[8px] text-phantom-muted hover:text-phantom-purple-bright hover:border-phantom-purple-bright transition-all cursor-pointer"
               title={label}
             >
               {label.slice(0, 2)}

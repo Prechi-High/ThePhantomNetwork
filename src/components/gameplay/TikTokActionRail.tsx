@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { Heart, Flame, MessageCircle, Share2 } from "lucide-react";
 import { useNotifications } from "@/components/ui/NotificationProvider";
+import { motion } from "framer-motion";
 
 interface TikTokActionRailProps {
   onLike?: () => void;
@@ -68,27 +70,27 @@ export function TikTokActionRail({
       className
     )}>
       <ActionButton
-        icon="❤️"
+        icon={<Heart size={32} />}
         count={localLikes}
         onClick={handleLike}
         active={isLiked}
         label="Like"
       />
       <ActionButton
-        icon="🔥"
+        icon={<Flame size={32} />}
         count={localBoosts}
         onClick={handleBoost}
         isAnimating={isBoosting}
         label="Boost"
       />
       <ActionButton
-        icon="💬"
+        icon={<MessageCircle size={32} />}
         count={commentCount}
         onClick={onComment}
         label="Comment"
       />
       <ActionButton
-        icon="🔗"
+        icon={<Share2 size={32} />}
         count={shareCount}
         onClick={onShare}
         label="Share"
@@ -105,7 +107,7 @@ function ActionButton({
   isAnimating,
   label,
 }: {
-  icon: string;
+  icon: React.ReactNode;
   count: number;
   onClick?: () => void;
   active?: boolean;
@@ -113,26 +115,41 @@ function ActionButton({
   label?: string;
 }) {
   return (
-    <button
+    <motion.button
       onClick={onClick}
-      className="flex flex-col items-center gap-1 p-2 rounded-full transition-all duration-200 hover:scale-110"
+      whileHover={{ scale: 1.15 }}
+      whileTap={{ scale: 0.9 }}
+      transition={{ type: "spring", stiffness: 400, damping: 15 }}
+      className="flex flex-col items-center gap-1 p-2 rounded-full transition-all duration-300"
     >
-      <div className={cn(
-        "text-3xl transition-all duration-200",
-        active ? "scale-110 text-shadow-lg" : "",
-        isAnimating ? "animate-pulse" : ""
-      )}
-        style={
+      <motion.div
+        animate={
           active
-            ? { textShadow: "0 0 10px rgba(212, 168, 83, 0.6)" }
-            : undefined
+            ? {
+                scale: [1, 1.2, 1],
+                transition: { duration: 0.3 }
+              }
+            : isAnimating
+            ? {
+                rotate: [0, 10, -10, 0],
+                transition: { duration: 0.6, repeat: Infinity }
+              }
+            : {}
         }
+        className={cn(
+          "transition-all duration-300",
+          active
+            ? "text-phantom-purple-bright drop-shadow-[0_0_10px_var(--color-phantom-purple-glow)]"
+            : "text-phantom-muted hover:text-phantom-text"
+        )}
       >
         {icon}
-      </div>
+      </motion.div>
       <span className={cn(
         "text-xs font-semibold",
-        active ? "text-phantom-gold" : "text-phantom-muted"
+        active
+          ? "text-phantom-purple-bright"
+          : "text-phantom-muted"
       )}
       >
         {count > 999 ? `${(count / 1000).toFixed(1)}k` : count}
@@ -142,6 +159,6 @@ function ActionButton({
           {label}
         </span>
       )}
-    </button>
+    </motion.button>
   );
 }
