@@ -161,8 +161,8 @@ export function GameplayArena({
         {/* Squad panel */}
         <aside
           className={`${
-            showSquad ? "absolute inset-x-0 top-0 z-20 max-h-[45%]" : "hidden"
-          } w-full shrink-0 overflow-y-auto border-r border-phantom-border/50 bg-phantom-surface/95 p-3 lg:relative lg:block lg:max-h-none lg:w-44 lg:bg-phantom-surface/40 xl:w-52`}
+            showSquad ? "absolute inset-x-0 top-0 z-30 max-h-[45%]" : "hidden"
+          } w-full shrink-0 overflow-y-auto border-r border-phantom-border/50 bg-transparent p-3 lg:relative lg:block lg:max-h-none lg:w-44 lg:bg-transparent xl:w-52`}
         >
           <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-phantom-gold">
             Your Squad

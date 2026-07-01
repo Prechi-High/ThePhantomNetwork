@@ -35,11 +35,11 @@ const sizeMap: Record<AvatarSize, number> = {
 };
 
 const borderSizeMap: Record<AvatarSize, number> = {
-  xs: 40,
-  sm: 56,
-  md: 72,
-  lg: 104,
-  xl: 136,
+  xs: 48,
+  sm: 72,
+  md: 96,
+  lg: 144,
+  xl: 192,
 };
 
 export function AnimatedAvatar({
