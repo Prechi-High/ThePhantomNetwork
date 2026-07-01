@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Syne, Inter } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
+import { NotificationProvider } from "@/components/ui/NotificationProvider";
 
 const syne = Syne({ subsets: ["latin"], variable: "--font-syne" });
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -24,7 +25,9 @@ export default function RootLayout({
           strategy="beforeInteractive"
         />
       </head>
-      <body className="min-h-screen antialiased">{children}</body>
+      <body className="min-h-screen antialiased">
+        <NotificationProvider>{children}</NotificationProvider>
+      </body>
     </html>
   );
 }

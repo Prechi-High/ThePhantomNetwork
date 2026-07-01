@@ -11,6 +11,7 @@ import { usePhaseTimer } from "@/hooks/useRealtimeSession";
 import type { SpinOutcome, StealTarget } from "@/types/gameplay";
 import { AnimatedAvatar } from "@/components/avatar";
 import type { ProfileSpriteState } from "@/lib/assets/types";
+import { TikTokActionRail } from "@/components/gameplay/TikTokActionRail";
 
 function formatPhaseTimer(ms: number) {
   const m = Math.floor(ms / 60000);
@@ -217,7 +218,13 @@ export function GameplayArena({
         </aside>
 
         {/* Main arena */}
-        <main className="flex min-w-0 flex-1 flex-col items-center justify-center gap-4 p-3 sm:p-4">
+        <main className="flex min-w-0 flex-1 flex-col items-center justify-center gap-4 p-3 sm:p-4 relative">
+          <TikTokActionRail
+            likeCount={142}
+            boostCount={8}
+            commentCount={31}
+            shareCount={5}
+          />
           {(isEliminated || isRevivable) && (
             <div className="flex gap-2">
               {isEliminated && <Badge variant="danger">Eliminated</Badge>}
