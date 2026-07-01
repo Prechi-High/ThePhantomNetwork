@@ -119,7 +119,11 @@ export function AnimatedAvatar({
 
       {/* Online Indicator */}
       {online && (
-        <div className="absolute -right-1 -bottom-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-phantom-bg z-20" />
+        <div className="absolute -right-1 -bottom-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-phantom-bg z-20 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+      )}
+      {/* Offline indicator */}
+      {!online && (
+        <div className="absolute -right-1 -bottom-1 w-3 h-3 bg-phantom-muted/60 rounded-full border-2 border-phantom-bg z-20" />
       )}
 
       {/* Token Badge */}
