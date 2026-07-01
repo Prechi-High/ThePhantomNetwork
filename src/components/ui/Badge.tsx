@@ -2,14 +2,15 @@ import { cn } from "@/lib/utils";
 
 interface BadgeProps {
   children: React.ReactNode;
-  variant?: "gold" | "danger" | "muted";
+  variant?: "gold" | "danger" | "muted" | "success";
 }
 
 export function Badge({ children, variant = "gold" }: BadgeProps) {
   const variants = {
-    gold: "bg-phantom-gold/20 text-phantom-gold border-phantom-gold/30",
-    danger: "bg-phantom-danger/20 text-phantom-danger border-phantom-danger/30",
-    muted: "bg-phantom-border text-phantom-muted border-phantom-border",
+    gold: "bg-phantom-gold/20 text-phantom-gold border border-phantom-gold/30",
+    danger: "bg-phantom-danger/20 text-phantom-danger border border-phantom-danger/30",
+    muted: "bg-phantom-border text-phantom-muted border border-phantom-border",
+    success: "bg-phantom-success/20 text-phantom-success border border-phantom-success/30",
   };
 
   return (

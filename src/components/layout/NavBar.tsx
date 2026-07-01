@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 const navItems = [
   { href: "/home", label: "Home" },
@@ -23,14 +24,22 @@ export function NavBar() {
           <Link
             key={item.href}
             href={item.href}
-            className={cn(
-              "px-3 py-2 text-xs font-medium transition-colors",
+            className="px-3 py-2 text-xs font-medium transition-colors"
+          >
+            <span className={cn(
               pathname.startsWith(item.href)
                 ? "text-phantom-gold"
                 : "text-phantom-muted hover:text-white"
+            )}>
+              {item.label}
+            </span>
+            {pathname.startsWith(item.href) && (
+              <motion.div
+                layoutId="nav-indicator"
+                className="h-1 bg-phantom-gold rounded-full mt-1"
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              />
             )}
-          >
-            {item.label}
           </Link>
         ))}
       </div>

@@ -4,14 +4,16 @@ interface CardProps {
   children: React.ReactNode;
   className?: string;
   glow?: boolean;
+  hoverable?: boolean;
 }
 
-export function Card({ children, className, glow }: CardProps) {
+export function Card({ children, className, glow, hoverable = false }: CardProps) {
   return (
     <div
       className={cn(
-        "rounded-xl border border-phantom-border bg-phantom-surface p-4",
-        glow && "shadow-[0_0_20px_rgba(212,168,83,0.15)]",
+        "rounded-[var(--radius-lg)] border border-phantom-border bg-phantom-surface p-4 transition-all duration-200",
+        glow && "shadow-[var(--shadow-glow-gold)]",
+        hoverable && "hover:border-phantom-border-subtle cursor-pointer hover:-translate-y-0.5",
         className
       )}
     >
