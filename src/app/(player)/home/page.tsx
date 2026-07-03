@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import Link from "next/link";
 import Image from "next/image";
-import { Bell, ChevronRight, Users, Trophy, Coins, TrendingUp, History, Skull, Sparkles, Zap, Crown } from "lucide-react";
+import { Bell, ChevronRight, Users, Trophy, Coins, TrendingUp, Skull, Sparkles, Zap, Crown } from "lucide-react";
 
 function StatCard({ icon, value, label, colorClass = "text-phantom-purple" }: { icon: React.ReactNode; value: string; label: string; colorClass?: string }) {
   return (
@@ -333,7 +333,7 @@ export default function HomePage() {
             </div>
             <div className="flex-1">
               <p className="text-sm text-phantom-muted leading-snug">
-                You're not in a permanent squad yet. Don't worry. You'll automatically be teamed with other players in your first session.
+                You&apos;re not in a permanent squad yet. Don&apos;t worry. You&apos;ll automatically be teamed with other players in your first session.
               </p>
               <p className="text-sm text-phantom-purple font-semibold mt-1">
                 Find teammates. Win together. Build something legendary.

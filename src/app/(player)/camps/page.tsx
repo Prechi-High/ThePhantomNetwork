@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
 
 export default function CampsPage() {
   const [camps, setCamps] = useState<Record<string, unknown>[]>([]);
