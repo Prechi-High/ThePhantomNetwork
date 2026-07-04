@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import Image from "next/image";
 import { ChevronLeft, Bell, Calendar, Clock, Users, Coins, Trophy, Filter, ChevronRight } from "lucide-react";
+import BottomNav from "@/components/ui/BottomNav";
 
 interface Session {
   id: string;
@@ -522,6 +523,8 @@ export default function SessionsPage() {
           </div>
         </Card>
       </div>
+
+      <BottomNav />
     </div>
   );
 }

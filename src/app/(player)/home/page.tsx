@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import Link from "next/link";
 import Image from "next/image";
-import { Bell, ChevronRight, Users, Trophy, Coins, TrendingUp, Skull, Sparkles, Zap, Crown } from "lucide-react";
+import { Bell, ChevronRight, Users, Trophy, Coins, TrendingUp, Globe, Skull, Sparkles, Zap, Crown } from "lucide-react";
+import BottomNav from "@/components/ui/BottomNav";
 
 function StatCard({ icon, value, label, colorClass = "text-phantom-purple" }: { icon: React.ReactNode; value: string; label: string; colorClass?: string }) {
   return (
@@ -484,25 +485,8 @@ export default function HomePage() {
           </Link>
         </div>
       </Card>
-    </div>
-  );
-}
 
-function Globe({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <circle cx="12" cy="12" r="10" />
-      <line x1="2" y1="12" x2="22" y2="12" />
-      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-    </svg>
+      <BottomNav />
+    </div>
   );
 }

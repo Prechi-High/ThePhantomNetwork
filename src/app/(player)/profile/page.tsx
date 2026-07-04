@@ -7,6 +7,7 @@ import { AVATARS } from "@/types/gameplay";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
+import BottomNav from "@/components/ui/BottomNav";
 import {
   Trophy,
   Skull,
@@ -625,41 +626,8 @@ export default function ProfilePage() {
         </div>
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 bg-phantom-bg border-t border-phantom-border py-3 px-4">
-        <div className="flex justify-around">
-          <Link href="/home" className="flex flex-col items-center gap-1 text-phantom-muted">
-            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              <polyline points="9 22 9 12 15 12 15 22" />
-            </svg>
-            <span className="text-[10px] uppercase">Home</span>
-          </Link>
-          <Link href="/sessions" className="flex flex-col items-center gap-1 text-phantom-muted">
-            <Calendar className="w-6 h-6" />
-            <span className="text-[10px] uppercase">Sessions</span>
-          </Link>
-          <Link href="/" className="flex flex-col items-center gap-1 text-phantom-muted">
-            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-            </svg>
-            <span className="text-[10px] uppercase">World</span>
-          </Link>
-          <Link href="/squads" className="flex flex-col items-center gap-1 text-phantom-muted">
-            <Users className="w-6 h-6" />
-            <span className="text-[10px] uppercase">Squad</span>
-          </Link>
-          <Link href="/profile" className="flex flex-col items-center gap-1 text-phantom-purple">
-            <div className="w-10 h-10 rounded-full bg-phantom-purple/20 flex items-center justify-center -mt-5 border-t border-phantom-purple">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-            </div>
-            <span className="text-[10px] uppercase text-phantom-purple">Profile</span>
-          </Link>
-        </div>
-      </div>
+
+      <BottomNav />
     </div>
   );
 }
