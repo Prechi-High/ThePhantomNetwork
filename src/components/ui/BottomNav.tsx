@@ -3,13 +3,13 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Calendar, Users, Globe, User } from "lucide-react";
+import { Home, Calendar, Users, Users2, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/home", label: "HOME", icon: Home },
   { href: "/sessions", label: "SESSIONS", icon: Calendar },
-  { href: "/world", label: "WORLD", icon: Globe },
+  { href: "/community", label: "COMMUNITY", icon: Users2 },
   { href: "/squads", label: "SQUAD", icon: Users },
   { href: "/profile", label: "PROFILE", icon: User },
 ];
