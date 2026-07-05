@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/Badge";
 import { usePhaseTimer } from "@/hooks/useRealtimeSession";
 import type { SpinOutcome, StealTarget } from "@/types/gameplay";
 import { AnimatedAvatar } from "@/components/avatar";
+import type { ProfileSpriteState } from "@/lib/assets/types";
 import {
   Zap,
   Shield,
