@@ -133,6 +133,7 @@ export function GameplayArena({
 }: GameplayArenaProps) {
   const remaining = usePhaseTimer(phaseEndsAt);
   const [showSquad, setShowSquad] = useState(true); // Default to showing squad panel
+  const [spinCount, setSpinCount] = useState(3); // Mock spin count
   const [liveFeedEvents, setLiveFeedEvents] = useState<LiveFeedEvent[]>([]);
   const [topSquads, setTopSquads] = useState<Squad[]>([]);
 
