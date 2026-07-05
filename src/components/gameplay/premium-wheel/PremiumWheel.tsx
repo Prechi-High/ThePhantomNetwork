@@ -4,21 +4,21 @@ import { useEffect, useRef } from "react";
 import { motion, useAnimation } from "framer-motion";
 import type { SpinOutcome } from "@/types/gameplay";
 import { SPIN_DURATION_MS } from "@/types/gameplay";
-import { Zap, Shield, UserMinus, Umbrella, Crown, RefreshCw, Plus } from "lucide-react";
+import { Zap, Shield, UserMinus, Umbrella, Crown, Plus } from "lucide-react";
 
 const WHEEL_SECTORS = [
-  { id: "STEAL", name: "STEAL", color: "from-purple-600 to-purple-900", icon: <UserMinus className="w-6 h-6" />, centerAngle: 0 },
-  { id: "MULTIPLIER", name: "2x", color: "from-purple-500 to-blue-700", textColor: "text-purple-400", centerAngle: 45 },
-  { id: "SHIELD", name: "SHIELD", color: "from-blue-500 to-blue-800", icon: <Shield className="w-6 h-6" />, centerAngle: 90 },
-  { id: "REVIVE", name: "REVIVE", color: "from-green-500 to-green-800", icon: <Plus className="w-6 h-6" />, centerAngle: 135 },
-  { id: "CLOAK", name: "CLOAK", color: "from-purple-800 to-gray-900", icon: <UserMinus className="w-6 h-6" />, centerAngle: 180 },
-  { id: "INSURANCE", name: "INSURANCE", color: "from-yellow-500 to-yellow-800", icon: <Umbrella className="w-6 h-6" />, centerAngle: 225 },
-  { id: "JACKPOT", name: "JACKPOT", color: "from-yellow-400 to-yellow-700", icon: <Crown className="w-6 h-6" />, centerAngle: 270 },
-  { id: "ADVANCE", name: "ADVANCE", color: "from-yellow-500 to-yellow-700", icon: <Zap className="w-6 h-6" />, centerAngle: 315 },
+  { id: "STEAL", name: "STEAL", color: "#7c3aed", icon: <UserMinus className="w-6 h-6" />, centerAngle: 0 },
+  { id: "MULTIPLIER", name: "2x", color: "#6d28d9", textColor: "text-purple-400", centerAngle: 45 },
+  { id: "SHIELD", name: "SHIELD", color: "#1e40af", icon: <Shield className="w-6 h-6" />, centerAngle: 90 },
+  { id: "REVIVE", name: "REVIVE", color: "#166534", icon: <Plus className="w-6 h-6" />, centerAngle: 135 },
+  { id: "CLOAK", name: "CLOAK", color: "#581c87", icon: <UserMinus className="w-6 h-6" />, centerAngle: 180 },
+  { id: "INSURANCE", name: "INSURANCE", color: "#854d0e", icon: <Umbrella className="w-6 h-6" />, centerAngle: 225 },
+  { id: "JACKPOT", name: "JACKPOT", color: "#a16207", icon: <Crown className="w-6 h-6" />, centerAngle: 270 },
+  { id: "ADVANCE", name: "ADVANCE", color: "#92400e", icon: <Zap className="w-6 h-6" />, centerAngle: 315 },
 ];
 
 const getTargetAngle = (id: string): number => {
-  const sector = WHEEL_SECTORS.find(s => s.id === id);
+  const sector = WHEEL_SECTORS.find((s) => s.id === id);
   if (!sector) return 0;
   return (360 - sector.centerAngle) % 360;
 };
@@ -42,8 +42,8 @@ export function PremiumWheel({ isSpinning, outcome, onSpinComplete }: PremiumWhe
       const fullRotations = 5;
       let additionalRotation = targetAngle - normalizedCurrent;
       if (additionalRotation <= 0) additionalRotation += 360;
-      
-      const finalRotation = finalRotationRef.current + (fullRotations * 360) + additionalRotation;
+
+      const finalRotation = finalRotationRef.current + fullRotations * 360 + additionalRotation;
 
       controls.start({
         rotate: finalRotation,
@@ -52,7 +52,7 @@ export function PremiumWheel({ isSpinning, outcome, onSpinComplete }: PremiumWhe
           ease: [0.25, 0.1, 0.25, 1],
         },
       });
-      
+
       finalRotationRef.current = finalRotation;
     }
   }, [isSpinning, outcome, controls]);
@@ -65,18 +65,18 @@ export function PremiumWheel({ isSpinning, outcome, onSpinComplete }: PremiumWhe
     <div className="relative mx-auto">
       {/* Outer Glow Ring */}
       <div className="absolute -inset-8 rounded-full bg-gradient-to-r from-purple-600/50 via-transparent to-purple-600/50 blur-3xl opacity-70" />
-      
+
       <div className="relative h-[min(70vw,300px)] w-[min(70vw,300px)] sm:h-[340px] sm:w-[340px]">
-        {/* Static Outer Frame
+        {/* Static Outer Frame */}
         <div className="absolute inset-0 rounded-full border-4 border-purple-600/50 shadow-[0_0_30px_rgba(139,92,246,0.5)]" />
-        
+
         {/* Rotating Wheel */}
         <motion.div
           className="absolute inset-2 rounded-full overflow-hidden border-2 border-purple-700/70"
           animate={controls}
           onAnimationComplete={handleAnimationComplete}
           style={{
-            background: `conic-gradient(${WHEEL_SECTORS.map((s, i) => `${s.color} ${i * 45}deg ${(i + 1) * 45}deg`).join(",")}
+            background: `conic-gradient(${WHEEL_SECTORS.map((s, i) => `${s.color} ${i * 45}deg ${(i + 1) * 45}deg`).join(",")})`,
           }}
         >
           {/* Center Emblem */}
@@ -95,28 +95,24 @@ export function PremiumWheel({ isSpinning, outcome, onSpinComplete }: PremiumWhe
           </div>
         </div>
 
-        {/* Sector Labels (Static on Frame */}
+        {/* Sector Labels (Static on Frame) */}
         {WHEEL_SECTORS.map((sector, index) => {
           const angle = sector.centerAngle;
-          const rad = (angle - 90) * Math.PI / 180;
-          const radius = 140;
-          const x = 50 + Math.cos(rad) * (radius / 3.5);
-          const y = 50 + Math.sin(rad) * (radius / 3.5);
-          
+
           return (
             <div
               key={sector.id}
               className="absolute left-0 top-0 w-full h-full pointer-events-none"
-              style={{ transform: `rotate(${angle}deg` }}
+              style={{ transform: `rotate(${angle}deg)` }}
             >
               <div
                 className="absolute left-1/2 top-2 -translate-x-1/2 -translate-y-[150px] flex flex-col items-center"
                 style={{ transform: `rotate(${-angle}deg)` }}
               >
                 {sector.icon && (
-                  <div className={`${sector.textColor || 'text-white'} mb-1`}>{sector.icon}</div>
+                  <div className={`${sector.textColor || "text-white"} mb-1`}>{sector.icon}</div>
                 )}
-                <span className={`text-sm font-black drop-shadow-lg text-white">{sector.name}</span>
+                <span className="text-sm font-black drop-shadow-lg text-white">{sector.name}</span>
               </div>
             </div>
           );

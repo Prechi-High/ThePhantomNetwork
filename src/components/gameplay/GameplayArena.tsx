@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { PremiumWheel, ButtonAnimator } from "@/components/gameplay/premium-wheel";
 import { StealTargetPicker } from "@/components/gameplay/StealTargetPicker";
 import { FireBoostMeter } from "@/components/gameplay/FireBoostMeter";
@@ -399,7 +399,11 @@ export function GameplayArena({
                   }`}
                   disabled={!skill.ready}
                 >
-                  <div className="text-lg">{typeof skill.icon === "string" ? skill.icon : skill.icon}</div>
+                  <div className="text-lg">
+                    {typeof skill.icon === "function" ? 
+                      React.createElement(skill.icon, { className: "w-6 h-6" }) 
+                      : skill.icon}
+                  </div>
                   {skill.cooldown && (
                     <span className="text-[9px] text-gray-400 font-mono mt-1">{skill.cooldown}</span>
                   )}
