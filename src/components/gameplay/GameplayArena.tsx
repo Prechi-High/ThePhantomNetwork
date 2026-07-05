@@ -1,29 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PremiumWheel, ButtonAnimator } from "@/components/gameplay/premium-wheel";
 import { StealTargetPicker } from "@/components/gameplay/StealTargetPicker";
 import { FireBoostMeter } from "@/components/gameplay/FireBoostMeter";
 import { RevivePanel } from "@/components/gameplay/RevivePanel";
-import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { usePhaseTimer } from "@/hooks/useRealtimeSession";
 import type { SpinOutcome, StealTarget } from "@/types/gameplay";
 import { AnimatedAvatar } from "@/components/avatar";
-import type { ProfileSpriteState } from "@/lib/assets/types";
-import { TikTokActionRail } from "@/components/gameplay/TikTokActionRail";
 import {
   Zap,
   Shield,
   UserMinus,
   Umbrella,
   Volume2,
-  Mic,
-  Swords,
-  Trophy,
   Users,
-  ArrowUp,
-  ChevronDown,
   ChevronUp,
 } from "lucide-react";
 
@@ -80,14 +72,7 @@ interface GameplayArenaProps {
 }
 
 // Mock live feed data for demonstration
-const liveFeedEvents = [
-  { id: 1, type: "steal", user: "PhantomX", amount: 20, time: "10s ago" },
-  { id: 2, type: "revive", user: "GhostQueen", time: "30s ago" },
-  { id: 3, type: "eliminate", user: "ShadowLord", target: "NightHawk", time: "1m ago" },
-  { id: 4, type: "camp", user: "EclipseCamp", message: "dominating!", time: "2m ago" },
-  { id: 5, type: "steal", user: "VoidWalker", amount: 15, time: "2m ago" },
-  { id: 6, type: "advance", user: "PhantomX", amount: 3, time: "3m ago" },
-];
+
 
 // Mock skill data with cooldowns/ready states
 const skills = [
@@ -101,8 +86,15 @@ interface LiveFeedEvent {
   id?: number;
   event_type?: string;
   message?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   created_at?: string;
+}
+
+interface Squad {
+  id: string;
+  name: string;
+  squad_tokens: number;
+  is_permanent?: boolean;
 }
 
 export function GameplayArena({
@@ -139,7 +131,7 @@ export function GameplayArena({
   const remaining = usePhaseTimer(phaseEndsAt);
   const [showSquad, setShowSquad] = useState(true); // Default to showing squad panel
   const [liveFeedEvents, setLiveFeedEvents] = useState<LiveFeedEvent[]>([]);
-  const [topSquads, setTopSquads] = useState<any[]>([]);
+  const [topSquads, setTopSquads] = useState<Squad[]>([]);
 
   // Load initial data
   useEffect(() => {
