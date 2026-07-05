@@ -12,6 +12,20 @@ import type { SpinOutcome, StealTarget } from "@/types/gameplay";
 import { AnimatedAvatar } from "@/components/avatar";
 import type { ProfileSpriteState } from "@/lib/assets/types";
 import { TikTokActionRail } from "@/components/gameplay/TikTokActionRail";
+import {
+  Zap,
+  Shield,
+  UserMinus,
+  Umbrella,
+  Volume2,
+  Mic,
+  Swords,
+  Trophy,
+  Users,
+  ArrowUp,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 
 function formatPhaseTimer(ms: number) {
   const m = Math.floor(ms / 60000);
@@ -64,6 +78,24 @@ interface GameplayArenaProps {
   onReviveContribute: (amount: number) => Promise<void>;
 }
 
+// Mock live feed data for demonstration
+const liveFeedEvents = [
+  { id: 1, type: "steal", user: "PhantomX", amount: 20, time: "10s ago" },
+  { id: 2, type: "revive", user: "GhostQueen", time: "30s ago" },
+  { id: 3, type: "eliminate", user: "ShadowLord", target: "NightHawk", time: "1m ago" },
+  { id: 4, type: "camp", user: "EclipseCamp", message: "dominating!", time: "2m ago" },
+  { id: 5, type: "steal", user: "VoidWalker", amount: 15, time: "2m ago" },
+  { id: 6, type: "advance", user: "PhantomX", amount: 3, time: "3m ago" },
+];
+
+// Mock skill data with cooldowns/ready states
+const skills = [
+  { id: "steal", name: "Steal Boost", icon: Zap, color: "text-purple-500", bg: "bg-purple-900/30", border: "border-purple-500/50", ready: true },
+  { id: "shield", name: "Shield", icon: Shield, color: "text-cyan-500", bg: "bg-cyan-900/30", border: "border-cyan-500/50", ready: true },
+  { id: "cloak", name: "Cloak", icon: UserMinus, color: "text-purple-400", bg: "bg-purple-900/30", border: "border-purple-400/50", ready: false, cooldown: "15s" },
+  { id: "insurance", name: "Insurance", icon: Umbrella, color: "text-yellow-500", bg: "bg-yellow-900/30", border: "border-yellow-500/50", ready: true },
+];
+
 export function GameplayArena({
   phase,
   round,
@@ -95,8 +127,8 @@ export function GameplayArena({
   onReviveContribute,
 }: GameplayArenaProps) {
   const remaining = usePhaseTimer(phaseEndsAt);
-  const [showSquad, setShowSquad] = useState(false);
-  const [showBoard, setShowBoard] = useState(false);
+  const [showSquad, setShowSquad] = useState(true); // Default to showing squad panel
+  const [spinCount, setSpinCount] = useState(3); // Mock spin count
 
   const liveSquad = squadMembers.filter((m) => !m.is_eliminated).length;
   const elimSquad = squadMembers.filter((m) => m.is_eliminated).length;
@@ -104,234 +136,475 @@ export function GameplayArena({
   const highestTokens = Math.max(...leaderboard.map((p) => p.session_tokens), 0);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden">
-      {/* Cinematic background layers */}
+    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-[#0a0a0f]">
+      {/* Background effects */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute bottom-0 left-0 h-64 w-64 bg-[radial-gradient(circle,_rgba(139,92,246,0.2)_0%,_transparent_60%)] animate-float" />
-        <div className="absolute bottom-0 right-0 h-64 w-64 bg-[radial-gradient(circle,_rgba(212,168,83,0.15)_0%,_transparent_60%)] animate-float" style={{ animationDelay: "2s" }} />
-        <div className="absolute top-0 left-1/2 h-48 w-48 bg-[radial-gradient(circle,_rgba(16,185,129,0.1)_0%,_transparent_50%)] animate-float" style={{ animationDelay: "1s" }} />
+        {/* Purple gradient blobs */}
+        <div className="absolute -top-20 -left-20 h-80 w-80 bg-[radial-gradient(circle,_rgba(147,51,234,0.3)_0%,_transparent_60%)] animate-float" />
+        <div className="absolute -bottom-40 -right-40 h-96 w-96 bg-[radial-gradient(circle,_rgba(139,92,246,0.25)_0%,_transparent_60%)] animate-float" style={{ animationDelay: "1.5s" }} />
+        {/* Glassmorphism overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0f] via-[#0a0a0f]/95 to-[#0a0a0f]" />
       </div>
 
-      {/* Header */}
-      <header className="relative z-10 grid grid-cols-3 gap-2 border-b border-phantom-border glass px-3 py-2">
-        <div className="text-left">
-          <p className="text-[10px] uppercase tracking-wider text-phantom-muted">
-            Phase {phase} · Round {round}/{maxRounds}
-          </p>
-          <p className="text-xs text-phantom-gold font-semibold">
-            <span className="text-phantom-muted">TOK</span> {tokens}
-          </p>
-        </div>
-
-        <div className="text-center">
-          <p className="text-[9px] uppercase tracking-widest text-phantom-muted">Session</p>
-          <p className="font-mono text-xl font-bold text-phantom-purple-bright neon-text">
-            {phaseEndsAt != null ? formatPhaseTimer(remaining) : "—"}
-          </p>
-          <p className="font-display text-[10px] font-bold tracking-wider text-phantom-purple/80">
-            THE PHANTOM
-          </p>
-        </div>
-
-        <div className="text-right">
-          <p className="text-[10px] uppercase tracking-wider text-phantom-muted">Rank</p>
-          <p className="font-mono text-sm font-bold text-phantom-gold">#{playerRank || "—"}</p>
-          <p className="text-[9px] text-phantom-muted">
-            {liveSquad} live / {elimSquad} elim
-          </p>
-        </div>
-      </header>
-
-      {/* Mobile toggles */}
-      <div className="relative z-10 flex gap-2 border-b border-phantom-border/50 px-3 py-1.5 lg:hidden">
-        <button
-          type="button"
-          onClick={() => setShowSquad((v) => !v)}
-          className="flex-1 glass rounded border border-phantom-border py-1 text-[10px] uppercase tracking-wider text-phantom-muted hover:text-phantom-text hover:border-phantom-purple transition-all"
-        >
-          Squad
-        </button>
-        <button
-          type="button"
-          onClick={() => setShowBoard((v) => !v)}
-          className="flex-1 glass rounded border border-phantom-border py-1 text-[10px] uppercase tracking-wider text-phantom-muted hover:text-phantom-text hover:border-phantom-purple transition-all"
-        >
-          Leaderboard
-        </button>
-      </div>
-
-      <div className="relative z-10 flex min-h-0 flex-1">
-        {/* Squad panel */}
-        <aside
-          className={`${
-            showSquad ? "absolute inset-x-0 top-0 z-30 max-h-[45%]" : "hidden"
-          } w-full shrink-0 overflow-y-auto border-r border-phantom-border/50 p-3 lg:relative lg:block lg:max-h-none lg:w-44 xl:w-52`}
-        >
-          <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-phantom-purple-bright">
-            Your Squad
-          </p>
-          <ul className="space-y-2">
-            {squadMembers.map((m) => {
-              const name = m.profiles?.username ?? "Player";
-              const eliminated = m.is_eliminated;
-              const revivable = m.is_revivable;
-              const winning = m.session_tokens === highestTokens;
-              const lowTokens = m.session_tokens < 10;
-
-              const states: ProfileSpriteState[] = [];
-              if (eliminated) states.push("ELIMINATED");
-              if (revivable) states.push("REVIVING");
-              if (winning) states.push("WINNING");
-              if (lowTokens) states.push("LOW_TOKENS");
-              if (states.length === 0) states.push("DEFAULT");
-
-              return (
-                <li
-                  key={m.user_id}
-                  className={`flex items-center gap-2 glass rounded-lg px-2 py-1.5 ${
-                    eliminated
-                      ? "border-phantom-danger/40"
-                      : "border-phantom-border/60"
-                  }`}
-                >
-                  <AnimatedAvatar
-                    states={states}
-                    size="sm"
-                    tokens={eliminated ? undefined : m.session_tokens}
-                    online={!eliminated}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-medium">@{name}</p>
-                    <p className="text-[10px] text-phantom-muted">
-                      {eliminated
-                        ? revivable
-                          ? "+ Revivable"
-                          : "Eliminated"
-                        : `${m.session_tokens} TOK`}
-                    </p>
-                  </div>
-                </li>
-              );
-            })}
-            {squadMembers.length === 0 && (
-              <li className="text-xs text-phantom-muted">Solo — no squad</li>
-            )}
-          </ul>
-        </aside>
-
-        {/* Main arena */}
-        <main className="flex min-w-0 flex-1 flex-col items-center justify-center gap-4 p-3 sm:p-4 relative">
-          <TikTokActionRail
-            likeCount={142}
-            boostCount={8}
-            commentCount={31}
-            shareCount={5}
-          />
-          {(isEliminated || isRevivable) && (
-            <div className="flex gap-2">
-              {isEliminated && <Badge variant="danger">Eliminated</Badge>}
-              {isRevivable && <Badge variant="gold">Revivable</Badge>}
+      {/* Main content wrapper */}
+      <div className="relative z-10 flex h-full flex-col">
+        {/* TOP HUD */}
+        <header className="flex items-center justify-between px-3 sm:px-4 pt-3 sm:pt-4 pb-2">
+          {/* Left: Price Pool & Alive */}
+          <div className="flex flex-col gap-1.5 sm:gap-2">
+            {/* Price Pool */}
+            <div className="glass rounded-xl border border-phantom-border/60 px-3 py-1.5 sm:px-4 sm:py-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="text-lg sm:text-xl">$</span>
+                <div>
+                  <p className="text-[8px] sm:text-[10px] uppercase tracking-wider text-phantom-muted">PRIZE POOL</p>
+                  <p className="text-base sm:text-xl font-mono font-bold text-white">$12,500</p>
+                </div>
+              </div>
             </div>
-          )}
-
-          <div className="relative animate-float">
-            <PremiumWheel
-              isSpinning={isSpinning}
-              outcome={lastOutcome}
-              onSpinComplete={onSpinComplete}
-            />
+            {/* Alive Players */}
+            <div className="glass rounded-xl border border-phantom-border/60 px-3 py-1.5 sm:px-4 sm:py-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400" />
+                <div>
+                  <p className="text-[8px] sm:text-[10px] uppercase tracking-wider text-phantom-muted">ALIVE</p>
+                  <p className="text-base sm:text-xl font-mono font-bold text-white">{totalPlayers || 28}</p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {showStealPicker && (
-            <StealTargetPicker
-              targets={stealTargets}
-              onSelect={onStealSelect}
-              onCancel={onStealCancel}
-            />
-          )}
-
-          {stealInProgress && attackerId && (
-            <div className="flex w-full max-w-sm flex-col items-center gap-3 glass rounded-lg p-3">
-              <FireBoostMeter taps={fireBoostTaps} onTap={onFireBoost} />
-              <Button onClick={onResolveSteal} variant="danger" size="sm">
-                Resolve Steal
-              </Button>
-            </div>
-          )}
-
-          {isRevivable && reviveTargetId && (
-            <RevivePanel
-              targetUsername="Teammate"
-              required={3}
-              contributed={0}
-              onContribute={onReviveContribute}
-            />
-          )}
-
-          {remaining === 0 && phaseEndsAt != null && (
-            <p className="animate-glow-pulse text-xs text-phantom-purple-bright neon-text">
-              Phase ending — syncing with network...
+          {/* Center: Phase & Timer */}
+          <div className="flex flex-col items-center">
+            <p className="text-xs sm:text-sm font-bold text-purple-500">PHASE {phase}/{6}</p>
+            <p className="text-xl sm:text-2xl font-mono font-bold text-white">
+              {phaseEndsAt != null ? formatPhaseTimer(remaining) : "02:45"}
             </p>
-          )}
-        </main>
+          </div>
 
-        {/* Leaderboard */}
-        <aside
-          className={`${
-            showBoard ? "absolute inset-x-0 bottom-16 z-20 max-h-[40%]" : "hidden"
-          } w-full shrink-0 overflow-y-auto border-l border-phantom-border/50 p-3 lg:relative lg:block lg:max-h-none lg:w-44 xl:w-52`}
-        >
-          <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-phantom-purple-bright">
-            Live Players
-          </p>
-          <ul className="space-y-1">
-            {leaderboard.slice(0, 10).map((p, i) => {
-              const isYou = p.user_id === currentUserId;
-              return (
-                <li
-                  key={p.user_id}
-                  className={`flex items-center justify-between glass rounded px-2 py-1 text-xs ${
-                    isYou ? "border border-phantom-purple/60 bg-phantom-purple/10" : ""
-                  }`}
-                >
-                  <span className="truncate text-phantom-muted">#{i + 1}</span>
-                  <span className="mx-1 flex-1 truncate">
-                    {isYou ? "You" : p.profiles?.username ?? "Player"}
-                  </span>
-                  <span className="font-mono text-phantom-gold">{p.session_tokens}</span>
-                </li>
-              );
-            })}
-          </ul>
-          <p className="mt-2 text-[9px] text-phantom-muted">{totalPlayers} in session</p>
-        </aside>
-      </div>
-
-      {/* Power-ups bar + spin */}
-      <footer className="relative z-10 border-t border-phantom-border glass px-3 py-3">
-        <div className="mb-3 flex justify-center gap-2 overflow-x-auto pb-1">
-          {["Magnet", "Heart", "Insurance", "Shield", "Boost"].map((label) => (
-            <div
-              key={label}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-phantom-border/60 glass text-[8px] text-phantom-muted hover:text-phantom-purple-bright hover:border-phantom-purple-bright transition-all cursor-pointer"
-              title={label}
-            >
-              {label.slice(0, 2)}
+          {/* Right: My Rank & Voice Widget */}
+          <div className="flex flex-col items-end gap-1.5 sm:gap-2">
+            {/* Voice Widget */}
+            <div className="glass rounded-full border border-phantom-border/60 px-2.5 py-1.5 sm:px-3 sm:py-2">
+              <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
             </div>
-          ))}
+            {/* My Rank */}
+            <div className="glass rounded-xl border border-phantom-border/60 px-3 py-1.5 sm:px-4 sm:py-2 text-right">
+              <p className="text-[8px] sm:text-[10px] uppercase tracking-wider text-phantom-muted">MY RANK</p>
+              <p className="text-base sm:text-xl font-mono font-bold text-purple-400">#{playerRank || 7}</p>
+            </div>
+          </div>
+        </header>
+
+        {/* MAIN GAME AREA - Responsive layout: vertical on mobile, 3 columns on larger screens */}
+        <div className="flex flex-1 flex-col lg:flex-row overflow-hidden">
+          {/* CENTER: Wheel and main interaction (priority on mobile) */}
+          <main className="flex-1 flex flex-col items-center justify-center px-3 py-3 sm:px-2 sm:py-4 relative order-1">
+            {/* Status badges */}
+            <div className="flex gap-2 mb-3 sm:mb-4">
+              {isEliminated && <Badge variant="danger" className="text-xs py-1 px-3">Eliminated</Badge>}
+              {isRevivable && <Badge variant="gold" className="text-xs py-1 px-3">Revivable</Badge>}
+            </div>
+
+            {/* Spin Wheel - Adjust size for mobile */}
+            <div className="relative animate-float mb-4 sm:mb-6">
+              <div className="transform scale-75 sm:scale-100">
+                <PremiumWheel
+                  isSpinning={isSpinning}
+                  outcome={lastOutcome}
+                  onSpinComplete={onSpinComplete}
+                />
+              </div>
+            </div>
+
+            {/* Steal picker */}
+            {showStealPicker && (
+              <StealTargetPicker
+                targets={stealTargets}
+                onSelect={onStealSelect}
+                onCancel={onStealCancel}
+              />
+            )}
+
+            {/* Fire boost */}
+            {stealInProgress && attackerId && (
+              <div className="flex w-full max-w-sm flex-col items-center gap-3 glass rounded-lg p-3">
+                <FireBoostMeter taps={fireBoostTaps} onTap={onFireBoost} />
+                <Button onClick={onResolveSteal} variant="danger" size="sm">
+                  Resolve Steal
+                </Button>
+              </div>
+            )}
+
+            {/* Revive panel */}
+            {isRevivable && reviveTargetId && (
+              <RevivePanel
+                targetUsername="Teammate"
+                required={3}
+                contributed={0}
+                onContribute={onReviveContribute}
+              />
+            )}
+
+            {/* Spin count indicator */}
+            <div className="text-center mb-3 sm:mb-4">
+              <p className="text-[10px] sm:text-xs text-phantom-muted mb-1">TAP TO SPIN</p>
+              <p className="text-xs sm:text-sm font-mono font-bold text-purple-400">{spinCount}/5 SPINS</p>
+            </div>
+
+            {/* Skill Dock */}
+            <div className="flex items-center justify-center gap-2.5 sm:gap-3 mb-4 sm:mb-6">
+              {skills.map((skill) => (
+                <div key={skill.id} className="flex flex-col items-center">
+                  <button
+                    className={`h-12 w-12 sm:h-14 sm:w-14 rounded-2xl border-2 flex items-center justify-center ${skill.bg} ${skill.border} ${
+                      skill.ready ? "hover:scale-105 transition-transform" : "opacity-50 cursor-not-allowed"
+                    }`}
+                    disabled={!skill.ready}
+                  >
+                    <skill.icon className={`w-5.5 h-5.5 sm:w-7 sm:h-7 ${skill.color}`} />
+                  </button>
+                  {skill.cooldown && (
+                    <span className="text-[8px] sm:text-[9px] text-phantom-muted mt-1">{skill.cooldown}</span>
+                  )}
+                  <span className="text-[7px] sm:text-[8px] text-phantom-muted uppercase mt-0.5">{skill.name}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Spin Button */}
+            <div className="flex flex-col items-center gap-2">
+              <div className="transform scale-90 sm:scale-100">
+                <ButtonAnimator
+                  state={
+                    isEliminated ? "idle" :
+                    isSpinning ? "cooldown" :
+                    spinLocked ? "cooldown" : "idle"
+                  }
+                  disabled={isSpinning || spinLocked || isEliminated}
+                  onClick={onSpin}
+                />
+              </div>
+            </div>
+
+            {/* Speed control - Hide on small mobile */}
+            <div className="hidden sm:block absolute right-6 bottom-8 glass rounded-lg px-3 py-2 border border-phantom-border/50">
+              <div className="flex items-center gap-1">
+                <ArrowUp className="w-3 h-3 text-phantom-muted" />
+                <span className="text-[9px] text-phantom-muted uppercase">x1 Speed</span>
+              </div>
+            </div>
+          </main>
+
+          {/* BOTTOM ROW ON MOBILE: Live Feed + Squad Panel (side by side) */}
+          <div className="flex flex-row flex-1 lg:hidden gap-2 px-3 pb-2 overflow-hidden">
+            {/* LEFT: Live Feed */}
+            <aside className="flex-1 flex flex-col min-w-0">
+              <div className="mb-1.5 flex items-center gap-1">
+                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                <p className="text-[8px] font-bold uppercase tracking-wider text-phantom-muted">
+                  LIVE FEED
+                </p>
+              </div>
+              <div className="flex-1 overflow-y-auto space-y-1.5 pb-2">
+                {liveFeedEvents.slice(0, 3).map((event) => (
+                  <div key={event.id} className="glass rounded-lg border border-phantom-border/50 px-2 py-1.5 text-[8px]">
+                    {event.type === "steal" && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-purple-400">💜</span>
+                        <span className="font-semibold text-white truncate">{event.user}</span>
+                        <span className="text-yellow-500 font-bold">{event.amount}</span>
+                      </div>
+                    )}
+                    {event.type === "revive" && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-green-400">💚</span>
+                        <span className="font-semibold text-white truncate">{event.user}</span>
+                        <span className="text-phantom-muted text-[7px]">revived</span>
+                      </div>
+                    )}
+                    {event.type === "eliminate" && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-red-400">💀</span>
+                        <span className="font-semibold text-white truncate">{event.user}</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </aside>
+
+            {/* RIGHT: Squad Panel */}
+            <aside className="flex-1 flex flex-col min-w-0">
+              <div className="flex justify-between items-center mb-1.5">
+                <p className="text-[8px] font-bold uppercase tracking-wider text-phantom-purple-bright">
+                  SQUADS
+                </p>
+                <button
+                  onClick={() => setShowSquad(!showSquad)}
+                  className="text-phantom-muted"
+                >
+                  {showSquad ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                </button>
+              </div>
+
+              {showSquad && (
+                <div className="flex-1 overflow-y-auto space-y-2">
+                  {/* Your Squad */}
+                  <div>
+                    <p className="text-[7px] uppercase tracking-wider text-phantom-muted mb-1">
+                      YOUR SQUAD
+                    </p>
+                    <ul className="space-y-1.5">
+                      {squadMembers.slice(0, 2).map((m) => {
+                        const name = m.profiles?.username ?? "Player";
+                        const eliminated = m.is_eliminated;
+
+                        return (
+                          <li
+                            key={m.user_id}
+                            className={`flex items-center gap-1.5 glass rounded-lg px-1.5 py-1 ${
+                              eliminated
+                                ? "border-red-900/40"
+                                : "border-phantom-border/60"
+                            }`}
+                          >
+                            <AnimatedAvatar
+                              states={[eliminated ? "ELIMINATED" : "DEFAULT"]}
+                              size="sm"
+                              tokens={eliminated ? undefined : m.session_tokens}
+                              online={!eliminated}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-[8px] font-medium text-white">@{name}</p>
+                              <p className="text-[7px] text-phantom-muted">
+                                {eliminated ? "Elim" : `${m.session_tokens}`}
+                              </p>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+
+                  {/* Top Squads */}
+                  <div>
+                    <p className="text-[7px] uppercase tracking-wider text-phantom-muted mb-1">
+                      TOP SQUADS
+                    </p>
+                    <ul className="space-y-1.5">
+                      {[
+                        { name: "Eclipse", tokens: 18450, rank: 1 },
+                        { name: "Nightfall", tokens: 17230, rank: 2 },
+                      ].map((squad) => (
+                        <li
+                          key={squad.name}
+                          className="flex items-center justify-between glass rounded-lg px-1.5 py-1 border border-phantom-border/60"
+                        >
+                          <div className="flex items-center gap-1">
+                            <span className="text-[8px] font-mono text-phantom-muted">{squad.rank}</span>
+                            <p className="text-[8px] font-semibold text-white truncate">{squad.name}</p>
+                          </div>
+                          <span className="text-[7px] font-mono text-yellow-500">{squad.tokens.toLocaleString()}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </aside>
+          </div>
+
+          {/* DESKTOP VIEW: Full Live Feed + Squad Panel */}
+          {/* LEFT: Live Feed - Desktop */}
+          <aside className="hidden lg:flex w-[26%] max-w-[220px] flex-shrink-0 px-3 overflow-hidden flex-col order-0">
+            <div className="mb-2 flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <p className="text-[10px] font-bold uppercase tracking-wider text-phantom-muted">
+                LIVE FEED
+              </p>
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-2 pb-4">
+              {liveFeedEvents.map((event) => (
+                <div key={event.id} className="glass rounded-lg border border-phantom-border/50 px-3 py-2 text-[10px]">
+                  {event.type === "steal" && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-purple-400">💜</span>
+                      <span className="font-semibold text-white">{event.user}</span>
+                      <span className="text-phantom-muted">stole</span>
+                      <span className="font-bold text-yellow-500">{event.amount} TOK</span>
+                      <span className="text-phantom-muted ml-auto">{event.time}</span>
+                    </div>
+                  )}
+                  {event.type === "revive" && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-green-400">💚</span>
+                      <span className="font-semibold text-white">{event.user}</span>
+                      <span className="text-phantom-muted">revived</span>
+                      <span className="text-phantom-muted ml-auto">{event.time}</span>
+                    </div>
+                  )}
+                  {event.type === "eliminate" && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-red-400">💀</span>
+                      <span className="font-semibold text-white">{event.user}</span>
+                      <span className="text-phantom-muted">eliminated</span>
+                      <span className="text-phantom-muted">{event.target}</span>
+                      <span className="text-phantom-muted ml-auto">{event.time}</span>
+                    </div>
+                  )}
+                  {event.type === "camp" && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-yellow-400">⭐</span>
+                      <span className="font-semibold text-white">{event.user}</span>
+                      <span className="text-phantom-muted">{event.message}</span>
+                      <span className="text-phantom-muted ml-auto">{event.time}</span>
+                    </div>
+                  )}
+                  {event.type === "advance" && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-green-400">✨</span>
+                      <span className="font-semibold text-white">{event.user}</span>
+                      <span className="text-phantom-muted">earned</span>
+                      <span className="font-bold text-green-500">+{event.amount} TOK</span>
+                      <span className="text-phantom-muted ml-auto">{event.time}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+              <button className="w-full text-center text-[10px] text-purple-400 hover:text-purple-300">
+                View All
+              </button>
+            </div>
+          </aside>
+
+          {/* RIGHT: Squad Panel - Desktop */}
+          <aside className="hidden lg:flex w-[26%] max-w-[220px] flex-shrink-0 px-3 overflow-hidden flex flex-col order-2">
+            <div className="flex justify-between items-center mb-2">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-phantom-purple-bright">
+                SQUADS
+              </p>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-4">
+              {/* Your Squad */}
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-phantom-muted mb-2">
+                  YOUR SQUAD
+                </p>
+                <ul className="space-y-2">
+                  {squadMembers.slice(0, 3).map((m) => {
+                    const name = m.profiles?.username ?? "Player";
+                    const eliminated = m.is_eliminated;
+                    const revivable = m.is_revivable;
+                    const winning = m.session_tokens === highestTokens;
+
+                    const states: ProfileSpriteState[] = [];
+                    if (eliminated) states.push("ELIMINATED");
+                    if (revivable) states.push("REVIVING");
+                    if (winning) states.push("WINNING");
+                    if (states.length === 0) states.push("DEFAULT");
+
+                    return (
+                      <li
+                        key={m.user_id}
+                        className={`flex items-center gap-2 glass rounded-lg px-2 py-2 ${
+                          eliminated
+                            ? "border-red-900/40"
+                            : "border-phantom-border/60"
+                        }`}
+                      >
+                        <AnimatedAvatar
+                          states={states}
+                          size="sm"
+                          tokens={eliminated ? undefined : m.session_tokens}
+                          online={!eliminated}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-medium text-white">@{name}</p>
+                          <p className="text-[9px] text-phantom-muted">
+                            {eliminated
+                              ? revivable
+                                ? "+ Revivable"
+                                : "Eliminated"
+                              : `${m.session_tokens} TOK`}
+                          </p>
+                        </div>
+                      </li>
+                    );
+                  })}
+                  {squadMembers.length === 0 && (
+                    <li className="text-[10px] text-phantom-muted">Solo — no squad</li>
+                  )}
+                </ul>
+              </div>
+
+              {/* Top Squads */}
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-phantom-muted mb-2">
+                  TOP SQUADS
+                </p>
+                <ul className="space-y-2">
+                  {[
+                    { name: "Eclipse Squad", tokens: 18450, rank: 1 },
+                    { name: "Nightfall Crew", tokens: 17230, rank: 2 },
+                    { name: "Dark Legion", tokens: 15890, rank: 3 },
+                    { name: "Phantom Force", tokens: 15120, rank: 4 },
+                  ].map((squad) => (
+                    <li
+                      key={squad.name}
+                      className="flex items-center justify-between glass rounded-lg px-2 py-2 border border-phantom-border/60"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono text-phantom-muted">{squad.rank}</span>
+                        <div>
+                          <p className="text-[10px] font-semibold text-white">{squad.name}</p>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-mono text-yellow-500">{squad.tokens.toLocaleString()}</span>
+                    </li>
+                  ))}
+                </ul>
+                <button className="w-full text-center text-[10px] text-purple-400 hover:text-purple-300 mt-2">
+                  +24 More
+                </button>
+              </div>
+            </div>
+          </aside>
         </div>
-        <div className="flex justify-center">
-          <ButtonAnimator
-            state={
-              isEliminated ? "idle" :
-              isSpinning ? "cooldown" :
-              spinLocked ? "cooldown" : "idle"
-            }
-            disabled={isSpinning || spinLocked || isEliminated}
-            onClick={onSpin}
-          />
-        </div>
-      </footer>
+
+        {/* BOTTOM: Shadow Surge Meter & other controls */}
+        <footer className="px-3 sm:px-4 pb-3 sm:pb-4 pt-1 sm:pt-2">
+          <div className="flex items-center justify-between">
+            {/* Shadow Surge Meter */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="relative w-20 sm:w-28 h-1 bg-phantom-border/50 rounded-full overflow-hidden">
+                <div className="absolute top-0 left-0 h-full bg-purple-500" style={{ width: "72%" }} />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[7px] sm:text-[9px] text-purple-400 font-semibold uppercase">Shadow Surge</span>
+                <span className="text-[6px] sm:text-[8px] text-phantom-muted">72%</span>
+              </div>
+            </div>
+
+            {/* Bottom Hide Handle indicator - Hide on small mobile */}
+            <div className="hidden sm:flex flex-col items-center gap-1">
+              <div className="flex gap-1">
+                <div className="w-1 h-1 rounded-full bg-phantom-muted/40" />
+                <div className="w-1 h-1 rounded-full bg-phantom-muted/40" />
+                <div className="w-1 h-1 rounded-full bg-phantom-muted/40" />
+              </div>
+              <p className="text-[7px] text-phantom-muted/60 uppercase">Bottom navigation hidden</p>
+            </div>
+
+            {/* Recording indicator */}
+            <div className="flex items-center gap-1.5 sm:gap-2 glass rounded-lg px-2 py-1 sm:px-3 sm:py-1.5 border border-red-900/50 bg-red-900/10">
+              <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-[8px] sm:text-[10px] text-red-400 font-semibold uppercase">REC</span>
+            </div>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 }
