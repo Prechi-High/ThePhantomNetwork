@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import spriteSheetData from "../../../../ass/spritesheet (3).json";
+import spriteSheetData from "../../../assets/spritesheet.json";
 
 type ButtonState = "idle" | "hover" | "pressed" | "cooldown" | "success";
 

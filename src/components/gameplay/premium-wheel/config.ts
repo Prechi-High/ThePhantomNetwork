@@ -3,7 +3,7 @@ import type { SpinOutcome } from "@/types/gameplay";
 export interface WheelSector {
   id: SpinOutcome;
   label: string;
-  centerAngle: number; // Exact center angle in degrees from top (0°)
+  centerAngle: number; // Degrees from top (0°)
 }
 
 // Artwork calibration constants
@@ -19,16 +19,16 @@ export const WHEEL_SECTORS: WheelSector[] = [
   { id: "VOID", label: "VOID", centerAngle: 324 },
 ];
 
-// Helper to get the target rotation angle for a sector (clockwise)
+// Helper to get target rotation for a sector (clockwise)
 export const getTargetAngle = (targetIndex: number): number => {
   const sector = WHEEL_SECTORS[targetIndex];
-  // Calculate target rotation such that sector center is at top (0°)
+  // Calculate target rotation so sector center is at top (0°)
   // Rotate wheel clockwise by (360 - sector.centerAngle) degrees
   const targetRotation = (360 - sector.centerAngle + ARTWORK_ROTATION_OFFSET) % 360;
   return targetRotation;
 };
 
-// Helper to find the index of a sector by id
+// Helper to find index of sector by id
 export const getSectorIndex = (id: SpinOutcome): number => {
   return WHEEL_SECTORS.findIndex((s) => s.id === id);
 };
