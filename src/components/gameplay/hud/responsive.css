@@ -126,7 +126,7 @@
 .top-hud-grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
-  gap: clamp(5px, 0.8vw, 8px);
+  gap: clamp(4px, 0.6vw, 7px);
   width: 100%;
 }
 
@@ -134,7 +134,7 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: var(--space-2) var(--space-2);
+  padding: clamp(6px, 0.8vw, 9px) clamp(7px, 0.9vw, 10px);
   min-height: 0;
 }
 
@@ -202,12 +202,12 @@
 .wheel-overlay-left,
 .wheel-overlay-right {
   position: absolute;
-  top: var(--space-2);
-  width: clamp(100px, 18vw, 130px);
-  max-height: calc(100% - var(--space-4));
+  top: clamp(8px, 1vw, 12px);
+  width: clamp(110px, 19vw, 140px);
+  max-height: calc(100% - clamp(16px, 2vw, 24px));
   overflow-y: auto;
   overflow-x: hidden;
-  padding: var(--space-2) clamp(6px, 0.8vw, 9px);
+  padding: clamp(8px, 1vw, 12px) clamp(7px, 0.9vw, 10px);
   scrollbar-width: none;
   -ms-overflow-style: none;
   z-index: 20;
@@ -219,11 +219,11 @@
 }
 
 .wheel-overlay-left {
-  left: calc(-1 * clamp(100px, 18vw, 130px) * 0.4);
+  left: calc(-1 * clamp(110px, 19vw, 140px) * 0.35);
 }
 
 .wheel-overlay-right {
-  right: calc(-1 * clamp(100px, 18vw, 130px) * 0.4);
+  right: calc(-1 * clamp(110px, 19vw, 140px) * 0.35);
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -234,8 +234,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-2);
-  padding-block: var(--space-1);
+  gap: clamp(8px, 1vw, 12px);
+  padding-block: clamp(4px, 0.5vw, 6px);
 }
 
 .spin-button-container {
@@ -248,17 +248,18 @@
 .controls-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-2);
+  gap: clamp(8px, 1vw, 12px);
   width: 100%;
-  max-width: min(90vw, 420px);
+  max-width: min(88vw, 400px);
 }
 
 .control-widget {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: clamp(5px, 0.7vw, 8px) var(--space-2);
+  gap: clamp(6px, 0.8vw, 9px);
+  padding: clamp(6px, 0.8vw, 9px) clamp(8px, 1vw, 11px);
   flex: 1;
+  min-height: clamp(42px, 5.5vw, 54px);
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -268,8 +269,8 @@
 .zone-bottom {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  padding-block-start: var(--space-1);
+  gap: clamp(10px, 1.2vw, 14px);
+  padding-block-start: clamp(6px, 0.8vw, 9px);
 }
 
 /* Active Effects */
