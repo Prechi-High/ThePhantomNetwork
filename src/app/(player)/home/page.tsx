@@ -119,6 +119,23 @@ export default function HomePage() {
     date.setHours(date.getHours() + 0, date.getMinutes() + 18, date.getSeconds() + 34, 0);
     return date;
   });
+  const [sessions, setSessions] = useState<{ id: string; title: string; status: string; starts_at: string; entry_fee_cents: number; total_pool_cents: number; registered_count: number; max_players?: number; is_featured?: boolean }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadSessions() {
+      try {
+        const res = await fetch("/api/sessions");
+        const data = await res.json();
+        setSessions(data.sessions ?? []);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadSessions();
+  }, []);
+
+  const nextSession = sessions.find((s) => s.is_featured) || sessions[0];
 
   return (
     <div className="space-y-8">
@@ -212,63 +229,63 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-gradient-to-t from-phantom-bg via-transparent to-transparent" />
         </div>
         <div className="relative z-10 p-6 md:p-8 space-y-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div>
-              <p className="text-xs text-phantom-muted uppercase tracking-widest mb-2">Next Session</p>
-              <h2 className="text-3xl md:text-4xl font-display font-bold text-white neon-text">
-                NIGHTFALL ARENA
-              </h2>
-              <Badge variant="purple" className="mt-3">
-                Solo / Squad
-              </Badge>
-            </div>
-            <div className="flex flex-col items-start md:items-end">
-              <p className="text-xs text-phantom-muted uppercase mb-2">Starts in</p>
-              <Countdown targetDate={targetDate} />
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-8">
-            <div className="flex items-center gap-3">
-              <span className="text-green-500 text-2xl">💲</span>
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div>
-                <p className="text-xs text-phantom-muted uppercase">Entry Fee</p>
-                <p className="font-bold text-xl">$5</p>
+                <p className="text-xs text-phantom-muted uppercase tracking-widest mb-2">Next Session</p>
+                <h2 className="text-3xl md:text-4xl font-display font-bold text-white neon-text">
+                  {nextSession?.title || "NIGHTFALL ARENA"}
+                </h2>
+                <Badge variant="purple" className="mt-3">
+                  Solo / Squad
+                </Badge>
+              </div>
+              <div className="flex flex-col items-start md:items-end">
+                <p className="text-xs text-phantom-muted uppercase mb-2">Starts in</p>
+                <Countdown targetDate={nextSession ? new Date(nextSession.starts_at) : targetDate} />
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-phantom-gold text-2xl">🏆</span>
-              <div>
-                <p className="text-xs text-phantom-muted uppercase">Prize Pool</p>
-                <p className="font-bold text-xl">$1,250</p>
-              </div>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex -space-x-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="w-8 h-8 rounded-full border-2 border-phantom-bg overflow-hidden">
-                  <Image
-                    src={`https://i.pravatar.cc/48?u=${i}`}
-                    alt=""
-                    width={32}
-                    height={32}
-                    className="object-cover"
-                  />
+            <div className="flex flex-wrap items-center gap-8">
+              <div className="flex items-center gap-3">
+                <span className="text-green-500 text-2xl">💲</span>
+                <div>
+                  <p className="text-xs text-phantom-muted uppercase">Entry Fee</p>
+                  <p className="font-bold text-xl">${nextSession ? (nextSession.entry_fee_cents / 100).toFixed(0) : "5"}</p>
                 </div>
-              ))}
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-phantom-gold text-2xl">🏆</span>
+                <div>
+                  <p className="text-xs text-phantom-muted uppercase">Prize Pool</p>
+                  <p className="font-bold text-xl">${nextSession ? (nextSession.total_pool_cents / 100).toLocaleString() : "1,250"}</p>
+                </div>
+              </div>
             </div>
-            <p className="text-sm md:text-base text-phantom-muted">32 / 200 Players Registered</p>
-          </div>
 
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-            <Link href="/sessions/next" className="w-full sm:flex-1">
-              <Button className="w-full py-4 bg-gradient-to-r from-phantom-purple to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white font-bold shadow-[0_0_30px_rgba(139,92,246,0.5)]">
-                JOIN SESSION
-                <ChevronRight className="w-6 h-6 ml-2" />
-              </Button>
-            </Link>
+            <div className="flex items-center gap-3">
+              <div className="flex -space-x-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="w-8 h-8 rounded-full border-2 border-phantom-bg overflow-hidden">
+                    <Image
+                      src={`https://i.pravatar.cc/48?u=${i}`}
+                      alt=""
+                      width={32}
+                      height={32}
+                      className="object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+              <p className="text-sm md:text-base text-phantom-muted">{nextSession ? `${nextSession.registered_count} / ${nextSession.max_players || 200}` : "32 / 200"} Players Registered</p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <Link href={nextSession ? `/sessions/${nextSession.id}` : "/sessions"} className="w-full sm:flex-1">
+                <Button className="w-full py-4 bg-gradient-to-r from-phantom-purple to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white font-bold shadow-[0_0_30px_rgba(139,92,246,0.5)]">
+                  JOIN SESSION
+                  <ChevronRight className="w-6 h-6 ml-2" />
+                </Button>
+              </Link>
             <Button variant="secondary" className="w-full sm:w-auto py-4 px-8">
               <Bell className="w-6 h-6" />
               <span className="ml-2">Set Reminder</span>
@@ -470,11 +487,11 @@ export default function HomePage() {
               />
             </div>
             <div>
-              <p className="text-xs text-phantom-muted uppercase mb-1">Next Session: Nightfall Arena</p>
-              <Countdown targetDate={targetDate} />
+              <p className="text-xs text-phantom-muted uppercase mb-1">Next Session: {nextSession?.title || "Nightfall Arena"}</p>
+              <Countdown targetDate={nextSession ? new Date(nextSession.starts_at) : targetDate} />
             </div>
           </div>
-          <Link href="/sessions/next" className="w-full sm:w-auto">
+          <Link href={nextSession ? `/sessions/${nextSession.id}` : "/sessions"} className="w-full sm:w-auto">
             <Button className="w-full sm:w-auto bg-gradient-to-r from-phantom-purple to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white font-bold py-4 px-8">
               JOIN NOW
               <ChevronRight className="w-5 h-5 ml-2" />
