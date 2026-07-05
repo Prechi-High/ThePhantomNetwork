@@ -119,14 +119,14 @@ const SKILLS: Skill[] = [
 
 export function SkillDockHUD() {
   return (
-    <div className="flex flex-col" style={{ paddingBottom: "env(safe-area-inset-bottom,4px)" }}>
+    <div className="skills-dock" style={{ paddingBottom: "env(safe-area-inset-bottom,var(--space-1))" }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-[8px] mb-[4px]">
-        <span style={{ fontSize: "9px", fontWeight: 800, letterSpacing: "0.14em", color: "rgba(255,255,255,0.55)", textTransform: "uppercase" }}>
+      <div className="skills-header">
+        <span className="text-sm" style={{ fontWeight: 800, letterSpacing: "0.14em", color: "rgba(255,255,255,0.55)", textTransform: "uppercase" }}>
           MY SKILLS
         </span>
-        <button className="flex items-center gap-[2px]">
-          <span style={{ fontSize: "8px", fontWeight: 700, letterSpacing: "0.1em", color: "rgba(168,85,247,0.6)", textTransform: "uppercase" }}>
+        <button style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+          <span className="text-xs" style={{ fontWeight: 700, letterSpacing: "0.1em", color: "rgba(168,85,247,0.6)", textTransform: "uppercase" }}>
             SCROLL
           </span>
           <svg width="9" height="9" viewBox="0 0 24 24" fill="none">
@@ -136,25 +136,25 @@ export function SkillDockHUD() {
       </div>
 
       {/* Skills row */}
-      <div className="flex items-end px-[5px] gap-[3px] overflow-x-auto scrollbar-hide pb-[4px]">
+      <div className="skills-scroll">
         {SKILLS.map((skill) => (
-          <div key={skill.id} className="flex flex-col items-center gap-[3px] flex-shrink-0" style={{ width: "52px" }}>
+          <div key={skill.id} className="skill-item">
             <motion.button
               whileTap={{ scale: 0.92 }}
-              className="relative flex items-center justify-center rounded-[12px] focus:outline-none"
-              style={{ width: "48px", height: "48px", background: `linear-gradient(145deg,${skill.bgFrom},${skill.bgTo})`, border: `1.5px solid ${skill.borderColor}`, boxShadow: `0 0 10px ${skill.glowColor}, inset 0 1px 0 rgba(255,255,255,0.07)` }}
+              className="skill-card"
+              style={{ background: `linear-gradient(145deg,${skill.bgFrom},${skill.bgTo})`, borderColor: skill.borderColor, boxShadow: `0 0 10px ${skill.glowColor}, inset 0 1px 0 rgba(255,255,255,0.07)` }}
             >
               {/* Specular sheen */}
-              <div className="absolute pointer-events-none" style={{ top: "3px", left: "50%", transform: "translateX(-50%)", width: "58%", height: "28%", background: "linear-gradient(180deg,rgba(255,255,255,0.12) 0%,transparent 100%)", borderRadius: "50%", filter: "blur(2px)" }} />
+              <div style={{ position: "absolute", top: "clamp(2px,0.3vw,4px)", left: "50%", transform: "translateX(-50%)", width: "58%", height: "28%", background: "linear-gradient(180deg,rgba(255,255,255,0.12) 0%,transparent 100%)", borderRadius: "50%", filter: "blur(2px)", pointerEvents: "none" }} />
               {skill.icon}
               {skill.badge}
             </motion.button>
 
-            <span style={{ fontSize: "7.5px", fontWeight: 800, letterSpacing: "0.04em", color: "rgba(255,255,255,0.65)", textTransform: "uppercase", textAlign: "center", lineHeight: 1.15, width: "100%" }}>
+            <span className="skill-label" style={{ color: "rgba(255,255,255,0.65)" }}>
               {skill.name}
             </span>
 
-            <span style={{ fontSize: "7.5px", fontWeight: 800, letterSpacing: "0.05em", color: skill.labelColor, textTransform: "uppercase", textShadow: `0 0 5px ${skill.glowColor}` }}>
+            <span className="skill-status" style={{ color: skill.labelColor, textShadow: `0 0 5px ${skill.glowColor}` }}>
               READY
             </span>
           </div>

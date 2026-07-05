@@ -44,22 +44,28 @@ export function LiveFeed() {
   }, []);
 
   return (
-    <div className="flex flex-col w-full">
+    <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
       {/* Header */}
-      <div className="flex items-center gap-[4px] mb-[5px]">
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)", marginBottom: "var(--space-1)" }}>
         <motion.div
           className="rounded-full"
           animate={{ opacity: [1, 0.25, 1] }}
           transition={{ duration: 1.4, repeat: Infinity }}
-          style={{ width: "6px", height: "6px", background: "#22c55e", boxShadow: "0 0 5px #22c55e", flexShrink: 0 }}
+          style={{ 
+            width: "clamp(5px,0.6vw,7px)", 
+            height: "clamp(5px,0.6vw,7px)", 
+            background: "#22c55e", 
+            boxShadow: "0 0 5px #22c55e", 
+            flexShrink: 0 
+          }}
         />
-        <span style={{ fontSize: "9px", fontWeight: 800, letterSpacing: "0.14em", color: "#22c55e", textTransform: "uppercase", textShadow: "0 0 7px rgba(34,197,94,0.45)" }}>
+        <span className="text-xs" style={{ fontWeight: 800, letterSpacing: "0.14em", color: "#22c55e", textTransform: "uppercase", textShadow: "0 0 7px rgba(34,197,94,0.45)" }}>
           LIVE FEED
         </span>
       </div>
 
       {/* 3 event slots */}
-      <div className="flex flex-col gap-[3px]" style={{ minHeight: "108px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "clamp(2px,0.3vw,4px)", minHeight: "clamp(90px,12vw,120px)" }}>
         <AnimatePresence initial={false} mode="popLayout">
           {events.map((ev) => (
             <motion.div
@@ -68,8 +74,12 @@ export function LiveFeed() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10, transition: { duration: 0.2 } }}
               transition={{ duration: 0.22, ease: "easeOut" }}
-              className="flex items-start gap-[5px] rounded-[8px] px-[6px] py-[4px]"
               style={{
+                display: "flex",
+                alignItems: "start",
+                gap: "var(--space-1)",
+                borderRadius: "clamp(6px,0.8vw,9px)",
+                padding: "var(--space-1) clamp(5px,0.6vw,7px)",
                 background: "rgba(10,4,22,0.45)",
                 border: "1px solid rgba(168,85,247,0.14)",
                 backdropFilter: "blur(4px)",
@@ -77,28 +87,38 @@ export function LiveFeed() {
             >
               {/* Avatar */}
               <div
-                className="flex-shrink-0 rounded-full flex items-center justify-center"
-                style={{ width: "20px", height: "20px", fontSize: "10px", background: `linear-gradient(135deg,rgba(88,28,135,0.7),rgba(20,0,40,0.85))`, border: `1px solid ${ev.color}44`, flexShrink: 0 }}
+                style={{ 
+                  width: "clamp(16px,2.2vw,22px)", 
+                  height: "clamp(16px,2.2vw,22px)", 
+                  fontSize: "var(--text-md)", 
+                  background: `linear-gradient(135deg,rgba(88,28,135,0.7),rgba(20,0,40,0.85))`, 
+                  border: `1px solid ${ev.color}44`, 
+                  flexShrink: 0,
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}
               >
                 {ev.avatar}
               </div>
 
               {/* Text */}
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-baseline gap-[2px]">
-                  <span style={{ fontSize: "9px", fontWeight: 700, color: "#fff", lineHeight: 1.3, whiteSpace: "nowrap" }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "2px" }}>
+                  <span className="text-sm" style={{ fontWeight: 700, color: "#fff", lineHeight: 1.3, whiteSpace: "nowrap" }}>
                     {ev.name}
                   </span>
-                  <span style={{ fontSize: "9px", fontWeight: 500, color: "rgba(255,255,255,0.55)", lineHeight: 1.3 }}>
+                  <span className="text-sm" style={{ fontWeight: 500, color: "rgba(255,255,255,0.55)", lineHeight: 1.3 }}>
                     {ev.action}
                   </span>
                   {ev.value && (
-                    <span style={{ fontSize: "9px", fontWeight: 800, color: ev.color, lineHeight: 1.3, textShadow: `0 0 5px ${ev.color}60` }}>
+                    <span className="text-sm" style={{ fontWeight: 800, color: ev.color, lineHeight: 1.3, textShadow: `0 0 5px ${ev.color}60` }}>
                       {ev.value}
                     </span>
                   )}
                 </div>
-                <span style={{ fontSize: "8px", fontWeight: 500, color: "rgba(168,85,247,0.45)", lineHeight: 1 }}>
+                <span className="text-xs" style={{ fontWeight: 500, color: "rgba(168,85,247,0.45)", lineHeight: 1 }}>
                   {ev.time}
                 </span>
               </div>
@@ -109,10 +129,19 @@ export function LiveFeed() {
 
       {/* View All */}
       <button
-        className="flex items-center justify-center gap-[3px] mt-[5px] rounded-[7px] py-[4px]"
-        style={{ background: "rgba(168,85,247,0.07)", border: "1px solid rgba(168,85,247,0.16)" }}
+        style={{ 
+          display: "flex", 
+          alignItems: "center", 
+          justifyContent: "center", 
+          gap: "clamp(2px,0.3vw,4px)", 
+          marginTop: "var(--space-1)", 
+          borderRadius: "clamp(6px,0.7vw,8px)", 
+          padding: "var(--space-1) 0",
+          background: "rgba(168,85,247,0.07)", 
+          border: "1px solid rgba(168,85,247,0.16)" 
+        }}
       >
-        <span style={{ fontSize: "8.5px", fontWeight: 700, color: "rgba(168,85,247,0.7)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+        <span className="text-xs" style={{ fontWeight: 700, color: "rgba(168,85,247,0.7)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
           View All
         </span>
         <svg width="9" height="9" viewBox="0 0 24 24" fill="none">

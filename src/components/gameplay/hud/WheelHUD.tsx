@@ -267,38 +267,41 @@ export function WheelHUD({ isSpinning, outcome, onSpinComplete }: WheelHUDProps)
 
   return (
     <div
-      className="relative flex items-center justify-center"
-      style={{ width: SVG_SIZE, height: SVG_SIZE }}
+      style={{ width: "100%", height: "100%", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}
     >
       {/* Outer ambient glow rings */}
       <div
-        className="absolute rounded-full pointer-events-none"
         style={{
-          inset: "-24px",
+          position: "absolute",
+          inset: "calc(var(--wheel-size) * -0.086)",
+          borderRadius: "50%",
           background: "radial-gradient(circle,rgba(168,85,247,0) 55%,rgba(168,85,247,0.35) 75%,rgba(168,85,247,0) 100%)",
           filter: "blur(12px)",
+          pointerEvents: "none"
         }}
       />
       <div
-        className="absolute rounded-full pointer-events-none"
         style={{
-          inset: "-8px",
+          position: "absolute",
+          inset: "calc(var(--wheel-size) * -0.029)",
           border: "2px solid rgba(168,85,247,0.25)",
           borderRadius: "50%",
           boxShadow: "0 0 30px rgba(168,85,247,0.4), inset 0 0 20px rgba(168,85,247,0.1)",
+          pointerEvents: "none"
         }}
       />
 
       {/* Static outer metallic ring */}
       <div
-        className="absolute rounded-full pointer-events-none"
         style={{
+          position: "absolute",
           inset: 0,
           borderRadius: "50%",
           background: "linear-gradient(135deg,rgba(168,85,247,0.5) 0%,rgba(88,28,135,0.3) 50%,rgba(168,85,247,0.5) 100%)",
           border: "3px solid rgba(168,85,247,0.6)",
           boxShadow:
             "0 0 40px rgba(168,85,247,0.5), 0 0 80px rgba(168,85,247,0.2), inset 0 0 20px rgba(168,85,247,0.15)",
+          pointerEvents: "none"
         }}
       />
 
@@ -306,17 +309,19 @@ export function WheelHUD({ isSpinning, outcome, onSpinComplete }: WheelHUDProps)
       <motion.div
         animate={controls}
         onAnimationComplete={() => { if (isSpinning) onSpinComplete(); }}
-        className="absolute rounded-full overflow-hidden"
         style={{
-          width: SVG_SIZE - 8,
-          height: SVG_SIZE - 8,
-          left: 4,
-          top: 4,
+          position: "absolute",
+          width: "calc(var(--wheel-size) - 8px)",
+          height: "calc(var(--wheel-size) - 8px)",
+          left: "4px",
+          top: "4px",
+          borderRadius: "50%",
+          overflow: "hidden"
         }}
       >
         <svg
-          width={SVG_SIZE - 8}
-          height={SVG_SIZE - 8}
+          width="100%"
+          height="100%"
           viewBox={`0 0 ${SVG_SIZE} ${SVG_SIZE}`}
           style={{ position: "absolute", inset: 0 }}
         >
@@ -448,13 +453,19 @@ export function WheelHUD({ isSpinning, outcome, onSpinComplete }: WheelHUDProps)
 
       {/* Center emblem (static, above wheel) */}
       <div
-        className="absolute rounded-full flex items-center justify-center z-10 pointer-events-none"
         style={{
-          width: "90px",
-          height: "90px",
+          position: "absolute",
+          width: "calc(var(--wheel-size) * 0.32)",
+          height: "calc(var(--wheel-size) * 0.32)",
           left: "50%",
           top: "50%",
           transform: "translate(-50%,-50%)",
+          borderRadius: "50%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 10,
+          pointerEvents: "none",
           background:
             "radial-gradient(circle at 40% 35%,rgba(168,85,247,0.25) 0%,rgba(20,0,40,0.98) 70%)",
           border: "3px solid rgba(168,85,247,0.6)",
@@ -465,7 +476,7 @@ export function WheelHUD({ isSpinning, outcome, onSpinComplete }: WheelHUDProps)
         {/* P logo */}
         <span
           style={{
-            fontSize: "42px",
+            fontSize: "clamp(34px,4.2vw,48px)",
             fontWeight: 900,
             color: "#a855f7",
             lineHeight: 1,
@@ -480,20 +491,22 @@ export function WheelHUD({ isSpinning, outcome, onSpinComplete }: WheelHUDProps)
 
       {/* Top pointer / indicator */}
       <div
-        className="absolute pointer-events-none z-20"
         style={{
-          top: "-4px",
+          position: "absolute",
+          top: "calc(var(--wheel-size) * -0.014)",
           left: "50%",
           transform: "translateX(-50%)",
+          pointerEvents: "none",
+          zIndex: 20
         }}
       >
         <div
           style={{
             width: 0,
             height: 0,
-            borderLeft: "9px solid transparent",
-            borderRight: "9px solid transparent",
-            borderTop: "18px solid #a855f7",
+            borderLeft: "clamp(7px,0.9vw,10px) solid transparent",
+            borderRight: "clamp(7px,0.9vw,10px) solid transparent",
+            borderTop: "clamp(14px,1.8vw,20px) solid #a855f7",
             filter: "drop-shadow(0 0 8px rgba(168,85,247,0.9))",
           }}
         />

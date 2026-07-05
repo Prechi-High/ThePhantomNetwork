@@ -52,15 +52,15 @@ const ACTIVE_EFFECTS: Effect[] = [
 
 export function ActiveEffects() {
   return (
-    <div className="flex flex-col items-center gap-[3px] py-[2px]">
-      <span style={{ fontSize: "8px", fontWeight: 800, letterSpacing: "0.16em", color: "rgba(255,255,255,0.45)", textTransform: "uppercase" }}>
+    <div className="effects-container">
+      <span className="text-xs" style={{ fontWeight: 800, letterSpacing: "0.16em", color: "rgba(255,255,255,0.45)", textTransform: "uppercase" }}>
         ACTIVE EFFECTS
       </span>
-      <div className="flex items-center gap-[5px]">
+      <div className="effects-row">
         {ACTIVE_EFFECTS.map((effect) => (
           <motion.div
             key={effect.id}
-            className="flex items-center gap-[4px] rounded-full px-[8px] py-[4px]"
+            className="effect-pill"
             animate={{ boxShadow: [`0 0 6px ${effect.glowColor}`, `0 0 12px ${effect.glowColor}`, `0 0 6px ${effect.glowColor}`] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
             style={{ background: "rgba(10,4,22,0.65)", border: `1px solid ${effect.color}44`, backdropFilter: "blur(8px)" }}
@@ -68,10 +68,10 @@ export function ActiveEffects() {
             <div style={{ filter: `drop-shadow(0 0 3px ${effect.color}80)` }}>
               {effect.icon}
             </div>
-            <span style={{ fontSize: "10px", fontWeight: 700, color: "#fff", lineHeight: 1 }}>
+            <span className="text-md" style={{ fontWeight: 700, color: "#fff", lineHeight: 1 }}>
               {effect.label}
             </span>
-            <span style={{ fontSize: "10px", fontWeight: 700, color: effect.color, lineHeight: 1, textShadow: `0 0 5px ${effect.color}70`, fontVariantNumeric: "tabular-nums" }}>
+            <span className="text-md" style={{ fontWeight: 700, color: effect.color, lineHeight: 1, textShadow: `0 0 5px ${effect.color}70`, fontVariantNumeric: "tabular-nums" }}>
               {effect.time}
             </span>
           </motion.div>
