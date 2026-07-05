@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { PremiumWheel, ButtonAnimator } from "@/components/gameplay/premium-wheel";
 import { StealTargetPicker } from "@/components/gameplay/StealTargetPicker";
 import { FireBoostMeter } from "@/components/gameplay/FireBoostMeter";
@@ -79,13 +79,13 @@ interface GameplayArenaProps {
 }
 
 const skills = [
-  { id: "steal", name: "STEAL BOOST", icon: Zap, color: "text-purple-400", bg: "from-purple-700 to-purple-900", border: "border-purple-500/70", ready: true, cooldown: null },
-  { id: "shield", name: "SHIELD", icon: Shield, color: "text-blue-400", bg: "from-blue-700 to-blue-900", border: "border-blue-500/70", ready: true, cooldown: null },
-  { id: "cloak", name: "CLOAK", icon: UserMinus, color: "text-purple-300", bg: "from-purple-800 to-gray-900", border: "border-purple-400/70", ready: false, cooldown: "12s" },
+  { id: "steal", name: "STEAL BOOST", icon: <Zap className="w-6 h-6" />, color: "text-purple-400", bg: "from-purple-700 to-purple-900", border: "border-purple-500/70", ready: true, cooldown: null },
+  { id: "shield", name: "SHIELD", icon: <Shield className="w-6 h-6" />, color: "text-blue-400", bg: "from-blue-700 to-blue-900", border: "border-blue-500/70", ready: true, cooldown: null },
+  { id: "cloak", name: "CLOAK", icon: <UserMinus className="w-6 h-6" />, color: "text-purple-300", bg: "from-purple-800 to-gray-900", border: "border-purple-400/70", ready: false, cooldown: "12s" },
   { id: "multiplier", name: "2x", icon: <span className="font-black">2x</span>, color: "text-purple-300", bg: "from-purple-700 to-blue-800", border: "border-purple-400/70", ready: true, cooldown: null },
-  { id: "insurance", name: "INSURANCE", icon: Umbrella, color: "text-yellow-400", bg: "from-yellow-700 to-yellow-900", border: "border-yellow-500/70", ready: true, cooldown: null },
-  { id: "revive", name: "REVIVE", icon: Plus, color: "text-green-400", bg: "from-green-700 to-green-900", border: "border-green-500/70", ready: true, cooldown: null },
-  { id: "more", name: "MORE", icon: Package, color: "text-gray-400", bg: "from-gray-700 to-gray-900", border: "border-gray-500/50", ready: false, cooldown: null },
+  { id: "insurance", name: "INSURANCE", icon: <Umbrella className="w-6 h-6" />, color: "text-yellow-400", bg: "from-yellow-700 to-yellow-900", border: "border-yellow-500/70", ready: true, cooldown: null },
+  { id: "revive", name: "REVIVE", icon: <Plus className="w-6 h-6" />, color: "text-green-400", bg: "from-green-700 to-green-900", border: "border-green-500/70", ready: true, cooldown: null },
+  { id: "more", name: "MORE", icon: <Package className="w-6 h-6" />, color: "text-gray-400", bg: "from-gray-700 to-gray-900", border: "border-gray-500/50", ready: false, cooldown: null },
 ];
 
 interface LiveFeedEvent {
@@ -399,11 +399,7 @@ export function GameplayArena({
                   }`}
                   disabled={!skill.ready}
                 >
-                  <div className="text-lg">
-                    {typeof skill.icon === "function" ? 
-                      React.createElement(skill.icon, { className: "w-6 h-6" }) 
-                      : skill.icon}
-                  </div>
+                  <div className="text-lg">{skill.icon}</div>
                   {skill.cooldown && (
                     <span className="text-[9px] text-gray-400 font-mono mt-1">{skill.cooldown}</span>
                   )}
