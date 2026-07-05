@@ -7,7 +7,7 @@ import { AVATARS } from "@/types/gameplay";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
-import BottomNav from "@/components/ui/BottomNav";
+
 import {
   Trophy,
   Skull,
@@ -18,7 +18,14 @@ import {
   Bell,
   Settings,
   Upload,
-  ChevronRight
+  ChevronRight,
+  ChevronLeft,
+  Plus,
+  Clock,
+  Globe,
+  Check,
+  Square,
+  TrendingUp
 } from "lucide-react";
 import Image from "next/image";
 
@@ -86,139 +93,129 @@ export default function ProfilePage() {
   const avatar = AVATARS.find((a) => a.id === profile.avatar_id);
 
   return (
-    <div className="space-y-5 pb-24">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 pb-24">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Link href="/" className="p-2 rounded-full hover:bg-phantom-surface">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-phantom-purple w-6 h-6">
-              <path d="M19 12H5M12 19l-7-7 7-7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+          <Link href="/" className="p-3 rounded-full hover:bg-phantom-surface transition-colors">
+            <ChevronLeft className="w-6 h-6 text-phantom-purple" />
           </Link>
           <div>
-            <h1 className="text-2xl font-display font-bold">PROFILE</h1>
+            <h1 className="text-2xl sm:text-3xl font-display font-bold">PROFILE</h1>
             <p className="text-sm text-phantom-muted">Who am I becoming?</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <button className="p-2 rounded-full bg-phantom-surface">
+        <div className="flex items-center gap-3 w-full md:w-auto flex-wrap">
+          <button className="p-3 rounded-full bg-phantom-surface hover:bg-phantom-surface/80 transition-colors">
             <Upload className="w-5 h-5 text-phantom-muted" />
           </button>
-          <button className="p-2 rounded-full bg-phantom-surface">
+          <button className="p-3 rounded-full bg-phantom-surface hover:bg-phantom-surface/80 transition-colors">
             <Settings className="w-5 h-5 text-phantom-muted" />
           </button>
-          <button className="relative p-2 rounded-full bg-phantom-surface">
+          <button className="relative p-3 rounded-full bg-phantom-surface hover:bg-phantom-surface/80 transition-colors">
             <Bell className="w-5 h-5 text-phantom-muted" />
-            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-phantom-purple rounded-full animate-pulse"></span>
+            <span className="absolute -top-1 -right-1 w-3 h-3 bg-phantom-purple rounded-full animate-pulse"></span>
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        <Card className="p-4 relative">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-green-500 text-xl">💲</span>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Card className="p-5 relative">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-green-500 text-2xl">💲</span>
             <span className="text-sm text-phantom-muted uppercase">Wallet Balance</span>
             <span className="ml-auto text-xs bg-phantom-surface px-2 py-1 rounded text-phantom-muted">USD</span>
           </div>
-          <p className="text-3xl font-mono font-bold text-white">
+          <p className="text-3xl sm:text-4xl font-mono font-bold text-white">
             ${((profile.wallet_balance_cents ? (profile.wallet_balance_cents as number) / 100 : 25.00).toFixed(2))}
           </p>
-          <button className="absolute top-4 right-4 p-2 bg-phantom-purple/20 rounded-lg">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-phantom-purple">
-              <path d="M12 5v14M5 12h14" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+          <button className="absolute top-5 right-5 p-3 bg-phantom-purple/20 rounded-lg hover:bg-phantom-purple/30 transition-colors">
+            <Plus className="w-5 h-5 text-phantom-purple" />
           </button>
         </Card>
-        <Card className="p-4 relative">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-phantom-purple text-xl">💎</span>
+        <Card className="p-5 relative">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-phantom-purple text-2xl">💎</span>
             <span className="text-sm text-phantom-muted uppercase">Phantom Tokens</span>
           </div>
-          <p className="text-3xl font-mono font-bold text-white">250</p>
-          <button className="absolute top-4 right-4 p-2 bg-phantom-purple/20 rounded-lg">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-phantom-purple">
-              <path d="M12 5v14M5 12h14" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+          <p className="text-3xl sm:text-4xl font-mono font-bold text-white">250</p>
+          <button className="absolute top-5 right-5 p-3 bg-phantom-purple/20 rounded-lg hover:bg-phantom-purple/30 transition-colors">
+            <Plus className="w-5 h-5 text-phantom-purple" />
           </button>
         </Card>
-        <Card className="p-4 relative">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-yellow-500 text-xl">🔶</span>
+        <Card className="p-5 relative sm:col-span-2 lg:col-span-1">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-yellow-500 text-2xl">🔶</span>
             <span className="text-sm text-phantom-muted uppercase">Squad Tokens</span>
           </div>
-          <p className="text-3xl font-mono font-bold text-white">1,340</p>
-          <button className="absolute top-4 right-4 p-2 bg-phantom-purple/20 rounded-lg">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-phantom-purple">
-              <path d="M12 5v14M5 12h14" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+          <p className="text-3xl sm:text-4xl font-mono font-bold text-white">1,340</p>
+          <button className="absolute top-5 right-5 p-3 bg-phantom-purple/20 rounded-lg hover:bg-phantom-purple/30 transition-colors">
+            <Plus className="w-5 h-5 text-phantom-purple" />
           </button>
         </Card>
       </div>
 
-      <Card className="p-5">
-        <div className="flex items-start gap-6">
-          <div className="relative">
-            <div className="w-36 h-40 rounded-2xl border-4 border-phantom-purple overflow-hidden bg-gradient-to-br from-phantom-purple/20 to-phantom-surface flex items-center justify-center">
-              <span className="text-8xl">{avatar?.emoji ?? "🌑"}</span>
+      <Card className="p-6">
+        <div className="flex flex-col lg:flex-row items-start gap-8">
+          <div className="relative mx-auto lg:mx-0">
+            <div className="w-40 h-48 sm:w-48 sm:h-56 rounded-2xl border-4 border-phantom-purple overflow-hidden bg-gradient-to-br from-phantom-purple/20 to-phantom-surface flex items-center justify-center">
+              <span className="text-8xl sm:text-9xl">{avatar?.emoji ?? "🌑"}</span>
             </div>
-            <button className="absolute bottom-2 right-2 bg-phantom-purple p-1.5 rounded-full">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-white">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+            <button className="absolute bottom-3 right-3 bg-phantom-purple p-2 rounded-full hover:bg-phantom-purple/90 transition-colors">
+              <Upload className="w-5 h-5 text-white" />
             </button>
           </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <h2 className="text-2xl font-display font-bold text-white">
+          <div className="flex-1 w-full text-center lg:text-left">
+            <div className="flex items-center justify-center lg:justify-start gap-2 mb-2">
+              <h2 className="text-2xl sm:text-3xl font-display font-bold text-white">
                 {(profile.username as string) || "PhantomX"}
               </h2>
-              <span className="text-phantom-purple text-xl">✓</span>
+              <span className="text-phantom-purple text-2xl">✓</span>
             </div>
-            <p className="text-lg text-phantom-muted">Shadow Elite</p>
-            <div className="flex items-center gap-2 mt-2">
-              <Badge variant="purple" className="text-xs font-bold">
+            <p className="text-lg sm:text-xl text-phantom-muted">Shadow Elite</p>
+            <div className="flex items-center justify-center lg:justify-start gap-2 mt-3 flex-wrap">
+              <Badge variant="purple" className="text-sm font-bold px-3 py-1">
                 18
               </Badge>
               <p className="text-sm text-phantom-muted">
                 • 2,450 / 3,000 XP
               </p>
             </div>
-            <p className="text-xs text-phantom-muted mt-3">
+            <p className="text-xs sm:text-sm text-phantom-muted mt-4">
               ID: PHX-87452 • Member since: 23 Apr 2024
             </p>
-            <div className="flex items-center gap-2 mt-2">
-              <Badge variant="purple" className="text-xs">
+            <div className="flex items-center justify-center lg:justify-start gap-2 mt-3 flex-wrap">
+              <Badge variant="purple" className="text-xs px-3 py-1">
                 🌙 Eclipse Camp
               </Badge>
-              <Badge variant="purple" className="text-xs">
+              <Badge variant="purple" className="text-xs px-3 py-1">
                 🌙 Eclipse Squad
               </Badge>
             </div>
           </div>
-          <div className="text-right">
+          <div className="text-center lg:text-right w-full lg:w-auto">
             <p className="text-xs text-phantom-muted uppercase">Global Rank</p>
-            <p className="text-2xl font-display font-bold text-white">#2,842</p>
-            <p className="text-xs text-phantom-muted mt-1">
+            <p className="text-3xl sm:text-4xl font-display font-bold text-white">#2,842</p>
+            <p className="text-xs sm:text-sm text-phantom-muted mt-1">
               Top 3.12% of all players
             </p>
-            <p className="text-xs text-phantom-muted uppercase mt-4">
+            <p className="text-xs text-phantom-muted uppercase mt-6">
               Highest Session Rank
             </p>
-            <div className="flex items-center justify-end gap-2 mt-1">
-              <span className="text-xl">⚙️</span>
-              <p className="text-2xl font-display font-bold text-white">#27</p>
+            <div className="flex items-center justify-center lg:justify-end gap-2 mt-2">
+              <span className="text-2xl">⚙️</span>
+              <p className="text-3xl sm:text-4xl font-display font-bold text-white">#27</p>
             </div>
           </div>
         </div>
       </Card>
 
-      <div className="flex gap-2 overflow-x-auto pb-2">
+      <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide">
         {["overview", "stats", "history", "achievements", "rivals", "badges"].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={cn(
-            "px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all",
+            "px-4 sm:px-6 py-3 rounded-lg text-sm sm:text-base font-semibold whitespace-nowrap transition-all flex-shrink-0",
             activeTab === tab
               ? "bg-phantom-purple/20 text-phantom-purple border-b-2 border-phantom-purple"
               : "text-phantom-muted hover:text-white"
@@ -230,159 +227,137 @@ export default function ProfilePage() {
       </div>
 
       {activeTab === "overview" && (
-        <div className="space-y-5">
+        <div className="space-y-8">
           <div>
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold uppercase tracking-widest text-phantom-muted">
                 Personal Stats
               </h3>
-              <div className="flex gap-1 bg-phantom-surface px-2 py-1 rounded-lg">
+              <div className="flex gap-1 bg-phantom-surface px-3 py-2 rounded-lg">
                 <button className="text-xs text-phantom-purple font-semibold">
                   This Season
                 </button>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              <Card className="p-3 text-center">
-                <div className="flex items-center justify-center mb-2">
-                  <Trophy className="w-6 h-6 text-yellow-500" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-4">
+              <Card className="p-5 text-center">
+                <div className="flex items-center justify-center mb-3">
+                  <Trophy className="w-8 h-8 text-yellow-500" />
                 </div>
-                <p className="text-2xl font-bold text-white">24</p>
-                <p className="text-xs text-phantom-muted uppercase">Wins</p>
+                <p className="text-3xl font-bold text-white">24</p>
+                <p className="text-xs sm:text-sm text-phantom-muted uppercase mt-1">Wins</p>
               </Card>
-              <Card className="p-3 text-center">
-                <div className="flex items-center justify-center mb-2">
-                  <svg className="w-6 h-6 text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M12 2a15.3 15.3 0 0 1 4 12 15.3 15.3 0 0 1 8 20" />
-                    <path d="M22 12a15.3 15.3 0 0 1-4 8" />
-                  </svg>
+              <Card className="p-5 text-center">
+                <div className="flex items-center justify-center mb-3">
+                  <Globe className="w-8 h-8 text-purple-500" />
                 </div>
-                <p className="text-2xl font-bold text-white">38</p>
-                <p className="text-xs text-phantom-muted uppercase">Top 5 Finishes</p>
+                <p className="text-3xl font-bold text-white">38</p>
+                <p className="text-xs sm:text-sm text-phantom-muted uppercase mt-1">Top 5 Finishes</p>
               </Card>
-              <Card className="p-3 text-center">
-                <div className="flex items-center justify-center mb-2">
-                  <Skull className="w-6 h-6 text-phantom-muted" />
+              <Card className="p-5 text-center">
+                <div className="flex items-center justify-center mb-3">
+                  <Skull className="w-8 h-8 text-phantom-muted" />
                 </div>
-                <p className="text-2xl font-bold text-white">156</p>
-                <p className="text-xs text-phantom-muted uppercase">Sessions Played</p>
+                <p className="text-3xl font-bold text-white">156</p>
+                <p className="text-xs sm:text-sm text-phantom-muted uppercase mt-1">Sessions Played</p>
               </Card>
-              <Card className="p-3 text-center">
-                <div className="flex items-center justify-center mb-2">
-                  <svg className="w-6 h-6 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                  </svg>
+              <Card className="p-5 text-center">
+                <div className="flex items-center justify-center mb-3">
+                  <Trophy className="w-8 h-8 text-green-500" />
                 </div>
-                <p className="text-2xl font-bold text-white">18</p>
-                <p className="text-xs text-phantom-muted uppercase">Revives</p>
+                <p className="text-3xl font-bold text-white">18</p>
+                <p className="text-xs sm:text-sm text-phantom-muted uppercase mt-1">Revives</p>
               </Card>
-              <Card className="p-3 text-center">
-                <div className="flex items-center justify-center mb-2">
-                  <Swords className="w-6 h-6 text-red-500" />
+              <Card className="p-5 text-center">
+                <div className="flex items-center justify-center mb-3">
+                  <Swords className="w-8 h-8 text-red-500" />
                 </div>
-                <p className="text-2xl font-bold text-white">56</p>
-                <p className="text-xs text-phantom-muted uppercase">Steals</p>
+                <p className="text-3xl font-bold text-white">56</p>
+                <p className="text-xs sm:text-sm text-phantom-muted uppercase mt-1">Steals</p>
               </Card>
-              <Card className="p-3 text-center">
-                <div className="flex items-center justify-center mb-2">
-                  <svg className="w-6 h-6 text-cyan-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-                  </svg>
+              <Card className="p-5 text-center">
+                <div className="flex items-center justify-center mb-3">
+                  <Swords className="w-8 h-8 text-cyan-500" />
                 </div>
-                <p className="text-2xl font-bold text-white">72%</p>
-                <p className="text-xs text-phantom-muted uppercase">Steal Success</p>
+                <p className="text-3xl font-bold text-white">72%</p>
+                <p className="text-xs sm:text-sm text-phantom-muted uppercase mt-1">Steal Success</p>
               </Card>
-              <Card className="p-3 text-center">
-                <div className="flex items-center justify-center mb-2">
-                  <Crown className="w-6 h-6 text-purple-500" />
+              <Card className="p-5 text-center">
+                <div className="flex items-center justify-center mb-3">
+                  <Crown className="w-8 h-8 text-purple-500" />
                 </div>
-                <p className="text-2xl font-bold text-white">3</p>
-                <p className="text-xs text-phantom-muted uppercase">Championships</p>
+                <p className="text-3xl font-bold text-white">3</p>
+                <p className="text-xs sm:text-sm text-phantom-muted uppercase mt-1">Championships</p>
               </Card>
-              <Card className="p-3 text-center">
-                <div className="flex items-center justify-center mb-2">
-                  <svg className="w-6 h-6 text-yellow-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7H21" />
-                  </svg>
+              <Card className="p-5 text-center">
+                <div className="flex items-center justify-center mb-3">
+                  <TrendingUp className="w-8 h-8 text-yellow-500" />
                 </div>
-                <p className="text-2xl font-bold text-white">$2,450</p>
-                <p className="text-xs text-phantom-muted uppercase">Total Earned</p>
+                <p className="text-3xl font-bold text-white">$2,450</p>
+                <p className="text-xs sm:text-sm text-phantom-muted uppercase mt-1">Total Earned</p>
               </Card>
-              <Card className="p-3 text-center">
-                <div className="flex items-center justify-center mb-2">
-                  <svg className="w-6 h-6 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                    <path d="M22 4L12 14.01l-3-3" />
-                  </svg>
+              <Card className="p-5 text-center sm:col-span-2 lg:col-span-1">
+                <div className="flex items-center justify-center mb-3">
+                  <Check className="w-8 h-8 text-green-500" />
                 </div>
-                <p className="text-2xl font-bold text-white">72%</p>
-                <p className="text-xs text-phantom-muted uppercase">Win Rate</p>
+                <p className="text-3xl font-bold text-white">72%</p>
+                <p className="text-xs sm:text-sm text-phantom-muted uppercase mt-1">Win Rate</p>
               </Card>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div>
-              <h3 className="text-sm font-bold uppercase tracking-widest text-phantom-muted mb-3">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-phantom-muted mb-4">
                 Progression Path
               </h3>
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 mb-6">
                 <div className="flex-1">
-                  <div className="flex items-center justify-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-phantom-surface border border-phantom-border flex items-center justify-center">
-                      <svg className="w-6 h-6 text-phantom-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="12" cy="12" r="10" />
-                        <path d="M12 6v6l4 2" />
-                      </svg>
-                    </div>
+                  <div className="flex items-center justify-center gap-3 sm:gap-6">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-phantom-surface border border-phantom-border flex items-center justify-center flex-shrink-0">
+                    <Clock className="w-6 h-6 sm:w-8 sm:h-8 text-phantom-muted" />
+                  </div>
                     <div className="h-1 flex-1 bg-phantom-purple/30"></div>
-                    <div className="w-20 h-20 rounded-full bg-phantom-surface border-2 border-phantom-purple flex items-center justify-center">
-                      <span className="text-4xl">{avatar?.emoji ?? "🌑"}</span>
+                    <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-phantom-surface border-2 border-phantom-purple flex items-center justify-center flex-shrink-0">
+                      <span className="text-4xl sm:text-5xl">{avatar?.emoji ?? "🌑"}</span>
                     </div>
                     <div className="h-1 flex-1 bg-phantom-border"></div>
-                    <div className="w-12 h-12 rounded-full bg-phantom-surface border border-phantom-border flex items-center justify-center">
-                      <svg className="w-6 h-6 text-phantom-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                        <rect x="9" y="9" width="6" height="6" />
-                      </svg>
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-phantom-surface border border-phantom-border flex items-center justify-center flex-shrink-0">
+                      <Square className="w-6 h-6 sm:w-8 sm:h-8 text-phantom-muted" />
                     </div>
                     <div className="h-1 flex-1 bg-phantom-border"></div>
-                    <div className="w-12 h-12 rounded-full bg-phantom-surface border border-phantom-border flex items-center justify-center">
-                      <svg className="w-6 h-6 text-phantom-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                        <rect x="9" y="9" width="6" height="6" />
-                      </svg>
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-phantom-surface border border-phantom-border flex items-center justify-center flex-shrink-0">
+                      <Square className="w-6 h-6 sm:w-8 sm:h-8 text-phantom-muted" />
                     </div>
                   </div>
-                  <div className="flex justify-between mt-2">
-                    <p className="text-xs text-phantom-muted">Shadow Initiate</p>
-                    <p className="text-xs text-phantom-muted">Shadow Elite</p>
-                    <p className="text-xs text-phantom-muted">Phantom Lord</p>
-                    <p className="text-xs text-phantom-muted">Phantom Legend</p>
+                  <div className="flex justify-between mt-3 text-center">
+                    <p className="text-[10px] sm:text-xs text-phantom-muted flex-1">Shadow Initiate</p>
+                    <p className="text-[10px] sm:text-xs text-phantom-muted flex-1">Shadow Elite</p>
+                    <p className="text-[10px] sm:text-xs text-phantom-muted flex-1">Phantom Lord</p>
+                    <p className="text-[10px] sm:text-xs text-phantom-muted flex-1">Phantom Legend</p>
                   </div>
                 </div>
               </div>
-              <Card className="p-4">
-                <p className="text-xs text-phantom-muted uppercase">Next Milestone</p>
-                <p className="text-sm font-semibold text-white mt-1">
+              <Card className="p-5">
+                <p className="text-xs sm:text-sm text-phantom-muted uppercase">Next Milestone</p>
+                <p className="text-base sm:text-lg font-semibold text-white mt-2">
                   Level 20 Reward
                 </p>
-                <p className="text-xs text-phantom-muted mt-1">
+                <p className="text-xs sm:text-sm text-phantom-muted mt-1">
                   Elite Avatar Frame
                 </p>
-                <div className="mt-3">
-                  <p className="text-xs text-phantom-muted">
-                  2,450 / 3,000 XP
+                <div className="mt-4">
+                  <p className="text-xs sm:text-sm text-phantom-muted">
+                    2,450 / 3,000 XP
                   </p>
-                  <div className="h-2 w-full bg-phantom-border rounded-full mt-1 overflow-hidden">
+                  <div className="h-2 sm:h-3 w-full bg-phantom-border rounded-full mt-2 overflow-hidden">
                     <div className="h-full bg-phantom-purple" style={{ width: "82%" }}></div>
                   </div>
                 </div>
               </Card>
             </div>
             <div className="flex items-center justify-center">
-              <div className="w-40 h-40">
+              <div className="w-48 h-48 sm:w-64 sm:h-64">
                 <svg viewBox="0 0 100 100" className="w-full h-full">
                   <defs>
                     <linearGradient id="frameGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -398,18 +373,18 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div>
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-bold uppercase tracking-widest text-phantom-muted">
                   Recent Sessions
                 </h3>
-                <Link href="/profile/sessions" className="text-xs text-phantom-purple flex items-center gap-1">
+                <Link href="/profile/sessions" className="text-xs sm:text-sm text-phantom-purple flex items-center gap-1">
                   View All
                   <ChevronRight className="w-4 h-4" />
                 </Link>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {[
                   {
                     name: "Nightfall Arena",
@@ -440,8 +415,8 @@ export default function ProfilePage() {
                     won: "$110"
                   }
                 ].map((session, i) => (
-                  <Card key={i} className="p-3 flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl overflow-hidden relative">
+                  <Card key={i} className="p-4 flex flex-wrap items-center gap-4">
+                    <div className="w-14 h-14 rounded-xl overflow-hidden relative flex-shrink-0">
                       <Image
                         src="https://images.unsplash.com/photo-1518837695005-2083093ee35b?q=80&w=400&auto=format&fit=crop"
                         alt={session.name}
@@ -449,35 +424,35 @@ export default function ProfilePage() {
                         className="object-cover"
                       />
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-white">
+                    <div className="flex-1 min-w-[150px]">
+                      <p className="text-sm sm:text-base font-semibold text-white">
                         {session.name}
                       </p>
-                      <p className="text-xs text-phantom-muted">
+                      <p className="text-xs sm:text-sm text-phantom-muted">
                         {session.time}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xs text-phantom-muted uppercase">
+                    <div className="text-right flex-1 min-w-[80px]">
+                      <p className="text-[10px] sm:text-xs text-phantom-muted uppercase">
                         Rank
                       </p>
-                      <p className="text-sm font-bold text-purple-500">
+                      <p className="text-sm sm:text-base font-bold text-purple-500">
                         {session.rank}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xs text-phantom-muted uppercase">
+                    <div className="text-right flex-1 min-w-[80px]">
+                      <p className="text-[10px] sm:text-xs text-phantom-muted uppercase">
                         Tokens
                       </p>
-                      <p className="text-sm font-bold text-white">
+                      <p className="text-sm sm:text-base font-bold text-white">
                         {session.tokens}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xs text-phantom-muted uppercase">
+                    <div className="text-right flex-1 min-w-[80px]">
+                      <p className="text-[10px] sm:text-xs text-phantom-muted uppercase">
                         Won
                       </p>
-                      <p className="text-sm font-bold text-green-500">
+                      <p className="text-sm sm:text-base font-bold text-green-500">
                         {session.won}
                       </p>
                     </div>
@@ -487,77 +462,77 @@ export default function ProfilePage() {
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-bold uppercase tracking-widest text-phantom-muted">
                   Badges
                 </h3>
-                <Link href="#" className="text-xs text-phantom-purple flex items-center gap-1">
+                <Link href="#" className="text-xs sm:text-sm text-phantom-purple flex items-center gap-1">
                   View All
                   <ChevronRight className="w-4 h-4" />
                 </Link>
               </div>
-              <div className="grid grid-cols-4 gap-2 mb-6">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
                 {[
                   { name: "Session Killer", icon: "💀", unlocked: true },
                   { name: "Reviver", icon: "⭐", unlocked: true },
                   { name: "Master Thief", icon: "👑", unlocked: true },
                   { name: "Champion", icon: "🏆", unlocked: true }
                 ].map((badge, i) => (
-                  <Card key={i} className="p-2 text-center">
-                    <div className="text-3xl mb-1">
+                  <Card key={i} className="p-4 text-center">
+                    <div className="text-4xl mb-2">
                       {badge.icon}
                     </div>
-                    <p className="text-[8px] text-phantom-muted uppercase leading-tight">
+                    <p className="text-[10px] sm:text-xs text-phantom-muted uppercase leading-tight">
                       {badge.name}
                     </p>
-                    <p className="text-[8px] text-phantom-muted">
+                    <p className="text-[10px] sm:text-xs text-phantom-muted mt-1">
                       Unlocked
                     </p>
                   </Card>
                 ))}
               </div>
 
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-bold uppercase tracking-widest text-phantom-muted">
                   Rivalries
                 </h3>
-                <Link href="#" className="text-xs text-phantom-purple flex items-center gap-1">
+                <Link href="#" className="text-xs sm:text-sm text-phantom-purple flex items-center gap-1">
                   View All
                   <ChevronRight className="w-4 h-4" />
                 </Link>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {[
                   { name: "DarkRider", camp: "Nightfall Camp", level: "High" },
                   { name: "StealthX", camp: "ShadowX", level: "Medium" },
                   { name: "BloodHawk", camp: "Eclipse Camp", level: "Low" }
                 ].map((rival, i) => (
-                  <Card key={i} className="p-3 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-phantom-surface border border-phantom-border flex items-center justify-center text-lg">
+                  <Card key={i} className="p-4 flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-phantom-surface border border-phantom-border flex items-center justify-center text-xl flex-shrink-0">
                       ⚔️
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-white">
+                    <div className="flex-1 min-w-[120px]">
+                      <p className="text-sm sm:text-base font-semibold text-white">
                         {rival.name}
                       </p>
-                      <p className="text-xs text-phantom-muted">
+                      <p className="text-xs sm:text-sm text-phantom-muted">
                         {rival.camp}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xs text-phantom-muted uppercase">
+                    <div className="text-right flex-1 min-w-[100px]">
+                      <p className="text-[10px] sm:text-xs text-phantom-muted uppercase">
                         Rivalry Level
                       </p>
                       <p className={cn(
-                        "text-sm font-bold",
+                        "text-sm sm:text-base font-bold",
                         rival.level === "High" ? "text-red-500" :
                         rival.level === "Medium" ? "text-yellow-500" : "text-green-500"
                       )}>
                         {rival.level}
                       </p>
                     </div>
-                    <button className="p-1.5 bg-phantom-surface rounded-full">
-                      <Swords className="w-4 h-4 text-phantom-muted" />
+                    <button className="p-2.5 bg-phantom-surface rounded-full hover:bg-phantom-surface/80 transition-colors flex-shrink-0">
+                      <Swords className="w-5 h-5 text-phantom-muted" />
                     </button>
                   </Card>
                 ))}
@@ -565,58 +540,54 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <Card className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="text-4xl">🔥</div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="p-5">
+              <div className="flex items-center gap-4">
+                <div className="text-5xl">🔥</div>
                 <div>
                   <p className="text-sm font-bold uppercase tracking-widest text-phantom-muted">
                     Session Streak
                   </p>
-                  <p className="text-2xl font-bold text-white">7</p>
-                  <p className="text-xs text-phantom-muted">
+                  <p className="text-3xl sm:text-4xl font-bold text-white mt-1">7</p>
+                  <p className="text-xs sm:text-sm text-phantom-muted mt-1">
                     Best: 12
                   </p>
                 </div>
               </div>
             </Card>
-            <div className="space-y-2">
-              <p className="text-xs text-phantom-muted uppercase">Next Streak Reward</p>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">💜</span>
+            <div className="space-y-3">
+              <p className="text-xs sm:text-sm text-phantom-muted uppercase">Next Streak Reward</p>
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">💜</span>
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-white">
+                  <p className="text-sm sm:text-base font-semibold text-white">
                     100 Phantom Tokens
                   </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="flex-1 h-1.5 bg-phantom-border rounded-full overflow-hidden">
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="flex-1 h-2 sm:h-3 bg-phantom-border rounded-full overflow-hidden">
                       <div className="h-full bg-phantom-purple" style={{ width: "70%" }}></div>
                     </div>
-                    <p className="text-xs text-phantom-muted">
+                    <p className="text-xs sm:text-sm text-phantom-muted whitespace-nowrap">
                       7 / 10 DAYS
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="flex gap-2 mt-3">
+              <div className="flex gap-2 mt-4 flex-wrap justify-center lg:justify-start">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((day, i) => (
                   <div
                     key={day}
                     className={cn(
-                      "w-8 h-8 rounded-lg flex items-center justify-center text-sm",
+                      "w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center text-lg",
                       i < 7 ? "bg-phantom-purple/20 border border-phantom-purple" :
                       i === 7 ? "bg-phantom-purple text-white" :
                       "bg-phantom-surface border border-phantom-border"
                     )}
                   >
                     {i < 8 ? (
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M20 6L9 17l-5-5" />
-                      </svg>
+                      <Check className="w-5 h-5" />
                     ) : (
-                      <svg className="w-4 h-4 text-phantom-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                      </svg>
+                      <Square className="w-5 h-5 text-phantom-muted" />
                     )}
                   </div>
                 ))}
@@ -627,7 +598,6 @@ export default function ProfilePage() {
       )}
 
 
-      <BottomNav />
     </div>
   );
 }

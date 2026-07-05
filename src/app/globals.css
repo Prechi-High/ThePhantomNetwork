@@ -30,6 +30,32 @@
   --transition-medium: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Base responsive container */
+.container-responsive {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container-responsive {
+    padding: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-responsive {
+    padding: 2rem;
+  }
+}
+
+/* Prevent horizontal overflow */
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
 body {
   background-color: var(--color-phantom-bg);
   background-image:

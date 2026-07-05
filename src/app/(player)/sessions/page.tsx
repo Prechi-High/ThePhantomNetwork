@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import Image from "next/image";
 import { ChevronLeft, Bell, Calendar, Clock, Users, Coins, Trophy, Filter, ChevronRight } from "lucide-react";
-import BottomNav from "@/components/ui/BottomNav";
+
 
 interface Session {
   id: string;
@@ -53,26 +53,26 @@ function Countdown({ targetDate }: { targetDate: Date }) {
   }, [targetDate]);
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-4">
       <div className="flex flex-col items-center">
-        <span className="font-mono text-3xl font-bold text-white">
+        <span className="font-mono text-4xl md:text-5xl font-bold text-white">
           {timeLeft.hours}
         </span>
-        <span className="text-[10px] text-phantom-muted uppercase">HRS</span>
+        <span className="text-xs text-phantom-muted uppercase mt-1">HRS</span>
       </div>
-      <span className="text-phantom-purple text-2xl font-bold">:</span>
+      <span className="text-phantom-purple text-3xl md:text-4xl font-bold">:</span>
       <div className="flex flex-col items-center">
-        <span className="font-mono text-3xl font-bold text-white">
+        <span className="font-mono text-4xl md:text-5xl font-bold text-white">
           {timeLeft.minutes}
         </span>
-        <span className="text-[10px] text-phantom-muted uppercase">MIN</span>
+        <span className="text-xs text-phantom-muted uppercase mt-1">MIN</span>
       </div>
-      <span className="text-phantom-purple text-2xl font-bold">:</span>
+      <span className="text-phantom-purple text-3xl md:text-4xl font-bold">:</span>
       <div className="flex flex-col items-center">
-        <span className="font-mono text-3xl font-bold text-white">
+        <span className="font-mono text-4xl md:text-5xl font-bold text-white">
           {timeLeft.seconds}
         </span>
-        <span className="text-[10px] text-phantom-muted uppercase">SEC</span>
+        <span className="text-xs text-phantom-muted uppercase mt-1">SEC</span>
       </div>
     </div>
   );
@@ -118,8 +118,8 @@ function SessionItem({ session }: { session: Session }) {
 
   return (
     <Card className="p-0 overflow-hidden">
-      <div className="flex items-center gap-4 p-4">
-        <div className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0">
+      <div className="flex flex-col md:flex-row items-start md:items-center gap-6 p-6">
+        <div className="relative w-24 h-24 rounded-xl overflow-hidden shrink-0">
           <Image
             src={
               session.image_url || sessionImages[Math.floor(Math.random() * sessionImages.length)]
@@ -131,42 +131,42 @@ function SessionItem({ session }: { session: Session }) {
           <div className="absolute inset-0 bg-gradient-to-t from-phantom-bg via-transparent to-transparent" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-xs text-phantom-muted uppercase tracking-widest">
+          <p className="text-xs text-phantom-muted uppercase tracking-widest mb-2">
             {formatDate(session.starts_at)}
           </p>
-          <h3 className="text-lg font-display font-bold text-white truncate">
+          <h3 className="text-xl md:text-2xl font-display font-bold text-white truncate">
             {session.title}
           </h3>
-          <Badge variant="purple" className="mt-1">
+          <Badge variant="purple" className="mt-3">
             {session.format || "SOLO / SQUAD"}
           </Badge>
 
-          <div className="flex gap-4 mt-3">
-            <div className="flex items-center gap-1">
-              <span className="text-phantom-gold text-sm">🏆</span>
+          <div className="flex flex-wrap gap-6 mt-4">
+            <div className="flex items-center gap-2">
+              <span className="text-phantom-gold text-xl">🏆</span>
               <div>
-                <p className="text-[10px] text-phantom-muted uppercase">Prize Pool</p>
-                <p className="text-sm font-bold text-phantom-gold">
+                <p className="text-xs text-phantom-muted uppercase">Prize Pool</p>
+                <p className="text-base font-bold text-phantom-gold">
                   ${(session.total_pool_cents / 100).toFixed(0)}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-1">
-              <span className="text-green-500 text-sm">💲</span>
+            <div className="flex items-center gap-2">
+              <span className="text-green-500 text-xl">💲</span>
               <div>
-                <p className="text-[10px] text-phantom-muted uppercase">Entry</p>
-                <p className="text-sm font-bold">
+                <p className="text-xs text-phantom-muted uppercase">Entry</p>
+                <p className="text-base font-bold">
                   ${(session.entry_fee_cents / 100).toFixed(0)}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-1">
-              <span className="text-phantom-muted text-sm">👥</span>
+            <div className="flex items-center gap-2">
+              <span className="text-phantom-muted text-xl">👥</span>
               <div>
-                <p className="text-[10px] text-phantom-muted uppercase">Registered</p>
-                <p className="text-sm font-bold">
+                <p className="text-xs text-phantom-muted uppercase">Registered</p>
+                <p className="text-base font-bold">
                   {session.registered_count} / {session.max_players || 200}
                 </p>
               </div>
@@ -176,9 +176,9 @@ function SessionItem({ session }: { session: Session }) {
 
         <Button
           variant="secondary"
-          className="px-4 py-2 bg-phantom-surface border border-phantom-border"
+          className="px-6 py-3 bg-phantom-surface border border-phantom-border w-full md:w-auto"
         >
-          <Bell className="w-4 h-4 mr-2" />
+          <Bell className="w-5 h-5 mr-2" />
           SET REMINDER
         </Button>
       </div>
@@ -196,13 +196,13 @@ function HowItWorksStep({
   desc: string;
 }) {
   return (
-    <div className="flex flex-col items-center text-center gap-2 flex-1">
-      <div className="w-12 h-12 rounded-full bg-phantom-surface border border-phantom-border flex items-center justify-center text-phantom-purple">
+    <div className="flex flex-col items-center text-center gap-3 flex-1">
+      <div className="w-14 h-14 rounded-full bg-phantom-surface border border-phantom-border flex items-center justify-center text-phantom-purple">
         {icon}
       </div>
       <div>
-        <p className="font-bold text-sm">{title}</p>
-        <p className="text-xs text-phantom-muted leading-tight">{desc}</p>
+        <p className="font-bold text-base">{title}</p>
+        <p className="text-xs text-phantom-muted leading-snug mt-1">{desc}</p>
       </div>
     </div>
   );
@@ -246,80 +246,80 @@ export default function SessionsPage() {
   const featuredSession = filteredSessions.find((s) => s.is_featured) || filteredSessions[0];
 
   return (
-    <div className="space-y-5 pb-20">
+    <div className="space-y-8">
       {/* HEADER */}
       <div className="flex items-center gap-4">
-        <Link href="/" className="p-2 rounded-full hover:bg-phantom-surface">
-          <ChevronLeft className="w-6 h-6 text-phantom-muted" />
+        <Link href="/" className="p-3 rounded-full hover:bg-phantom-surface">
+          <ChevronLeft className="w-7 h-7 text-phantom-muted" />
         </Link>
         <div>
-          <h1 className="text-2xl font-display font-bold text-white">SESSIONS</h1>
-          <p className="text-sm text-phantom-muted">Compete. Survive. Win.</p>
+          <h1 className="text-3xl md:text-4xl font-display font-bold text-white">SESSIONS</h1>
+          <p className="text-sm md:text-base text-phantom-muted">Compete. Survive. Win.</p>
         </div>
         <div className="ml-auto flex items-center gap-3">
-          <button className="relative">
-            <Bell className="w-6 h-6 text-phantom-muted" />
-            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-phantom-danger rounded-full" />
+          <button className="relative p-2 rounded-full hover:bg-phantom-surface">
+            <Bell className="w-7 h-7 text-phantom-muted" />
+            <span className="absolute -top-1 -right-1 w-3 h-3 bg-phantom-danger rounded-full" />
           </button>
         </div>
       </div>
 
       {/* TABS */}
-      <div className="flex gap-2">
+      <div className="flex gap-3">
         <button
           onClick={() => setActiveTab("upcoming")}
-          className={`flex-1 py-3 rounded-lg flex items-center justify-center gap-2 font-semibold text-sm transition-all ${
+          className={`flex-1 py-4 rounded-xl flex items-center justify-center gap-3 font-semibold text-base transition-all ${
             activeTab === "upcoming"
               ? "bg-phantom-purple/20 text-phantom-purple border border-phantom-purple"
               : "bg-phantom-surface border border-phantom-border text-phantom-muted"
           }`}
         >
-          <Calendar className="w-4 h-4" />
+          <Calendar className="w-5 h-5" />
           UPCOMING
         </button>
         <button
           onClick={() => setActiveTab("live")}
-          className={`flex-1 py-3 rounded-lg flex items-center justify-center gap-2 font-semibold text-sm transition-all ${
+          className={`flex-1 py-4 rounded-xl flex items-center justify-center gap-3 font-semibold text-base transition-all ${
             activeTab === "live"
               ? "bg-phantom-purple/20 text-phantom-purple border border-phantom-purple"
               : "bg-phantom-surface border border-phantom-border text-phantom-muted"
           }`}
         >
-          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
           LIVE NOW
         </button>
         <button
           onClick={() => setActiveTab("completed")}
-          className={`flex-1 py-3 rounded-lg flex items-center justify-center gap-2 font-semibold text-sm transition-all ${
+          className={`flex-1 py-4 rounded-xl flex items-center justify-center gap-3 font-semibold text-base transition-all ${
             activeTab === "completed"
               ? "bg-phantom-purple/20 text-phantom-purple border border-phantom-purple"
               : "bg-phantom-surface border border-phantom-border text-phantom-muted"
           }`}
         >
-          <Clock className="w-4 h-4" />
+          <Clock className="w-5 h-5" />
           COMPLETED
         </button>
       </div>
 
       {/* TIMEZONE INFO */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <p className="text-xs text-phantom-muted flex items-center gap-2">
-          <Clock className="w-4 h-4" />
+          <Clock className="w-5 h-5" />
           All times shown in your local time (WAT)
         </p>
         <Button
           variant="secondary"
-          className="px-3 py-2 text-xs flex items-center gap-2"
+          className="px-4 py-3 text-sm flex items-center gap-2"
         >
-          <Filter className="w-4 h-4" />
+          <Filter className="w-5 h-5" />
           Filter
         </Button>
       </div>
 
       {/* NEXT UP FEATURED SESSION */}
       {activeTab === "upcoming" && featuredSession && (
-        <div className="space-y-2">
-          <p className="text-sm font-bold uppercase tracking-widest text-phantom-muted">
+        <div className="space-y-4">
+          <p className="text-sm md:text-base font-bold uppercase tracking-widest text-phantom-muted">
             NEXT UP
           </p>
           <Card className="relative overflow-hidden p-0">
@@ -332,75 +332,75 @@ export default function SessionsPage() {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-phantom-bg via-transparent to-transparent" />
             </div>
-            <div className="relative z-10 p-5 space-y-4">
-              <div className="flex items-start justify-between">
+            <div className="relative z-10 p-6 md:p-8 space-y-6">
+              <div className="flex flex-col md:flex-row items-start justify-between gap-6">
                 <div>
                   <Badge
                   variant="purple"
-                  className="mb-2"
+                  className="mb-3"
                 >
                   FEATURED
                 </Badge>
-                  <h2 className="text-3xl font-display font-bold text-white neon-text">
+                  <h2 className="text-3xl md:text-4xl font-display font-bold text-white neon-text">
                     {featuredSession.title}
                   </h2>
-                  <Badge variant="purple" className="mt-2">
+                  <Badge variant="purple" className="mt-3">
                     {featuredSession.format || "SOLO / SQUAD"}
                   </Badge>
-                  <p className="text-xs text-phantom-muted mt-2">
+                  <p className="text-xs md:text-sm text-phantom-muted mt-3">
                     {featuredSession.description || "High stakes. High rewards. Only the strong survive."}
                   </p>
                 </div>
-                <div className="flex flex-col items-end">
-                  <p className="text-xs text-phantom-muted uppercase">Starts in</p>
+                <div className="flex flex-col items-start md:items-end">
+                  <p className="text-xs text-phantom-muted uppercase mb-3">Starts in</p>
                   <Countdown
                     targetDate={new Date(featuredSession.starts_at)}
                   />
                 </div>
               </div>
 
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2">
-                  <span className="text-green-500 text-xl">💲</span>
+              <div className="flex flex-wrap items-center gap-8">
+                <div className="flex items-center gap-3">
+                  <span className="text-green-500 text-2xl">💲</span>
                   <div>
                     <p className="text-xs text-phantom-muted uppercase">Entry Fee</p>
-                    <p className="font-bold text-lg">
+                    <p className="font-bold text-xl">
                       ${(featuredSession.entry_fee_cents / 100).toFixed(0)}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-phantom-gold text-xl">🏆</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-phantom-gold text-2xl">🏆</span>
                   <div>
                     <p className="text-xs text-phantom-muted uppercase">Prize Pool</p>
-                    <p className="font-bold text-lg">
+                    <p className="font-bold text-xl">
                       ${(featuredSession.total_pool_cents / 100).toLocaleString()}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-phantom-muted text-xl">👥</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-phantom-muted text-2xl">👥</span>
                   <div>
                     <p className="text-xs text-phantom-muted uppercase">Registered</p>
-                    <p className="font-bold text-lg">
+                    <p className="font-bold text-xl">
                       {featuredSession.registered_count} / {featuredSession.max_players || 200}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-phantom-muted text-xl">⏱️</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-phantom-muted text-2xl">⏱️</span>
                   <div>
                     <p className="text-xs text-phantom-muted uppercase">Format</p>
-                    <p className="font-bold text-lg">20 MIN</p>
+                    <p className="font-bold text-xl">20 MIN</p>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
                 <Link href={`/sessions/${featuredSession.id}`} className="flex-1">
-                  <Button className="w-full py-3 bg-gradient-to-r from-phantom-purple to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white font-bold shadow-[0_0_30px_rgba(139,92,246,0.5)]">
+                  <Button className="w-full py-4 bg-gradient-to-r from-phantom-purple to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white font-bold shadow-[0_0_30px_rgba(139,92,246,0.5)]">
                     JOIN NOW
-                    <ChevronRight className="w-5 h-5 ml-2" />
+                    <ChevronRight className="w-6 h-6 ml-2" />
                   </Button>
                 </Link>
               </div>
@@ -410,34 +410,34 @@ export default function SessionsPage() {
       )}
 
       {/* UPCOMING SESSIONS LIST */}
-      <div className="space-y-2">
+      <div className="space-y-4">
         {activeTab === "upcoming" && (
-          <p className="text-sm font-bold uppercase tracking-widest text-phantom-muted">
+          <p className="text-sm md:text-base font-bold uppercase tracking-widest text-phantom-muted">
             UPCOMING SESSIONS
           </p>
         )}
         {activeTab === "live" && (
-          <p className="text-sm font-bold uppercase tracking-widest text-phantom-muted flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          <p className="text-sm md:text-base font-bold uppercase tracking-widest text-phantom-muted flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
             LIVE NOW
           </p>
         )}
         {activeTab === "completed" && (
-          <p className="text-sm font-bold uppercase tracking-widest text-phantom-muted">
+          <p className="text-sm md:text-base font-bold uppercase tracking-widest text-phantom-muted">
             PAST SESSIONS
           </p>
         )}
 
         {loading && (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {[1, 2, 3].map((i) => (
               <Card key={i} className="p-0 overflow-hidden">
-                <div className="flex items-center gap-4 p-4">
-                  <div className="w-20 h-20 rounded-xl bg-phantom-surface animate-pulse" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-3 w-24 bg-phantom-surface rounded animate-pulse" />
-                    <div className="h-5 w-48 bg-phantom-surface rounded animate-pulse" />
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-6 p-6">
+                  <div className="w-24 h-24 rounded-xl bg-phantom-surface animate-pulse" />
+                  <div className="flex-1 space-y-3">
                     <div className="h-4 w-32 bg-phantom-surface rounded animate-pulse" />
+                    <div className="h-6 w-64 bg-phantom-surface rounded animate-pulse" />
+                    <div className="h-5 w-40 bg-phantom-surface rounded animate-pulse" />
                   </div>
                 </div>
               </Card>
@@ -446,17 +446,17 @@ export default function SessionsPage() {
         )}
 
         {error && (
-          <Card>
-            <p className="text-phantom-danger">{error}</p>
-            <Button variant="secondary" className="mt-3" onClick={loadSessions}>
+          <Card className="p-6">
+            <p className="text-phantom-danger text-base">{error}</p>
+            <Button variant="secondary" className="mt-4" onClick={loadSessions}>
               Retry
             </Button>
           </Card>
         )}
 
         {!loading && !error && filteredSessions.length === 0 && (
-          <Card>
-            <p className="text-phantom-muted">
+          <Card className="p-6">
+            <p className="text-phantom-muted text-base">
               No {activeTab === "upcoming" ? "upcoming" : activeTab === "live" ? "live" : "completed"} sessions.
             </p>
           </Card>
@@ -470,53 +470,53 @@ export default function SessionsPage() {
       </div>
 
       {/* REMINDERS CARD */}
-      <Card className="border border-phantom-purple/30">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-phantom-purple/20 border border-phantom-purple flex items-center justify-center text-phantom-purple">
-            <Calendar className="w-6 h-6" />
+      <Card className="border border-phantom-purple/30 p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+          <div className="w-14 h-14 rounded-full bg-phantom-purple/20 border border-phantom-purple flex items-center justify-center text-phantom-purple flex-shrink-0">
+            <Calendar className="w-7 h-7" />
           </div>
           <div className="flex-1">
-            <h3 className="font-bold text-white">Never Miss a Session</h3>
-            <p className="text-sm text-phantom-muted">
+            <h3 className="font-bold text-white text-xl">Never Miss a Session</h3>
+            <p className="text-sm md:text-base text-phantom-muted mt-1">
               Set reminders and get notified before every session starts.
             </p>
           </div>
-          <Button className="bg-gradient-to-r from-phantom-purple to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white font-bold">
+          <Button className="bg-gradient-to-r from-phantom-purple to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white font-bold py-4 px-6 w-full sm:w-auto">
             MANAGE REMINDERS
-            <ChevronRight className="w-4 h-4 ml-2" />
+            <ChevronRight className="w-5 h-5 ml-2" />
           </Button>
         </div>
       </Card>
 
       {/* HOW SESSIONS WORK */}
-      <div className="space-y-3">
-        <p className="text-sm font-bold uppercase tracking-widest text-phantom-muted">
+      <div className="space-y-4">
+        <p className="text-sm md:text-base font-bold uppercase tracking-widest text-phantom-muted">
           HOW SESSIONS WORK
         </p>
-        <Card className="p-4">
-          <div className="flex justify-between gap-2">
+        <Card className="p-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
             <HowItWorksStep
-              icon={<Users className="w-6 h-6" />}
+              icon={<Users className="w-7 h-7" />}
               title="1 JOIN"
               desc="Register and enter the arena."
             />
             <HowItWorksStep
-              icon={<Coins className="w-6 h-6" />}
+              icon={<Coins className="w-7 h-7" />}
               title="2 SPIN & EARN"
               desc="Spin the wheel, earn tokens."
             />
             <HowItWorksStep
-              icon={<div className="w-6 h-6">💀</div>}
+              icon={<div className="w-7 h-7 flex items-center justify-center">💀</div>}
               title="3 SURVIVE"
               desc="Outlast others, avoid elimination."
             />
             <HowItWorksStep
-              icon={<Trophy className="w-6 h-6" />}
+              icon={<Trophy className="w-7 h-7" />}
               title="4 RANK"
               desc="Climb the ranks in 4 phases."
             />
             <HowItWorksStep
-              icon={<div className="w-6 h-6">🏆</div>}
+              icon={<div className="w-7 h-7 flex items-center justify-center">🏆</div>}
               title="5 WIN"
               desc="Top players win real cash rewards."
             />
@@ -524,7 +524,6 @@ export default function SessionsPage() {
         </Card>
       </div>
 
-      <BottomNav />
     </div>
   );
 }

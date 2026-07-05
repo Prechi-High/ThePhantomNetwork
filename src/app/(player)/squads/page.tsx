@@ -52,20 +52,20 @@ function Countdown({ targetDate }: { targetDate: Date }) {
   }, [targetDate]);
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-4">
       <div className="flex flex-col items-center">
-        <span className="font-mono text-3xl font-bold text-white">{timeLeft.hours}</span>
-        <span className="text-[10px] text-phantom-muted uppercase">HRS</span>
+        <span className="font-mono text-4xl md:text-5xl font-bold text-white">{timeLeft.hours}</span>
+        <span className="text-xs text-phantom-muted uppercase mt-1">HRS</span>
       </div>
-      <span className="text-phantom-purple text-2xl font-bold">:</span>
+      <span className="text-phantom-purple text-3xl md:text-4xl font-bold">:</span>
       <div className="flex flex-col items-center">
-        <span className="font-mono text-3xl font-bold text-white">{timeLeft.minutes}</span>
-        <span className="text-[10px] text-phantom-muted uppercase">MIN</span>
+        <span className="font-mono text-4xl md:text-5xl font-bold text-white">{timeLeft.minutes}</span>
+        <span className="text-xs text-phantom-muted uppercase mt-1">MIN</span>
       </div>
-      <span className="text-phantom-purple text-2xl font-bold">:</span>
+      <span className="text-phantom-purple text-3xl md:text-4xl font-bold">:</span>
       <div className="flex flex-col items-center">
-        <span className="font-mono text-3xl font-bold text-white">{timeLeft.seconds}</span>
-        <span className="text-[10px] text-phantom-muted uppercase">SEC</span>
+        <span className="font-mono text-4xl md:text-5xl font-bold text-white">{timeLeft.seconds}</span>
+        <span className="text-xs text-phantom-muted uppercase mt-1">SEC</span>
       </div>
     </div>
   );
@@ -170,68 +170,68 @@ function SquadPage({ squad }: { squad: Record<string, unknown> }) {
   }, []);
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/home" className="p-2 rounded-full hover:bg-phantom-surface">
-            <ChevronLeft className="w-6 h-6 text-phantom-muted" />
+    <div className="space-y-8">
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <Link href="/home" className="p-3 rounded-full hover:bg-phantom-surface">
+            <ChevronLeft className="w-7 h-7 text-phantom-muted" />
           </Link>
           <div>
-            <h1 className="text-2xl font-display font-bold text-white">MY SQUAD</h1>
-            <p className="text-sm text-phantom-muted">Stronger together. Win together.</p>
+            <h1 className="text-3xl md:text-4xl font-display font-bold text-white">MY SQUAD</h1>
+            <p className="text-sm md:text-base text-phantom-muted">Stronger together. Win together.</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="secondary" className="px-4 py-3">
-            <UserPlus className="w-5 h-5" />
-            <span className="ml-2">INVITE</span>
+        <div className="flex flex-col sm:flex-row items-stretch gap-4">
+          <Button variant="secondary" className="px-6 py-4">
+            <UserPlus className="w-6 h-6" />
+            <span className="ml-3">INVITE</span>
           </Button>
-          <Button variant="secondary" className="px-4 py-3">
-            <Settings className="w-5 h-5" />
-            <span className="ml-2">SQUAD SETTINGS</span>
+          <Button variant="secondary" className="px-6 py-4">
+            <Settings className="w-6 h-6" />
+            <span className="ml-3">SQUAD SETTINGS</span>
           </Button>
-          <Button variant="secondary" className="px-4 py-3 text-red-500 border-red-500/30">
-            <LogOut className="w-5 h-5" />
-            <span className="ml-2">LEAVE SQUAD</span>
+          <Button variant="secondary" className="px-6 py-4 text-red-500 border-red-500/30">
+            <LogOut className="w-6 h-6" />
+            <span className="ml-3">LEAVE SQUAD</span>
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        <Card className="p-4 relative">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-green-500 text-xl">💲</span>
-            <span className="text-sm text-phantom-muted uppercase">Wallet Balance</span>
-            <span className="ml-auto text-xs bg-phantom-surface px-2 py-1 rounded text-phantom-muted">USD</span>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="p-6 relative">
+          <div className="flex items-center gap-3 mb-3">
+            <span className="text-green-500 text-2xl">💲</span>
+            <span className="text-sm md:text-base text-phantom-muted uppercase">Wallet Balance</span>
+            <span className="ml-auto text-xs bg-phantom-surface px-3 py-1.5 rounded text-phantom-muted">USD</span>
           </div>
-          <p className="text-3xl font-mono font-bold text-white">$25.00</p>
-          <button className="absolute top-4 right-4 p-2 bg-phantom-purple/20 rounded-lg">
-            <Plus className="w-5 h-5 text-phantom-purple" />
+          <p className="text-4xl font-mono font-bold text-white">$25.00</p>
+          <button className="absolute top-6 right-6 p-3 bg-phantom-purple/20 rounded-xl">
+            <Plus className="w-6 h-6 text-phantom-purple" />
           </button>
         </Card>
-        <Card className="p-4 relative">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-phantom-purple text-xl">💎</span>
-            <span className="text-sm text-phantom-muted uppercase">Phantom Tokens</span>
+        <Card className="p-6 relative">
+          <div className="flex items-center gap-3 mb-3">
+            <span className="text-phantom-purple text-2xl">💎</span>
+            <span className="text-sm md:text-base text-phantom-muted uppercase">Phantom Tokens</span>
           </div>
-          <p className="text-3xl font-mono font-bold text-white">250</p>
-          <button className="absolute top-4 right-4 p-2 bg-phantom-purple/20 rounded-lg">
-            <Plus className="w-5 h-5 text-phantom-purple" />
+          <p className="text-4xl font-mono font-bold text-white">250</p>
+          <button className="absolute top-6 right-6 p-3 bg-phantom-purple/20 rounded-xl">
+            <Plus className="w-6 h-6 text-phantom-purple" />
           </button>
         </Card>
-        <Card className="p-4 relative">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-yellow-500 text-xl">🔶</span>
-            <span className="text-sm text-phantom-muted uppercase">Squad Tokens</span>
+        <Card className="p-6 relative">
+          <div className="flex items-center gap-3 mb-3">
+            <span className="text-yellow-500 text-2xl">🔶</span>
+            <span className="text-sm md:text-base text-phantom-muted uppercase">Squad Tokens</span>
           </div>
-          <p className="text-3xl font-mono font-bold text-white">1,340</p>
-          <button className="absolute top-4 right-4 p-2 bg-phantom-purple/20 rounded-lg">
-            <Plus className="w-5 h-5 text-phantom-purple" />
+          <p className="text-4xl font-mono font-bold text-white">1,340</p>
+          <button className="absolute top-6 right-6 p-3 bg-phantom-purple/20 rounded-xl">
+            <Plus className="w-6 h-6 text-phantom-purple" />
           </button>
         </Card>
       </div>
 
-      <Card className="p-5 relative overflow-hidden">
+      <Card className="p-8 relative overflow-hidden">
         <Image
           src="https://images.unsplash.com/photo-1518837695005-2083093ee35b?q=80&w=1600&auto=format&fit=crop"
           alt=""
@@ -239,76 +239,76 @@ function SquadPage({ squad }: { squad: Record<string, unknown> }) {
           height={400}
           className="absolute inset-0 object-cover opacity-30"
         />
-        <div className="relative z-10 flex items-start gap-6">
-          <div className="relative">
-            <div className="w-32 h-32 rounded-2xl border-4 border-phantom-purple overflow-hidden bg-gradient-to-br from-phantom-purple/20 to-phantom-surface flex items-center justify-center">
-              <span className="text-7xl">{AVATARS[0].emoji}</span>
+        <div className="relative z-10 flex flex-col lg:flex-row items-start gap-8">
+          <div className="relative flex-shrink-0">
+            <div className="w-40 h-40 rounded-2xl border-4 border-phantom-purple overflow-hidden bg-gradient-to-br from-phantom-purple/20 to-phantom-surface flex items-center justify-center">
+              <span className="text-8xl">{AVATARS[0].emoji}</span>
             </div>
           </div>
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex flex-wrap items-center gap-3 mb-2">
               <Badge variant="purple" className="text-xs">🛡️ OFFICER</Badge>
-              <h2 className="text-2xl font-display font-bold text-white">{squad.name as string}</h2>
-              <span className="text-phantom-purple text-xl">✓</span>
+              <h2 className="text-2xl md:text-3xl font-display font-bold text-white">{squad.name as string}</h2>
+              <span className="text-phantom-purple text-2xl">✓</span>
             </div>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex flex-wrap items-center gap-3 mt-2">
               <Badge variant="purple" className="text-xs">ECLP</Badge>
               <Badge variant="purple" className="text-xs">INVITE ONLY</Badge>
               <Badge variant="purple" className="text-xs">LVL 18</Badge>
             </div>
-            <p className="text-sm text-phantom-muted mt-2">
+            <p className="text-sm md:text-base text-phantom-muted mt-4">
               We rise from the shadows. Loyalty. Discipline. Victory.
             </p>
             <p className="text-xs text-phantom-muted mt-2">FOUNDED 23 APR 2024</p>
             <p className="text-xs text-phantom-muted">TYPE: Permanent</p>
           </div>
-          <div className="text-right">
-            <div className="w-32">
+          <div className="text-right flex-shrink-0">
+            <div className="w-auto">
               <p className="text-xs text-phantom-muted uppercase">SQUAD LEVEL</p>
-              <p className="text-4xl font-display font-bold text-purple-400">18</p>
-              <p className="text-xs text-phantom-muted mt-1">2,450 / 3,000 XP</p>
+              <p className="text-5xl font-display font-bold text-purple-400">18</p>
+              <p className="text-xs text-phantom-muted mt-2">2,450 / 3,000 XP</p>
             </div>
           </div>
         </div>
       </Card>
 
-      <div className="grid grid-cols-4 gap-3">
-        <Card className="p-3 text-center">
-          <div className="flex items-center justify-center mb-2">
-            <Crown className="w-6 h-6 text-yellow-500" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="p-5 text-center">
+          <div className="flex items-center justify-center mb-3">
+            <Crown className="w-8 h-8 text-yellow-500" />
           </div>
           <p className="text-xs text-phantom-muted uppercase">SQUAD RANK</p>
-          <p className="text-lg font-bold text-white">#3</p>
-          <p className="text-xs text-phantom-muted">In Eclipse Camp</p>
+          <p className="text-2xl font-bold text-white">#3</p>
+          <p className="text-xs text-phantom-muted mt-1">In Eclipse Camp</p>
         </Card>
-        <Card className="p-3 text-center">
-          <div className="flex items-center justify-center mb-2">
-            <Globe className="w-6 h-6 text-purple-500" />
+        <Card className="p-5 text-center">
+          <div className="flex items-center justify-center mb-3">
+            <Globe className="w-8 h-8 text-purple-500" />
           </div>
           <p className="text-xs text-phantom-muted uppercase">GLOBAL RANK</p>
-          <p className="text-lg font-bold text-white">#27</p>
-          <p className="text-xs text-phantom-muted">All Squads</p>
+          <p className="text-2xl font-bold text-white">#27</p>
+          <p className="text-xs text-phantom-muted mt-1">All Squads</p>
         </Card>
-        <Card className="p-3 text-center">
-          <div className="flex items-center justify-center mb-2">
-            <Users className="w-6 h-6 text-phantom-purple" />
+        <Card className="p-5 text-center">
+          <div className="flex items-center justify-center mb-3">
+            <Users className="w-8 h-8 text-phantom-purple" />
           </div>
           <p className="text-xs text-phantom-muted uppercase">MEMBERS</p>
-          <p className="text-lg font-bold text-white">24 / 30</p>
-          <p className="text-xs text-green-500">8 online</p>
+          <p className="text-2xl font-bold text-white">24 / 30</p>
+          <p className="text-xs text-green-500 mt-1">8 online</p>
         </Card>
-        <Card className="p-3 text-center">
-          <div className="flex items-center justify-center mb-2">
-            <Trophy className="w-6 h-6 text-yellow-500" />
+        <Card className="p-5 text-center">
+          <div className="flex items-center justify-center mb-3">
+            <Trophy className="w-8 h-8 text-yellow-500" />
           </div>
           <p className="text-xs text-phantom-muted uppercase">SESSIONS WON</p>
-          <p className="text-lg font-bold text-white">156</p>
-          <p className="text-xs text-green-500">72% Win Rate This Season</p>
+          <p className="text-2xl font-bold text-white">156</p>
+          <p className="text-xs text-green-500 mt-1">72% Win Rate This Season</p>
         </Card>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Card className="p-5 relative overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="p-6 relative overflow-hidden">
           <div className="absolute inset-0 opacity-40">
             <Image
               src="https://images.unsplash.com/photo-1518837695005-2083093ee35b?q=80&w=1600&auto=format&fit=crop"
@@ -318,71 +318,71 @@ function SquadPage({ squad }: { squad: Record<string, unknown> }) {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-phantom-bg via-transparent to-transparent" />
           </div>
-          <div className="relative z-10 space-y-4">
+          <div className="relative z-10 space-y-5">
             <div>
-              <Badge variant="purple" className="mb-2">NEXT SESSION TOGETHER</Badge>
-              <h3 className="text-xl font-bold text-white neon-text">NIGHTFALL ARENA</h3>
-              <Badge variant="purple" className="mt-1">SQUAD MODE</Badge>
+              <Badge variant="purple" className="mb-3">NEXT SESSION TOGETHER</Badge>
+              <h3 className="text-xl md:text-2xl font-bold text-white neon-text">NIGHTFALL ARENA</h3>
+              <Badge variant="purple" className="mt-2">SQUAD MODE</Badge>
             </div>
             <div className="flex items-start justify-between">
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <p className="text-xs text-phantom-muted uppercase">Starts in</p>
                 <Countdown targetDate={targetDate} />
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-green-500 text-xl">💲</span>
+            <div className="flex flex-wrap items-center gap-6">
+              <div className="flex items-center gap-3">
+                <span className="text-green-500 text-2xl">💲</span>
                 <div>
                   <p className="text-xs text-phantom-muted uppercase">Entry Fee</p>
-                  <p className="font-bold text-white">$5</p>
+                  <p className="font-bold text-white text-xl">$5</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-phantom-gold text-xl">🏆</span>
+              <div className="flex items-center gap-3">
+                <span className="text-phantom-gold text-2xl">🏆</span>
                 <div>
                   <p className="text-xs text-phantom-muted uppercase">Prize Pool</p>
-                  <p className="font-bold text-white">$1,250</p>
+                  <p className="font-bold text-white text-xl">$1,250</p>
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="flex -space-x-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="flex -space-x-3">
                 {members.slice(0, 4).map((member, i) => {
                   const avatar = AVATARS.find((a) => a.id === member.avatar_id) || AVATARS[0];
                   return (
                     <div
                       key={member.id as string}
-                      className="w-8 h-8 rounded-full border-2 border-phantom-bg overflow-hidden bg-phantom-surface flex items-center justify-center"
+                      className="w-10 h-10 rounded-full border-2 border-phantom-bg overflow-hidden bg-phantom-surface flex items-center justify-center flex-shrink-0"
                     >
-                      <span className="text-lg">{avatar?.emoji}</span>
+                      <span className="text-2xl">{avatar?.emoji}</span>
                     </div>
                   );
                 })}
               </div>
-              <p className="text-sm text-phantom-muted">8 / 24 Members Registered</p>
-              <div className="ml-auto">
-                <Button className="px-6 py-3">
+              <p className="text-sm md:text-base text-phantom-muted">8 / 24 Members Registered</p>
+              <div className="w-full sm:w-auto sm:ml-auto">
+                <Button className="px-8 py-4 w-full sm:w-auto">
                   VIEW SESSION
-                  <ChevronRight className="w-4 h-4 ml-2" />
+                  <ChevronRight className="w-5 h-5 ml-2" />
                 </Button>
               </div>
             </div>
           </div>
         </Card>
 
-        <Card className="p-4 space-y-3">
+        <Card className="p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-phantom-muted">SQUAD ACTIVITY</h3>
-            <Link href="#" className="text-xs text-phantom-purple flex items-center gap-1">
+            <h3 className="text-sm md:text-base font-bold uppercase tracking-widest text-phantom-muted">SQUAD ACTIVITY</h3>
+            <Link href="#" className="text-xs md:text-sm text-phantom-purple flex items-center gap-2">
               VIEW ALL
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-5 h-5" />
             </Link>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {activities.map((activity) => (
-              <div key={activity.id as string} className="flex items-center gap-3 py-2">
-                <div className="text-xl">
+              <div key={activity.id as string} className="flex items-center gap-4 py-3">
+                <div className="text-2xl">
                   {activity.type === "rank"
                     ? "⬆️"
                     : activity.type === "win"
@@ -391,9 +391,9 @@ function SquadPage({ squad }: { squad: Record<string, unknown> }) {
                     ? "🛡️"
                     : "⚔️"}
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm text-white">{activity.message as string}</p>
-                  <p className="text-xs text-phantom-muted">{activity.time as string}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm md:text-base text-white">{activity.message as string}</p>
+                  <p className="text-xs text-phantom-muted mt-1">{activity.time as string}</p>
                 </div>
               </div>
             ))}
@@ -401,98 +401,98 @@ function SquadPage({ squad }: { squad: Record<string, unknown> }) {
         </Card>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-phantom-muted">SQUAD MEMBERS</h3>
-            <Link href="#" className="text-xs text-phantom-purple flex items-center gap-1">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm md:text-base font-bold uppercase tracking-widest text-phantom-muted">SQUAD MEMBERS</h3>
+            <Link href="#" className="text-xs md:text-sm text-phantom-purple flex items-center gap-2">
               VIEW ALL
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-5 h-5" />
             </Link>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {members.map((member) => {
               const avatar = AVATARS.find((a) => a.id === member.avatar_id) || AVATARS[0];
               return (
-                <div key={member.id as string} className="flex items-center gap-3">
-                  <div className="relative">
-                    <div className="w-10 h-10 rounded-full bg-phantom-surface border border-phantom-border flex items-center justify-center">
-                      <span className="text-2xl">{avatar?.emoji}</span>
+                <div key={member.id as string} className="flex items-center gap-4 flex-wrap">
+                  <div className="relative flex-shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-phantom-surface border border-phantom-border flex items-center justify-center">
+                      <span className="text-3xl">{avatar?.emoji}</span>
                     </div>
                     {member.role === "leader" && (
-                      <div className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-yellow-500 flex items-center justify-center">
-                        <Crown className="w-3 h-3 text-phantom-bg" />
+                      <div className="absolute -top-1 -left-1 w-6 h-6 rounded-full bg-yellow-500 flex items-center justify-center">
+                        <Crown className="w-4 h-4 text-phantom-bg" />
                       </div>
                     )}
                     {(member.online as boolean) && (
-                      <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-green-500 border-2 border-phantom-bg" />
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-green-500 border-2 border-phantom-bg" />
                     )}
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-white">{member.username as string}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm md:text-base font-semibold text-white">{member.username as string}</p>
                     <p className="text-xs text-phantom-muted">
                       {member.role === "leader" ? "Leader" : member.role === "officer" ? "Officer" : "Member"}
                     </p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right flex-shrink-0">
                     <p className="text-xs text-phantom-muted uppercase">CONTRIBUTION</p>
-                    <p className="text-sm font-bold text-purple-400">
+                    <p className="text-sm md:text-base font-bold text-purple-400">
                       {(member.contribution as number).toLocaleString()}
                     </p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right flex-shrink-0">
                     <p className="text-xs text-phantom-muted uppercase">TOKENS EARNED</p>
-                    <p className="text-sm font-bold text-yellow-500">{(member.tokens as number).toLocaleString()}</p>
+                    <p className="text-sm md:text-base font-bold text-yellow-500">{(member.tokens as number).toLocaleString()}</p>
                   </div>
                 </div>
               );
             })}
           </div>
 
-          <Button className="w-full mt-4 py-3 bg-gradient-to-r from-phantom-purple to-purple-800 hover:from-purple-700 hover:to-purple-900">
-            <UserPlus className="w-5 h-5" />
-            <span className="ml-2">INVITE MEMBERS</span>
+          <Button className="w-full mt-6 py-4 bg-gradient-to-r from-phantom-purple to-purple-800 hover:from-purple-700 hover:to-purple-900">
+            <UserPlus className="w-6 h-6" />
+            <span className="ml-3">INVITE MEMBERS</span>
           </Button>
         </Card>
 
-        <Card className="p-4 flex flex-col h-96">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-phantom-muted">SQUAD CHAT</h3>
-            <div className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-green-500" />
-              <span className="text-[10px] text-green-500">8 online</span>
+        <Card className="p-6 flex flex-col h-[500px]">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm md:text-base font-bold uppercase tracking-widest text-phantom-muted">SQUAD CHAT</h3>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-green-500" />
+              <span className="text-xs text-green-500">8 online</span>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto space-y-3 pb-4">
+          <div className="flex-1 overflow-y-auto space-y-4 pb-4">
             {messages.map((msg) => {
               const avatar = AVATARS.find((a) => a.id === msg.sender_avatar_id) || AVATARS[0];
               const isCurrentUser = msg.is_current_user;
               return (
                 <div
                   key={msg.id as string}
-                  className={`flex gap-3 ${isCurrentUser ? "flex-row-reverse" : "flex-row"}`}
+                  className={`flex gap-4 ${isCurrentUser ? "flex-row-reverse" : "flex-row"}`}
                 >
-                  <div className="w-8 h-8 rounded-full bg-phantom-surface flex items-center justify-center flex-shrink-0">
-                    <span className="text-lg">{avatar?.emoji}</span>
+                  <div className="w-10 h-10 rounded-full bg-phantom-surface flex items-center justify-center flex-shrink-0">
+                    <span className="text-2xl">{avatar?.emoji}</span>
                   </div>
-                  <div className={`flex flex-col ${isCurrentUser ? "items-end" : "items-start"}`}>
-                    <p className="text-xs text-phantom-muted mb-1">
+                  <div className={`flex flex-col flex-1 ${isCurrentUser ? "items-end" : "items-start"}`}>
+                    <p className="text-xs text-phantom-muted mb-2">
                       {msg.sender_username as string}
                       {(msg.pinned as boolean) && "  📌"}
                     </p>
                     <div
-                      className={`px-4 py-2 rounded-2xl ${
+                      className={`px-5 py-3 rounded-2xl ${
                         isCurrentUser ? "bg-phantom-purple rounded-br-none" : "bg-phantom-surface rounded-bl-none"
-                      }`}
+                      } max-w-[80%]`}
                     >
-                      <p className="text-sm text-white">{msg.text as string}</p>
+                      <p className="text-sm md:text-base text-white">{msg.text as string}</p>
                     </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] text-phantom-muted">{msg.time as string}</span>
+                    <div className="flex items-center gap-3 mt-2 flex-wrap">
+                      <span className="text-xs text-phantom-muted">{msg.time as string}</span>
                       {(msg.reactions as Array<Record<string, unknown>>)?.map((reaction: Record<string, unknown>) => (
                         <span
                           key={reaction.emoji as string}
-                          className="text-xs px-1 py-0.5 bg-phantom-surface rounded-full"
+                          className="text-xs px-2 py-1 bg-phantom-surface rounded-full"
                         >
                           {reaction.emoji as string} {reaction.count as string | number}
                         </span>
@@ -502,13 +502,13 @@ function SquadPage({ squad }: { squad: Record<string, unknown> }) {
                 </div>
               );
             })}
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] text-phantom-muted">IrrFang is typing...</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-phantom-muted">IrrFang is typing...</span>
             </div>
           </div>
-          <div className="flex items-center gap-2 pt-3 border-t border-phantom-border">
-            <button className="p-2 rounded-full hover:bg-phantom-surface">
-              <Paperclip className="w-5 h-5 text-phantom-muted" />
+          <div className="flex items-center gap-3 pt-4 border-t border-phantom-border">
+            <button className="p-3 rounded-full hover:bg-phantom-surface">
+              <Paperclip className="w-6 h-6 text-phantom-muted" />
             </button>
             <div className="flex-1 relative">
               <input
@@ -516,14 +516,14 @@ function SquadPage({ squad }: { squad: Record<string, unknown> }) {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Type a message..."
-                className="w-full bg-phantom-surface border border-phantom-border rounded-full px-5 py-3 text-sm focus:outline-none focus:border-phantom-purple"
+                className="w-full bg-phantom-surface border border-phantom-border rounded-full px-6 py-4 text-sm md:text-base focus:outline-none focus:border-phantom-purple"
               />
-              <button className="absolute right-2 top-1/2 -translate-y-1/2 p-1">
-                <Smile className="w-5 h-5 text-phantom-muted" />
+              <button className="absolute right-3 top-1/2 -translate-y-1/2 p-2">
+                <Smile className="w-6 h-6 text-phantom-muted" />
               </button>
             </div>
-            <button className="p-3 bg-phantom-purple rounded-full hover:bg-purple-700">
-              <Send className="w-5 h-5 text-white" />
+            <button className="p-4 bg-phantom-purple rounded-full hover:bg-purple-700">
+              <Send className="w-6 h-6 text-white" />
             </button>
           </div>
         </Card>
