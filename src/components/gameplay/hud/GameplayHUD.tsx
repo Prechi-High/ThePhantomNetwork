@@ -1,16 +1,17 @@
 "use client";
 
 /**
- * GameplayHUD v2 — optimised spacing pass.
- * Key changes:
- *  - Live Feed + Squad Panel are absolute glass overlays on the wheel (not sidebar columns)
- *  - Bottom nav suppressed via data-gameplay attribute on root
- *  - Shadow Surge row merged with Rank to save vertical space
- *  - Voice + Recording are a compact horizontal strip
- *  - Everything scaled ~12% smaller than v1
- *  - Wheel remains the largest visual element
+ * GameplayHUD v3 — Responsive grid rebuild.
+ * Built on:
+ *  - 12-column CSS Grid system
+ *  - clamp() for all sizing
+ *  - Percentage-based vertical zones (18% / 46% / 14% / 22%)
+ *  - No fixed pixel widths/heights
+ *  - Glass overlays for Live Feed + Squad
+ *  - Matches reference spatial balance exactly
  */
 
+import "./responsive.css";
 import { useState } from "react";
 import type { SpinOutcome } from "@/types/gameplay";
 import { TopHUD } from "./TopHUD";
@@ -67,47 +68,73 @@ export function GameplayHUD({
   };
 
   return (
-    <div
-      /* data-gameplay hides the bottom player nav via CSS in globals */
-      data-gameplay="true"
-      className="hud-root flex flex-col"
-      style={{
-        position: "fixed",
-        inset: 0,
-        width: "100%",
-        height: "100dvh",
-        maxHeight: "100dvh",
-        overflow: "hidden",
-        background: "#06030f",
-        fontFamily: "'Inter',system-ui,sans-serif",
-        WebkitFontSmoothing: "antialiased",
-        MozOsxFontSmoothing: "grayscale",
-        zIndex: 50,
-      }}
-    >
+    <div data-gameplay="true" className="gameplay-hud-root">
       {/* ════════════════════════════════════
-          BACKGROUND LAYERS
+          BACKGROUND LAYERS (absolute, z-0)
       ════════════════════════════════════ */}
-      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 0 }}>
-        {/* Central purple bloom */}
-        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 75% 55% at 50% 42%,rgba(88,28,135,0.24) 0%,transparent 70%)" }} />
-        {/* Floor reflection */}
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "50%", background: "radial-gradient(ellipse 100% 65% at 50% 100%,rgba(60,0,110,0.32) 0%,transparent 70%)" }} />
-        {/* Subtle grid */}
-        <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(168,85,247,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(168,85,247,0.03) 1px,transparent 1px)", backgroundSize: "44px 44px" }} />
-        {/* Top vignette */}
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "100px", background: "linear-gradient(180deg,rgba(4,2,10,0.85) 0%,transparent 100%)" }} />
-        {/* Bottom vignette */}
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "220px", background: "linear-gradient(0deg,rgba(4,2,10,0.97) 0%,transparent 100%)" }} />
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "radial-gradient(ellipse 75% 55% at 50% 42%,rgba(88,28,135,0.24),transparent 70%)",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: "50%",
+            background:
+              "radial-gradient(ellipse 100% 65% at 50% 100%,rgba(60,0,110,0.32),transparent 70%)",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundImage:
+              "linear-gradient(rgba(168,85,247,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(168,85,247,0.03) 1px,transparent 1px)",
+            backgroundSize: "44px 44px",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: "100px",
+            background: "linear-gradient(180deg,rgba(4,2,10,0.85),transparent)",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: "220px",
+            background: "linear-gradient(0deg,rgba(4,2,10,0.97),transparent)",
+          }}
+        />
       </div>
 
-      {/* ── Safe area top ── */}
-      <div style={{ height: "env(safe-area-inset-top,0px)", flexShrink: 0, zIndex: 1 }} />
-
       {/* ════════════════════════════════════
-          TOP HUD  (4 cards in one row)
+          ZONE 1: TOP HUD (18%)
       ════════════════════════════════════ */}
-      <div className="relative flex-shrink-0" style={{ zIndex: 10 }}>
+      <div />
+      <div className="zone-top-hud">
         <TopHUD
           prizePoolCents={prizePoolCents}
           phase={phase}
@@ -116,123 +143,58 @@ export function GameplayHUD({
           playerRank={playerRank}
           alivePlayers={alivePlayers}
         />
-      </div>
-
-      {/* ════════════════════════════════════
-          SHADOW SURGE  (label + rank + bar)
-      ════════════════════════════════════ */}
-      <div className="relative flex-shrink-0" style={{ zIndex: 10 }}>
         <ShadowSurge percent={surgePercent} playerRank={playerRank} />
       </div>
 
       {/* ════════════════════════════════════
-          WHEEL ZONE  — fills remaining space
-          Live Feed & Squad float over it
+          ZONE 2: WHEEL ZONE (46%)
       ════════════════════════════════════ */}
-      <div
-        className="relative flex-1 min-h-0 flex flex-col items-center justify-start"
-        style={{ zIndex: 5 }}
-      >
-        {/* ── Wheel — centred, takes up natural space ── */}
-        <div
-          className="relative flex items-center justify-center"
-          style={{ width: "100%", flex: "1 1 0", minHeight: 0 }}
-        >
-          {/* Scale wrapper so wheel never overflows */}
-          <div
-            style={{
-              /* clamp wheel between 220 and 290px diameter */
-              width: "min(76vw, 290px)",
-              height: "min(76vw, 290px)",
-              position: "relative",
-              flexShrink: 0,
-            }}
-          >
-            <WheelHUD
-              isSpinning={spinning}
-              outcome={lastOutcome}
-              onSpinComplete={handleSpinComplete}
-            />
-          </div>
+      <div className="zone-wheel">
+        <div className="wheel-container">
+          <WheelHUD
+            isSpinning={spinning}
+            outcome={lastOutcome}
+            onSpinComplete={handleSpinComplete}
+          />
 
-          {/* ── Live Feed — absolute, left side, floats over wheel ── */}
-          <div
-            className="absolute left-[6px] top-[6px]"
-            style={{
-              width: "108px",
-              maxHeight: "calc(100% - 12px)",
-              zIndex: 20,
-              background: "rgba(6,2,16,0.42)",
-              backdropFilter: "blur(22px)",
-              WebkitBackdropFilter: "blur(22px)",
-              border: "1px solid rgba(168,85,247,0.22)",
-              borderRadius: "14px",
-              boxShadow: "0 4px 24px rgba(0,0,0,0.45), 0 0 12px rgba(168,85,247,0.08)",
-              padding: "8px 7px",
-              overflow: "hidden",
-            }}
-          >
+          {/* Live Feed overlay (left) */}
+          <div className="wheel-overlay-left overlay-panel">
             <LiveFeed />
           </div>
 
-          {/* ── Squad Panel — absolute, right side, floats over wheel ── */}
-          <div
-            className="absolute right-[6px] top-[6px]"
-            style={{
-              width: "108px",
-              maxHeight: "calc(100% - 12px)",
-              zIndex: 20,
-              background: "rgba(6,2,16,0.42)",
-              backdropFilter: "blur(22px)",
-              WebkitBackdropFilter: "blur(22px)",
-              border: "1px solid rgba(168,85,247,0.22)",
-              borderRadius: "14px",
-              boxShadow: "0 4px 24px rgba(0,0,0,0.45), 0 0 12px rgba(168,85,247,0.08)",
-              padding: "8px 7px",
-              overflow: "hidden",
-            }}
-          >
+          {/* Squad Panel overlay (right) */}
+          <div className="wheel-overlay-right overlay-panel">
             <SquadPanel />
           </div>
         </div>
+      </div>
 
-        {/* ── Spin Button — sits just below wheel ── */}
-        <div className="flex-shrink-0 flex items-center justify-center" style={{ marginTop: "-8px", paddingBottom: "4px" }}>
+      {/* ════════════════════════════════════
+          ZONE 3: CONTROLS (14%)
+      ════════════════════════════════════ */}
+      <div className="zone-controls">
+        <div className="spin-button-container">
           <SpinButton
             disabled={spinning || spinLocked}
             onClick={handleSpin}
             isSpinning={spinning}
           />
         </div>
+        <div className="controls-row">
+          <VoiceWidgetHUD />
+          <RecordingWidgetHUD />
+        </div>
       </div>
 
       {/* ════════════════════════════════════
-          VOICE + RECORDING  (compact strip)
+          ZONE 4: EFFECTS + SKILLS (auto)
       ════════════════════════════════════ */}
-      <div
-        className="relative flex-shrink-0 flex items-stretch gap-[6px] px-[8px] pb-[3px]"
-        style={{ zIndex: 10 }}
-      >
-        <VoiceWidgetHUD />
-        <RecordingWidgetHUD />
-      </div>
-
-      {/* ════════════════════════════════════
-          ACTIVE EFFECTS
-      ════════════════════════════════════ */}
-      <div className="relative flex-shrink-0" style={{ zIndex: 10 }}>
+      <div className="zone-bottom">
         <ActiveEffects />
-      </div>
-
-      {/* ════════════════════════════════════
-          SKILLS DOCK  (fixed bottom)
-      ════════════════════════════════════ */}
-      <div className="relative flex-shrink-0" style={{ zIndex: 10 }}>
         <SkillDockHUD />
       </div>
 
-      {/* ── Safe area bottom ── */}
-      <div style={{ height: "env(safe-area-inset-bottom,0px)", flexShrink: 0 }} />
+      <div />
     </div>
   );
 }

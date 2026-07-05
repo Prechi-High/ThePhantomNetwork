@@ -16,8 +16,8 @@ export function SpinButton({ disabled, onClick, isSpinning }: SpinButtonProps) {
       whileTap={!disabled ? { scale: 0.95 } : undefined}
       className="relative focus:outline-none"
       style={{
-        width: "148px",
-        height: "148px",
+        width: "100%",
+        height: "100%",
         borderRadius: "50%",
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.6 : 1,

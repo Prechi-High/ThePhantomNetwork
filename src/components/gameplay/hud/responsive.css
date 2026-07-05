@@ -1,0 +1,394 @@
+/* ════════════════════════════════════════════════════════════════
+   GAMEPLAY HUD — RESPONSIVE DESIGN SYSTEM
+   Built on 12-column grid, clamp() scaling, no fixed pixels
+   ════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Spacing scale */
+  --space-1: clamp(4px, 0.5vw, 6px);
+  --space-2: clamp(8px, 0.8vw, 10px);
+  --space-3: clamp(12px, 1vw, 14px);
+  --space-4: clamp(16px, 1.5vw, 20px);
+  --space-5: clamp(24px, 2vw, 28px);
+
+  /* Typography scale */
+  --text-xs: clamp(7px, 0.75vw, 9px);
+  --text-sm: clamp(8px, 0.85vw, 10px);
+  --text-base: clamp(9px, 0.9vw, 11px);
+  --text-md: clamp(10px, 1vw, 12px);
+  --text-lg: clamp(13px, 1.3vw, 16px);
+  --text-xl: clamp(16px, 1.8vw, 20px);
+  --text-2xl: clamp(20px, 2.5vw, 26px);
+  --text-3xl: clamp(26px, 3.2vw, 34px);
+
+  /* Component sizing */
+  --wheel-size: min(68vw, 420px);
+  --spin-button-size: clamp(130px, 34vw, 175px);
+  --effect-pill-height: clamp(26px, 3vw, 34px);
+  --skill-card-width: clamp(58px, 16vw, 74px);
+  --skill-card-height: clamp(90px, 16vw, 118px);
+  --bar-height: clamp(8px, 1vw, 12px);
+
+  /* Glass system */
+  --glass-bg: rgba(10, 10, 18, 0.3);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-hover: rgba(170, 90, 255, 0.35);
+  --glass-blur: 24px;
+  --glass-shadow: 0 0 24px rgba(128, 0, 255, 0.1);
+
+  /* Overlay glass (more transparent) */
+  --overlay-bg: rgba(12, 12, 20, 0.32);
+  --overlay-blur: 22px;
+  --overlay-border: rgba(180, 90, 255, 0.22);
+  --overlay-shadow: 0 4px 24px rgba(0, 0, 0, 0.45), 0 0 12px rgba(168, 85, 247, 0.08);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ROOT CONTAINER
+   ════════════════════════════════════════════════════════════════ */
+
+.gameplay-hud-root {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: 
+    env(safe-area-inset-top, 0px)
+    18%  /* Top HUD */
+    46%  /* Wheel Zone */
+    14%  /* Controls */
+    auto /* Effects + Skills */
+    env(safe-area-inset-bottom, 0px);
+  padding-inline: clamp(8px, 2vw, 12px);
+  background: #06030f;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  z-index: 50;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   12-COLUMN GRID UTILITY
+   ════════════════════════════════════════════════════════════════ */
+
+.grid-12 {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: clamp(6px, 1vw, 10px);
+  width: 100%;
+}
+
+.col-span-2 { grid-column: span 2; }
+.col-span-3 { grid-column: span 3; }
+.col-span-4 { grid-column: span 4; }
+.col-span-6 { grid-column: span 6; }
+.col-span-12 { grid-column: span 12; }
+
+/* ════════════════════════════════════════════════════════════════
+   GLASS COMPONENTS
+   ════════════════════════════════════════════════════════════════ */
+
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: clamp(10px, 1.2vw, 14px);
+}
+
+.glass-panel-hover:hover {
+  border-color: var(--glass-border-hover);
+}
+
+.overlay-panel {
+  background: var(--overlay-bg);
+  backdrop-filter: blur(var(--overlay-blur));
+  -webkit-backdrop-filter: blur(var(--overlay-blur));
+  border: 1px solid var(--overlay-border);
+  box-shadow: var(--overlay-shadow);
+  border-radius: clamp(12px, 1.4vw, 16px);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ZONE 1: TOP HUD (18%)
+   ════════════════════════════════════════════════════════════════ */
+
+.zone-top-hud {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-block: var(--space-2);
+}
+
+.top-hud-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: clamp(5px, 0.8vw, 8px);
+  width: 100%;
+}
+
+.top-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--space-2) var(--space-2);
+  min-height: 0;
+}
+
+.top-card-label {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.top-card-value {
+  font-size: var(--text-xl);
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SHADOW SURGE SECTION
+   ════════════════════════════════════════════════════════════════ */
+
+.surge-section {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-3);
+  align-items: center;
+  margin-bottom: var(--space-1);
+}
+
+.surge-bar {
+  height: var(--bar-height);
+  background: rgba(49, 7, 70, 0.45);
+  border: 1px solid rgba(168, 85, 247, 0.22);
+  border-radius: 9999px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ZONE 2: WHEEL ZONE (46%)
+   ════════════════════════════════════════════════════════════════ */
+
+.zone-wheel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.wheel-container {
+  width: var(--wheel-size);
+  height: var(--wheel-size);
+  aspect-ratio: 1;
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Floating overlays */
+.wheel-overlay-left,
+.wheel-overlay-right {
+  position: absolute;
+  top: var(--space-2);
+  width: clamp(100px, 18vw, 130px);
+  max-height: calc(100% - var(--space-4));
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--space-2) clamp(6px, 0.8vw, 9px);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  z-index: 20;
+}
+
+.wheel-overlay-left::-webkit-scrollbar,
+.wheel-overlay-right::-webkit-scrollbar {
+  display: none;
+}
+
+.wheel-overlay-left {
+  left: calc(-1 * clamp(100px, 18vw, 130px) * 0.4);
+}
+
+.wheel-overlay-right {
+  right: calc(-1 * clamp(100px, 18vw, 130px) * 0.4);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ZONE 3: CONTROLS (14%)
+   ════════════════════════════════════════════════════════════════ */
+
+.zone-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding-block: var(--space-1);
+}
+
+.spin-button-container {
+  width: var(--spin-button-size);
+  height: var(--spin-button-size);
+  aspect-ratio: 1;
+  flex-shrink: 0;
+}
+
+.controls-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  width: 100%;
+  max-width: min(90vw, 420px);
+}
+
+.control-widget {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: clamp(5px, 0.7vw, 8px) var(--space-2);
+  flex: 1;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ZONE 4: EFFECTS + SKILLS (auto, ~22%)
+   ════════════════════════════════════════════════════════════════ */
+
+.zone-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-block-start: var(--space-1);
+}
+
+/* Active Effects */
+.effects-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(3px, 0.4vw, 5px);
+}
+
+.effects-row {
+  display: flex;
+  gap: clamp(5px, 0.7vw, 8px);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.effect-pill {
+  display: flex;
+  align-items: center;
+  gap: clamp(4px, 0.5vw, 6px);
+  height: var(--effect-pill-height);
+  padding-inline: clamp(8px, 1vw, 12px);
+  border-radius: 9999px;
+}
+
+/* Skills Dock */
+.skills-dock {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(4px, 0.5vw, 6px);
+}
+
+.skills-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-inline: var(--space-2);
+}
+
+.skills-scroll {
+  display: flex;
+  gap: clamp(3px, 0.4vw, 5px);
+  padding-inline: clamp(5px, 0.6vw, 8px);
+  padding-block-end: clamp(6px, 0.8vw, 10px);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.skills-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.skill-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(3px, 0.4vw, 5px);
+  flex-shrink: 0;
+}
+
+.skill-card {
+  position: relative;
+  width: var(--skill-card-width);
+  height: clamp(52px, 14vw, 68px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: clamp(11px, 1.3vw, 14px);
+  border: 1.5px solid;
+  flex-shrink: 0;
+}
+
+.skill-label {
+  font-size: var(--text-xs);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 1.15;
+  max-width: var(--skill-card-width);
+}
+
+.skill-status {
+  font-size: var(--text-xs);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   UTILITY CLASSES
+   ════════════════════════════════════════════════════════════════ */
+
+.text-xs { font-size: var(--text-xs); }
+.text-sm { font-size: var(--text-sm); }
+.text-base { font-size: var(--text-base); }
+.text-md { font-size: var(--text-md); }
+.text-lg { font-size: var(--text-lg); }
+.text-xl { font-size: var(--text-xl); }
+.text-2xl { font-size: var(--text-2xl); }
+.text-3xl { font-size: var(--text-3xl); }
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
