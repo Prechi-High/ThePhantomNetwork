@@ -16,11 +16,14 @@ import {
   Shield,
   UserMinus,
   Umbrella,
-  Volume2,
+  Mic,
   Users,
-  ArrowUp,
-  ChevronDown,
-  ChevronUp,
+  Crown,
+  RefreshCw,
+  Plus,
+  Package,
+  Trophy,
+  ChevronRight,
 } from "lucide-react";
 
 function formatPhaseTimer(ms: number) {
@@ -75,12 +78,14 @@ interface GameplayArenaProps {
   onReviveContribute: (amount: number) => Promise<void>;
 }
 
-// Mock skill data with cooldowns/ready states
 const skills = [
-  { id: "steal", name: "Steal Boost", icon: Zap, color: "text-purple-500", bg: "bg-purple-900/30", border: "border-purple-500/50", ready: true },
-  { id: "shield", name: "Shield", icon: Shield, color: "text-cyan-500", bg: "bg-cyan-900/30", border: "border-cyan-500/50", ready: true },
-  { id: "cloak", name: "Cloak", icon: UserMinus, color: "text-purple-400", bg: "bg-purple-900/30", border: "border-purple-400/50", ready: false, cooldown: "15s" },
-  { id: "insurance", name: "Insurance", icon: Umbrella, color: "text-yellow-500", bg: "bg-yellow-900/30", border: "border-yellow-500/50", ready: true },
+  { id: "steal", name: "STEAL BOOST", icon: Zap, color: "text-purple-400", bg: "from-purple-700 to-purple-900", border: "border-purple-500/70", ready: true, cooldown: null },
+  { id: "shield", name: "SHIELD", icon: Shield, color: "text-blue-400", bg: "from-blue-700 to-blue-900", border: "border-blue-500/70", ready: true, cooldown: null },
+  { id: "cloak", name: "CLOAK", icon: UserMinus, color: "text-purple-300", bg: "from-purple-800 to-gray-900", border: "border-purple-400/70", ready: false, cooldown: "12s" },
+  { id: "multiplier", name: "2x", icon: <span className="font-black">2x</span>, color: "text-purple-300", bg: "from-purple-700 to-blue-800", border: "border-purple-400/70", ready: true, cooldown: null },
+  { id: "insurance", name: "INSURANCE", icon: Umbrella, color: "text-yellow-400", bg: "from-yellow-700 to-yellow-900", border: "border-yellow-500/70", ready: true, cooldown: null },
+  { id: "revive", name: "REVIVE", icon: Plus, color: "text-green-400", bg: "from-green-700 to-green-900", border: "border-green-500/70", ready: true, cooldown: null },
+  { id: "more", name: "MORE", icon: Package, color: "text-gray-400", bg: "from-gray-700 to-gray-900", border: "border-gray-500/50", ready: false, cooldown: null },
 ];
 
 interface LiveFeedEvent {
@@ -130,501 +135,307 @@ export function GameplayArena({
   onReviveContribute,
 }: GameplayArenaProps) {
   const remaining = usePhaseTimer(phaseEndsAt);
-  const [showSquad, setShowSquad] = useState(true); // Default to showing squad panel
-  const [spinCount, setSpinCount] = useState(3); // Mock spin count
-  const [liveFeedEvents, setLiveFeedEvents] = useState<LiveFeedEvent[]>([]);
-  const [topSquads, setTopSquads] = useState<Squad[]>([]);
+  const [showSquad, setShowSquad] = useState(true);
+  const [spinCount, setSpinCount] = useState(3);
+  const [liveFeedEvents, setLiveFeedEvents] = useState<LiveFeedEvent[]>([
+    { id: 1, event_type: "advance", message: "NovaQueen 👻 stole from Ghost", created_at: "10s ago" },
+    { id: 2, event_type: "camp", message: "Camp Eclipse 🌑 took the lead", created_at: "28s ago" },
+    { id: 3, event_type: "revive", message: "PhantomX ➕ revived Nightfall", created_at: "38s ago" },
+  ]);
+  const [topSquads, setTopSquads] = useState<Squad[]>([
+    { id: "1", name: "ShadowKings", squad_tokens: 1500 },
+    { id: "2", name: "NightHunters", squad_tokens: 1350 },
+    { id: "3", name: "Eclipse 🌑", squad_tokens: 1200 },
+  ]);
 
-  // Load initial data
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const [feedRes, squadsRes] = await Promise.all([
-          fetch("/api/live-feed"),
-          fetch("/api/squads/leaderboard"),
-        ]);
-        const feedJson = await feedRes.json();
-        const squadsJson = await squadsRes.json();
-        setLiveFeedEvents(feedJson.events);
-        setTopSquads(squadsJson.squads);
-      } catch {
-        // ignore errors
-      }
-    }
-    loadData();
-  }, []);
-
-  // Realtime feed updates
-  useEffect(() => {
-    const es = new EventSource("/api/live-feed/stream");
-    es.onmessage = (evt) => {
-      try {
-        const data = JSON.parse(evt.data);
-        setLiveFeedEvents((prev) => [
-          { ...data, created_at: new Date().toISOString() } as LiveFeedEvent,
-          ...prev.slice(0, 29),
-        ]);
-      } catch {
-        // ignore parse errors
-      }
-    };
-    return () => es.close();
-  }, []);
-
-  const liveSquad = squadMembers.filter((m) => !m.is_eliminated).length;
   const highestTokens = Math.max(...leaderboard.map((p) => p.session_tokens), 0);
+  const mockLeaderboard = [
+    { rank: 1, name: "ShadowKing 👑", tokens: 182 },
+    { rank: 2, name: "NovaHunter", tokens: 168 },
+    { rank: 3, name: "Eclipse 🌑", tokens: 154 },
+    { rank: 4, name: "PhantomX", tokens: 142 },
+    { rank: 5, name: "Ghost", tokens: 131 },
+  ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0a0a0f]">
-      {/* Background effects */}
-      <div className="pointer-events-none fixed inset-0">
-        {/* Purple gradient blobs */}
-        <div className="absolute -top-20 -left-20 h-80 w-80 bg-[radial-gradient(circle,_rgba(147,51,234,0.3)_0%,_transparent_60%)] animate-float" />
-        <div className="absolute -bottom-40 -right-40 h-96 w-96 bg-[radial-gradient(circle,_rgba(139,92,246,0.25)_0%,_transparent_60%)] animate-float" style={{ animationDelay: "1.5s" }} />
-        {/* Glassmorphism overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0f] via-[#0a0a0f]/95 to-[#0a0a0f]" />
+    <div className="min-h-screen bg-[#080512] relative overflow-x-hidden">
+      {/* Background */}
+      <div className="fixed inset-0 z-0">
+        {/* Radial gradient center */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(139,92,246,0.15)_0%,transparent_70%)]" />
+        {/* Grid lines */}
+        <div className="absolute inset-0" style={{
+          backgroundImage: `
+            linear-gradient(rgba(139,92,246,0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(139,92,246,0.05) 1px, transparent 1px)
+          `,
+          backgroundSize: "40px 40px",
+        }} />
       </div>
 
-      {/* Main content wrapper */}
-      <div className="relative z-10 flex flex-col">
-        {/* TOP HUD */}
-        <header className="sticky top-0 z-20 flex items-center justify-between px-3 sm:px-4 pt-3 sm:pt-4 pb-2 bg-[#0a0a0f]/80 backdrop-blur-sm">
-          {/* Left: Price Pool & Alive */}
-          <div className="flex flex-col gap-1.5 sm:gap-2">
-            {/* Price Pool */}
-            <div className="glass rounded-xl border border-phantom-border/60 px-3 py-1.5 sm:px-4 sm:py-2">
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="text-lg sm:text-xl">$</span>
-                <div>
-                  <p className="text-[8px] sm:text-[10px] uppercase tracking-wider text-phantom-muted">PRIZE POOL</p>
-                  <p className="text-base sm:text-xl font-mono font-bold text-white">
-                    {totalPoolCents != null
-                      ? `$${(totalPoolCents / 100).toLocaleString()}`
-                      : "$0"}
-                  </p>
-                </div>
+      <div className="relative z-10 min-h-screen flex flex-col">
+        {/* Top HUD */}
+        <header className="px-4 pt-4 pb-2 flex items-center justify-between gap-3">
+          {/* Prize Pool */}
+          <div className="glass rounded-2xl border border-purple-600/40 px-4 py-3 bg-gradient-to-br from-purple-950/70 to-purple-900/30">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
+                <span className="text-xs font-black">$</span>
               </div>
-            </div>
-            {/* Alive Players */}
-            <div className="glass rounded-xl border border-phantom-border/60 px-3 py-1.5 sm:px-4 sm:py-2">
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400" />
-                <div>
-                  <p className="text-[8px] sm:text-[10px] uppercase tracking-wider text-phantom-muted">ALIVE</p>
-                  <p className="text-base sm:text-xl font-mono font-bold text-white">{totalPlayers || 28}</p>
-                </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] uppercase tracking-widest text-green-300/80 font-semibold">PRIZE POOL</span>
+                <span className="text-xl font-mono font-black text-white">
+                  ${totalPoolCents ? (totalPoolCents / 100).toLocaleString() : "12,500"}
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Center: Phase & Timer */}
+          {/* Phase & Timer */}
           <div className="flex flex-col items-center">
-            <p className="text-xs sm:text-sm font-bold text-purple-500">PHASE {phase}/{6}</p>
-            <p className="text-xl sm:text-2xl font-mono font-bold text-white">
-              {phaseEndsAt != null ? formatPhaseTimer(remaining) : "02:45"}
-            </p>
+            <div className="flex items-center gap-3 mb-1">
+              <div className="w-2 h-2 rounded-full bg-purple-500 animate-ping" />
+              <span className="text-sm font-bold text-purple-400">PHASE {phase}/{6}</span>
+              <div className="w-2 h-2 rounded-full bg-purple-500 animate-ping" />
+            </div>
+            <span className="text-3xl font-mono font-black text-white tracking-wider">
+              {phaseEndsAt ? formatPhaseTimer(remaining) : "02:45"}
+            </span>
           </div>
 
-          {/* Right: My Rank & Voice Widget */}
-          <div className="flex flex-col items-end gap-1.5 sm:gap-2">
-            {/* Voice Widget */}
-            <div className="glass rounded-full border border-phantom-border/60 px-2.5 py-1.5 sm:px-3 sm:py-2">
-              <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
+          {/* Rank & Alive */}
+          <div className="flex items-center gap-3 glass rounded-2xl border border-purple-600/40 px-4 py-3 bg-gradient-to-br from-purple-950/70 to-purple-900/30">
+            <div className="flex flex-col items-center">
+              <Users className="w-5 h-5 text-purple-300" />
+              <span className="text-[10px] uppercase tracking-wider text-purple-400/80 font-semibold">ALIVE</span>
+              <span className="text-xl font-mono font-black text-white">{totalPlayers || 28}</span>
             </div>
-            {/* My Rank */}
-            <div className="glass rounded-xl border border-phantom-border/60 px-3 py-1.5 sm:px-4 sm:py-2 text-right">
-              <p className="text-[8px] sm:text-[10px] uppercase tracking-wider text-phantom-muted">MY RANK</p>
-              <p className="text-base sm:text-xl font-mono font-bold text-purple-400">#{playerRank || 7}</p>
+            <div className="w-px h-10 bg-gradient-to-b from-purple-600/30 via-purple-400/60 to-purple-600/30" />
+            <div className="flex flex-col items-center">
+              <Crown className="w-5 h-5 text-yellow-400" />
+              <span className="text-[10px] uppercase tracking-wider text-yellow-400/80 font-semibold">YOUR RANK</span>
+              <span className="text-xl font-mono font-black text-yellow-300">{playerRank ? `${playerRank}th` : "7th"}</span>
+            </div>
+            <div className="w-px h-10 bg-gradient-to-b from-purple-600/30 via-purple-400/60 to-purple-600/30" />
+            <div className="flex flex-col items-center">
+              <span className="text-[10px] uppercase tracking-wider text-purple-400/80 font-semibold">TOKENS</span>
+              <span className="text-xl font-mono font-black text-white">{tokens || 142}</span>
             </div>
           </div>
         </header>
 
-        {/* MAIN GAME AREA - Responsive layout: vertical on mobile, 3 columns on larger screens */}
-        <div className="flex flex-1 flex-col lg:flex-row">
-          {/* CENTER: Wheel and main interaction (priority on mobile) */}
-          <main className="flex-1 flex flex-col items-center px-3 py-3 sm:px-2 sm:py-4 relative order-1">
-            {/* Status badges */}
-            <div className="flex gap-2 mb-3 sm:mb-4">
-              {isEliminated && <Badge variant="danger" className="text-xs py-1 px-3">Eliminated</Badge>}
-              {isRevivable && <Badge variant="gold" className="text-xs py-1 px-3">Revivable</Badge>}
+        {/* Shadow Surge Meter */}
+        <div className="px-4 pb-3">
+          <div className="glass rounded-full border border-purple-600/40 px-4 py-2 bg-gradient-to-br from-purple-950/60 to-purple-900/20 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-700 to-purple-900 flex items-center justify-center border border-purple-500/60">
+              <Zap className="w-5 h-5 text-purple-300" />
+            </div>
+            <div className="flex-1 flex items-center gap-3">
+              <div className="flex-1 h-3 bg-purple-900/50 rounded-full overflow-hidden border border-purple-600/30">
+                <div className="h-full w-[72%] bg-gradient-to-r from-purple-600 via-purple-500 to-purple-400 shadow-[0_0_15px_rgba(139,92,246,0.7)]" />
+              </div>
+              <span className="font-mono text-sm font-bold text-purple-400">72%</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 px-4 pb-4">
+          <div className="flex flex-col lg:flex-row gap-6 items-start">
+            {/* Left: Live Feed */}
+            <div className="w-full lg:w-64 order-2 lg:order-1">
+              <div className="glass rounded-2xl border border-purple-600/40 bg-gradient-to-br from-purple-950/70 to-purple-900/20 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-xs font-bold uppercase tracking-widest text-green-400">LIVE FEED</span>
+                </div>
+                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                  {liveFeedEvents.map((event, i) => (
+                    <div key={i} className="glass rounded-xl border border-purple-600/30 bg-purple-950/40 px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-800 to-purple-950 flex items-center justify-center text-lg">
+                          👻
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-white truncate">{event.message}</p>
+                          <p className="text-[10px] text-purple-400/70">{event.created_at}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-3 text-[10px] text-purple-400/60 font-medium">LIVE FEED PEEK</p>
+                <p className="text-[9px] text-purple-400/40">
+                  Shows the latest three activities in real-time. Auto-updates, new items enter from the bottom.
+                </p>
+              </div>
+              
+              {/* Voice Widget */}
+              <div className="mt-4 glass rounded-full border border-green-600/40 bg-gradient-to-br from-green-950/60 to-green-900/30 p-3 flex items-center justify-center">
+                <div className="text-center">
+                  <Mic className="w-8 h-8 text-green-400 mx-auto mb-1 animate-pulse" />
+                  <span className="text-[10px] text-green-300 font-medium">ACTIVE</span>
+                </div>
+              </div>
+              <p className="mt-2 text-[9px] text-purple-400/50 text-center">
+                VOICE WIDGET
+              </p>
             </div>
 
-            {/* Spin Wheel - Adjust size for mobile */}
-            <div className="relative animate-float mb-4 sm:mb-6">
-              <div className="transform scale-75 sm:scale-100">
+            {/* Center: Wheel */}
+            <div className="flex-1 flex flex-col items-center order-1 lg:order-2">
+              {/* Spin Wheel */}
+              <div className="mb-4">
                 <PremiumWheel
                   isSpinning={isSpinning}
                   outcome={lastOutcome}
                   onSpinComplete={onSpinComplete}
                 />
               </div>
-            </div>
 
-            {/* Steal picker */}
-            {showStealPicker && (
-              <StealTargetPicker
-                targets={stealTargets}
-                onSelect={onStealSelect}
-                onCancel={onStealCancel}
-              />
-            )}
-
-            {/* Fire boost */}
-            {stealInProgress && attackerId && (
-              <div className="flex w-full max-w-sm flex-col items-center gap-3 glass rounded-lg p-3">
-                <FireBoostMeter taps={fireBoostTaps} onTap={onFireBoost} />
-                <Button onClick={onResolveSteal} variant="danger" size="sm">
-                  Resolve Steal
-                </Button>
-              </div>
-            )}
-
-            {/* Revive panel */}
-            {isRevivable && reviveTargetId && (
-              <RevivePanel
-                targetUsername="Teammate"
-                required={3}
-                contributed={0}
-                onContribute={onReviveContribute}
-              />
-            )}
-
-            {/* Spin count indicator */}
-            <div className="text-center mb-3 sm:mb-4">
-              <p className="text-[10px] sm:text-xs text-phantom-muted mb-1">TAP TO SPIN</p>
-              <p className="text-xs sm:text-sm font-mono font-bold text-purple-400">{spinCount}/5 SPINS</p>
-            </div>
-
-            {/* Skill Dock */}
-            <div className="flex items-center justify-center gap-2.5 sm:gap-3 mb-4 sm:mb-6">
-              {skills.map((skill) => (
-                <div key={skill.id} className="flex flex-col items-center">
-                  <button
-                    className={`h-12 w-12 sm:h-14 sm:w-14 rounded-2xl border-2 flex items-center justify-center ${skill.bg} ${skill.border} ${
-                      skill.ready ? "hover:scale-105 transition-transform" : "opacity-50 cursor-not-allowed"
-                    }`}
-                    disabled={!skill.ready}
-                  >
-                    <skill.icon className={`w-5.5 h-5.5 sm:w-7 sm:h-7 ${skill.color}`} />
-                  </button>
-                  {skill.cooldown && (
-                    <span className="text-[8px] sm:text-[9px] text-phantom-muted mt-1">{skill.cooldown}</span>
-                  )}
-                  <span className="text-[7px] sm:text-[8px] text-phantom-muted uppercase mt-0.5">{skill.name}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Spin Button */}
-            <div className="flex flex-col items-center gap-2">
-              <div className="transform scale-90 sm:scale-100">
+              {/* Spin Button */}
+              <div className="mb-4 -mt-2">
                 <ButtonAnimator
-                  state={
-                    isEliminated ? "idle" :
-                    isSpinning ? "cooldown" :
-                    spinLocked ? "cooldown" : "idle"
-                  }
+                  state={isEliminated ? "idle" : isSpinning ? "cooldown" : spinLocked ? "cooldown" : "idle"}
                   disabled={isSpinning || spinLocked || isEliminated}
                   onClick={onSpin}
                 />
               </div>
-            </div>
 
-            {/* Speed control - Hide on small mobile */}
-            <div className="hidden sm:block absolute right-6 bottom-8 glass rounded-lg px-3 py-2 border border-phantom-border/50">
-              <div className="flex items-center gap-1">
-                <ArrowUp className="w-3 h-3 text-phantom-muted" />
-                <span className="text-[9px] text-phantom-muted uppercase">x1 Speed</span>
-              </div>
-            </div>
-          </main>
-
-          {/* BOTTOM ROW ON MOBILE: Live Feed + Squad Panel (side by side) */}
-          <div className="flex flex-row flex-1 lg:hidden gap-2 px-3 pb-2">
-            {/* LEFT: Live Feed */}
-            <aside className="flex-1 flex flex-col min-w-0">
-              <div className="mb-1.5 flex items-center gap-1">
-                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                <p className="text-[8px] font-bold uppercase tracking-wider text-phantom-muted">
-                  LIVE FEED
-                </p>
-              </div>
-              <div className="flex-1 overflow-y-auto space-y-1.5 pb-2">
-              {liveFeedEvents.slice(0, 3).map((event, index) => (
-                <div key={event.id || index} className="glass rounded-lg border border-phantom-border/50 px-2 py-1.5 text-[8px]">
-                  <div className="flex items-center gap-1">
-                    {event.event_type === "steal" && (
-                      <span className="text-purple-400">💜</span>
-                    )}
-                    {event.event_type === "revive" && (
-                      <span className="text-green-400">💚</span>
-                    )}
-                    {event.event_type === "eliminate" && (
-                      <span className="text-red-400">💀</span>
-                    )}
-                    {event.event_type === "camp" && (
-                      <span className="text-yellow-400">⭐</span>
-                    )}
-                    {event.event_type === "advance" && (
-                      <span className="text-green-400">✨</span>
-                    )}
-                    <span className="font-semibold text-white truncate">
-                      {event.message || "New event"}
-                    </span>
-                  </div>
+              {/* Active Effects */}
+              <div className="glass rounded-xl border border-purple-600/40 bg-gradient-to-br from-purple-950/60 to-purple-900/20 p-3 flex items-center gap-3">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-purple-300">ACTIVE EFFECTS</span>
+                <div className="flex items-center gap-2">
+                  {[
+                    { icon: <Shield className="w-4 h-4 text-blue-400" />, cooldown: "12s" },
+                    { icon: <Zap className="w-4 h-4 text-purple-400" />, cooldown: "8s" },
+                    { icon: <Crown className="w-4 h-4 text-yellow-400" />, cooldown: "15s" },
+                  ].map((effect, i) => (
+                    <div key={i} className="w-10 h-10 rounded-xl glass border border-purple-600/40 bg-purple-950/40 flex flex-col items-center justify-center">
+                      {effect.icon}
+                      <span className="text-[8px] text-purple-400 font-mono">{effect.cooldown}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
-            </aside>
 
-            {/* RIGHT: Squad Panel */}
-            <aside className="flex-1 flex flex-col min-w-0">
-              <div className="flex justify-between items-center mb-1.5">
-                <p className="text-[8px] font-bold uppercase tracking-wider text-phantom-purple-bright">
-                  SQUADS
-                </p>
+            {/* Right: Squad & Leaderboard */}
+            <div className="w-full lg:w-72 order-3">
+              {/* Prepare Handle */}
+              <div className="glass rounded-2xl border border-yellow-600/40 bg-gradient-to-br from-yellow-950/60 to-yellow-900/20 p-4 mb-4 flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-yellow-700 to-yellow-900 flex items-center justify-center border border-yellow-500/60">
+                  <Package className="w-6 h-6 text-yellow-300" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-bold text-yellow-300 uppercase tracking-wider">PREPARE HANDLE</p>
+                  <p className="text-[10px] text-yellow-400/70">Tap to open the prepare / inventory drawer.</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-yellow-500/60" />
+              </div>
+
+              {/* Squad Handle */}
+              <div className="glass rounded-2xl border border-purple-600/40 bg-gradient-to-br from-purple-950/60 to-purple-900/20 p-4 mb-4">
                 <button
                   onClick={() => setShowSquad(!showSquad)}
-                  className="text-phantom-muted"
+                  className="flex items-center justify-between w-full mb-3"
                 >
-                  {showSquad ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-700 to-purple-900 flex items-center justify-center border border-purple-500/60">
+                      <Users className="w-6 h-6 text-purple-300" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-xs font-bold text-purple-300 uppercase tracking-wider">SQUAD HANDLE</p>
+                      <p className="text-[10px] text-purple-400/70">Tap to open the squad panel.</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-purple-500/60" />
                 </button>
               </div>
 
-              {showSquad && (
-                <div className="flex-1 overflow-y-auto space-y-2">
-                  {/* Your Squad */}
-                  <div>
-                    <p className="text-[7px] uppercase tracking-wider text-phantom-muted mb-1">
-                      YOUR SQUAD
-                    </p>
-                    <ul className="space-y-1.5">
-                      {squadMembers.slice(0, 2).map((m) => {
-                        const name = m.profiles?.username ?? "Player";
-                        const eliminated = m.is_eliminated;
-
-                        return (
-                          <li
-                            key={m.user_id}
-                            className={`flex items-center gap-1.5 glass rounded-lg px-1.5 py-1 ${
-                              eliminated
-                                ? "border-red-900/40"
-                                : "border-phantom-border/60"
-                            }`}
-                          >
-                            <AnimatedAvatar
-                              states={[eliminated ? "ELIMINATED" : "DEFAULT"]}
-                              size="sm"
-                              tokens={eliminated ? undefined : m.session_tokens}
-                              online={!eliminated}
-                            />
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-[8px] font-medium text-white">@{name}</p>
-                              <p className="text-[7px] text-phantom-muted">
-                                {eliminated ? "Elim" : `${m.session_tokens}`}
-                              </p>
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-
-                  {/* Top Squads */}
-                  <div>
-                    <p className="text-[7px] uppercase tracking-wider text-phantom-muted mb-1">
-                      TOP SQUADS
-                    </p>
-                    <ul className="space-y-1.5">
-                      {topSquads.slice(0, 2).map((squad, index) => (
-                        <li
-                          key={squad.id}
-                          className="flex items-center justify-between glass rounded-lg px-1.5 py-1 border border-phantom-border/60"
-                        >
-                          <div className="flex items-center gap-1">
-                            <span className="text-[8px] font-mono text-phantom-muted">{index + 1}</span>
-                            <p className="text-[8px] font-semibold text-white truncate">{squad.name}</p>
-                          </div>
-                          <span className="text-[7px] font-mono text-yellow-500">{Number(squad.squad_tokens).toLocaleString()}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+              {/* Top Players */}
+              <div className="glass rounded-2xl border border-purple-600/40 bg-gradient-to-br from-purple-950/60 to-purple-900/20 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-bold uppercase tracking-widest text-purple-300">TOP PLAYERS</span>
+                  <Crown className="w-4 h-4 text-yellow-400" />
                 </div>
-              )}
-            </aside>
-          </div>
-
-          {/* DESKTOP VIEW: Full Live Feed + Squad Panel */}
-          {/* LEFT: Live Feed - Desktop */}
-          <aside className="hidden lg:flex w-[26%] max-w-[220px] flex-shrink-0 px-3 overflow-hidden flex-col order-0">
-            <div className="mb-2 flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <p className="text-[10px] font-bold uppercase tracking-wider text-phantom-muted">
-                LIVE FEED
-              </p>
-            </div>
-            <div className="flex-1 overflow-y-auto space-y-2 pb-4">
-              {liveFeedEvents.slice(0, 30).map((event, index) => (
-                <div key={event.id || index} className="glass rounded-lg border border-phantom-border/50 px-3 py-2 text-[10px]">
-                  <div className="flex items-center gap-1.5">
-                    {event.event_type === "steal" && (
-                      <span className="text-purple-400">💜</span>
-                    )}
-                    {event.event_type === "revive" && (
-                      <span className="text-green-400">💚</span>
-                    )}
-                    {event.event_type === "eliminate" && (
-                      <span className="text-red-400">💀</span>
-                    )}
-                    {event.event_type === "camp" && (
-                      <span className="text-yellow-400">⭐</span>
-                    )}
-                    {event.event_type === "advance" && (
-                      <span className="text-green-400">✨</span>
-                    )}
-                    <span className="font-semibold text-white truncate">
-                      {event.message || "New event"}
-                    </span>
-                    {event.created_at && (
-                      <span className="text-phantom-muted ml-auto text-[9px]">
-                        {new Date(event.created_at).toLocaleTimeString()}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
-              {liveFeedEvents.length > 30 && (
-                <button className="w-full text-center text-[10px] text-purple-400 hover:text-purple-300">
-                  View All
-                </button>
-              )}
-            </div>
-          </aside>
-
-          {/* RIGHT: Squad Panel - Desktop */}
-          <aside className="hidden lg:flex w-[26%] max-w-[220px] flex-shrink-0 px-3 overflow-hidden flex flex-col order-2">
-            <div className="flex justify-between items-center mb-2">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-phantom-purple-bright">
-                SQUADS
-              </p>
-            </div>
-
-            <div className="flex-1 overflow-y-auto space-y-4">
-              {/* Your Squad */}
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-phantom-muted mb-2">
-                  YOUR SQUAD
-                </p>
-                <ul className="space-y-2">
-                  {squadMembers.slice(0, 3).map((m) => {
-                    const name = m.profiles?.username ?? "Player";
-                    const eliminated = m.is_eliminated;
-                    const revivable = m.is_revivable;
-                    const winning = m.session_tokens === highestTokens;
-
-                    const states: ProfileSpriteState[] = [];
-                    if (eliminated) states.push("ELIMINATED");
-                    if (revivable) states.push("REVIVING");
-                    if (winning) states.push("WINNING");
-                    if (states.length === 0) states.push("DEFAULT");
-
-                    return (
-                      <li
-                        key={m.user_id}
-                        className={`flex items-center gap-2 glass rounded-lg px-2 py-2 ${
-                          eliminated
-                            ? "border-red-900/40"
-                            : "border-phantom-border/60"
-                        }`}
-                      >
-                        <AnimatedAvatar
-                          states={states}
-                          size="sm"
-                          tokens={eliminated ? undefined : m.session_tokens}
-                          online={!eliminated}
-                        />
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-xs font-medium text-white">@{name}</p>
-                          <p className="text-[9px] text-phantom-muted">
-                            {eliminated
-                              ? revivable
-                                ? "+ Revivable"
-                                : "Eliminated"
-                              : `${m.session_tokens} TOK`}
-                          </p>
-                        </div>
-                      </li>
-                    );
-                  })}
-                  {squadMembers.length === 0 && (
-                    <li className="text-[10px] text-phantom-muted">Solo — no squad</li>
-                  )}
-                </ul>
-              </div>
-
-              {/* Top Squads */}
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-phantom-muted mb-2">
-                  TOP SQUADS
-                </p>
-                <ul className="space-y-2">
-                  {topSquads.slice(0, 4).map((squad, index) => (
-                    <li
-                      key={squad.id}
-                      className="flex items-center justify-between glass rounded-lg px-2 py-2 border border-phantom-border/60"
+                <div className="space-y-2">
+                  {mockLeaderboard.map((player, i) => (
+                    <div
+                      key={i}
+                      className={`flex items-center gap-3 p-2 rounded-xl ${
+                        i === 0 ? "glass border border-yellow-500/40 bg-yellow-950/30" : "glass border border-purple-600/30 bg-purple-950/20"
+                      }`}
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-phantom-muted">{index + 1}</span>
-                        <div>
-                          <p className="text-[10px] font-semibold text-white">{squad.name}</p>
-                        </div>
+                      <span className="font-mono text-sm font-bold text-purple-400 w-6">{player.rank}</span>
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-700 to-purple-900 flex items-center justify-center border border-purple-500/50 text-lg">
+                        {i === 0 ? "👑" : "👻"}
                       </div>
-                      <span className="text-[10px] font-mono text-yellow-500">{Number(squad.squad_tokens).toLocaleString()}</span>
-                    </li>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white truncate">{player.name}</p>
+                      </div>
+                      <span className="font-mono text-sm font-bold text-purple-300">{player.tokens}</span>
+                    </div>
                   ))}
-                </ul>
-                {topSquads.length > 4 && (
-                  <button className="w-full text-center text-[10px] text-purple-400 hover:text-purple-300 mt-2">
-                    +{topSquads.length - 4} More
-                  </button>
-                )}
+                </div>
+                <button className="mt-3 w-full py-2 text-[10px] font-semibold text-purple-400 uppercase tracking-wider hover:text-purple-300 transition-colors">
+                  VIEW FULL LEADERBOARD
+                </button>
+                <p className="mt-2 text-[9px] text-purple-400/50">TOP PLAYERS</p>
+                <p className="text-[9px] text-purple-400/40">Top 5 players in this session based on Session Tokens. Leaderboard updates real-time.</p>
               </div>
             </div>
-          </aside>
+          </div>
         </div>
 
-        {/* BOTTOM: Shadow Surge Meter & other controls */}
-        <footer className="sticky bottom-0 z-20 px-3 sm:px-4 pb-3 sm:pb-4 pt-1 sm:pt-2 bg-[#0a0a0f]/80 backdrop-blur-sm mt-auto">
-          <div className="flex items-center justify-between">
-            {/* Shadow Surge Meter */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="relative w-20 sm:w-28 h-1 bg-phantom-border/50 rounded-full overflow-hidden">
-                <div className="absolute top-0 left-0 h-full bg-purple-500" style={{ width: "72%" }} />
+        {/* Bottom: Skill Dock */}
+        <div className="px-4 pb-6">
+          <div className="grid grid-cols-7 gap-2">
+            {skills.map((skill, i) => (
+              <div key={skill.id} className="flex flex-col items-center gap-1">
+                <button
+                  className={`w-full aspect-square rounded-2xl border-2 flex flex-col items-center justify-center bg-gradient-to-br ${skill.bg} ${skill.border} ${
+                    skill.ready ? "hover:scale-105 transition-transform shadow-[0_0_15px_rgba(139,92,246,0.3)]" : "opacity-40 cursor-not-allowed"
+                  }`}
+                  disabled={!skill.ready}
+                >
+                  <div className="text-lg">{typeof skill.icon === "string" ? skill.icon : skill.icon}</div>
+                  {skill.cooldown && (
+                    <span className="text-[9px] text-gray-400 font-mono mt-1">{skill.cooldown}</span>
+                  )}
+                </button>
+                <span className="text-[8px] text-purple-400/70 font-semibold uppercase text-center leading-tight">{skill.name}</span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-[7px] sm:text-[9px] text-purple-400 font-semibold uppercase">Shadow Surge</span>
-                <span className="text-[6px] sm:text-[8px] text-phantom-muted">72%</span>
-              </div>
-            </div>
+            ))}
+          </div>
 
-            {/* Bottom Hide Handle indicator - Hide on small mobile */}
-            <div className="hidden sm:flex flex-col items-center gap-1">
-              <div className="flex gap-1">
-                <div className="w-1 h-1 rounded-full bg-phantom-muted/40" />
-                <div className="w-1 h-1 rounded-full bg-phantom-muted/40" />
-                <div className="w-1 h-1 rounded-full bg-phantom-muted/40" />
+          {/* Skill Descriptions */}
+          <div className="mt-4 grid grid-cols-2 lg:grid-cols-7 gap-2">
+            {skills.slice(0, 6).map((skill, i) => (
+              <div key={skill.id} className="flex items-start gap-2">
+                <div className="w-2 h-2 rounded-full mt-1" style={{ backgroundColor: i === 0 ? "var(--color-purple-500)" : i === 1 ? "var(--color-blue-500)" : i === 2 ? "var(--color-purple-400)" : i === 3 ? "var(--color-purple-500)" : i === 4 ? "var(--color-yellow-500)" : "var(--color-green-500)" }} />
+                <div className="flex-1">
+                  <span className="text-[10px] font-bold text-purple-300 uppercase">{skill.name}</span>
+                  <p className="text-[8px] text-purple-400/60">
+                    {skill.id === "steal" && "Increases steal success chance for or amount."}
+                    {skill.id === "shield" && "Blocks incoming steal for a limited time."}
+                    {skill.id === "cloak" && "Makes you harder to target for a limited time."}
+                    {skill.id === "multiplier" && "Increases token gains for a limited time."}
+                    {skill.id === "insurance" && "Protects a portion of your tokens if stolen."}
+                    {skill.id === "revive" && "Allows you to revive a squad teammate."}
+                  </p>
+                </div>
               </div>
-              <p className="text-[7px] text-phantom-muted/60 uppercase">Bottom navigation hidden</p>
-            </div>
-
-            {/* Recording indicator */}
-            <div className="flex items-center gap-1.5 sm:gap-2 glass rounded-lg px-2 py-1 sm:px-3 sm:py-1.5 border border-red-900/50 bg-red-900/10">
-              <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-red-500 animate-pulse" />
-              <span className="text-[8px] sm:text-[10px] text-red-400 font-semibold uppercase">REC</span>
+            ))}
+            <div className="flex items-start gap-2">
+              <div className="w-2 h-2 rounded-full mt-1 bg-gray-500" />
+              <div className="flex-1">
+                <span className="text-[10px] font-bold text-purple-300 uppercase">MORE SKILLS</span>
+                <p className="text-[8px] text-purple-400/60">Access additional skills you own.</p>
+              </div>
             </div>
           </div>
-        </footer>
+        </div>
       </div>
     </div>
   );

@@ -1,33 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import spriteSheetData from "../../../assets/spritesheet.json";
-
-type ButtonState = "idle" | "hover" | "pressed" | "cooldown" | "success";
 
 interface ButtonAnimatorProps {
-  state: ButtonState;
+  state: "idle" | "cooldown" | "success";
   disabled?: boolean;
   onClick?: () => void;
   className?: string;
 }
-
-interface SpriteFrame {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
-
-const SPRITE_SHEET_URL = "/spritesheet.png";
-const STATE_TO_FRAME: Record<ButtonState, string[]> = {
-  idle: ["tile000.png"],
-  hover: ["tile001.png", "tile002.png"],
-  pressed: ["tile004.png", "tile005.png"],
-  cooldown: ["tile006.png", "tile008.png", "tile009.png", "tile010.png"],
-  success: ["tile012.png", "tile013.png", "tile014.png"],
-};
 
 export function ButtonAnimator({
   state,
@@ -35,74 +15,38 @@ export function ButtonAnimator({
   onClick,
   className,
 }: ButtonAnimatorProps) {
-  const [frameIndex, setFrameIndex] = useState(0);
-  const requestRef = useRef<number | null>(null);
-  const previousTimeRef = useRef<number | null>(null);
-  const frameDurationRef = useRef(150);
-
-  const getFrameData = (key: string): SpriteFrame | null => {
-    const frame = spriteSheetData.frames[key as keyof typeof spriteSheetData.frames];
-    if (!frame) return null;
-    return {
-      x: frame.frame.x,
-      y: frame.frame.y,
-      w: frame.frame.w,
-      h: frame.frame.h,
-    };
-  };
-
-  const animate = useCallback((time: number) => {
-    if (previousTimeRef.current === undefined || previousTimeRef.current === null) {
-      previousTimeRef.current = time;
-    }
-    const delta = time - previousTimeRef.current!;
-
-    if (delta >= frameDurationRef.current) {
-      setFrameIndex((prev) => {
-        const frames = STATE_TO_FRAME[state];
-        return (prev + 1) % frames.length;
-      });
-      previousTimeRef.current = time;
-    }
-
-    requestRef.current = requestAnimationFrame(animate);
-  }, [state]);
-
-  useEffect(() => {
-    setFrameIndex(0);
-    requestRef.current = requestAnimationFrame(animate);
-    return () => {
-      if (requestRef.current) cancelAnimationFrame(requestRef.current);
-    };
-  }, [animate]);
-
-  const frames = STATE_TO_FRAME[state];
-  const currentFrameKey = frames[frameIndex];
-  const frameData = getFrameData(currentFrameKey);
-
   return (
     <motion.button
-      whileHover={!disabled ? { scale: 1.02 } : undefined}
-      whileTap={!disabled ? { scale: 0.98 } : undefined}
+      whileHover={!disabled ? { scale: 1.03 } : undefined}
+      whileTap={!disabled ? { scale: 0.97 } : undefined}
       onClick={onClick}
       disabled={disabled}
-      className={`relative overflow-hidden rounded-lg border-none bg-transparent p-0 ${className}`}
-      style={{ width: frameData ? frameData.w : 227, height: frameData ? frameData.h : 114 }}
+      className={`relative overflow-hidden rounded-full border-none bg-transparent p-0 ${className}`}
+      style={{ width: 200, height: 200 }}
     >
-      {frameData && (
-        <div
-          className="absolute inset-0"
-          style={{
-          backgroundImage: `url(${SPRITE_SHEET_URL})`,
-          backgroundPosition: `-${frameData.x}px -${frameData.y}px`,
-          backgroundSize: `${spriteSheetData.meta.size.w}px ${spriteSheetData.meta.size.h}px`,
-        }}
-      />
-      )}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className="font-display text-xl font-bold uppercase tracking-widest text-white drop-shadow-lg">
-          ENGAGE
-        </span>
+      {/* Outer Glow */}
+      <div className="absolute -inset-4 bg-gradient-to-r from-yellow-500/40 via-transparent to-yellow-500/40 rounded-full blur-xl animate-pulse" />
+      
+      {/* Main Button */}
+      <div className="relative h-full w-full">
+        {/* Outer Ring */}
+        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-yellow-600 via-yellow-500 to-yellow-700 shadow-[0_0_40px_rgba(234,179,8,0.6)]">
+          {/* Inner Ring */}
+          <div className="absolute inset-2 rounded-full bg-gradient-to-br from-yellow-900/90 via-yellow-800 to-yellow-950 flex items-center justify-center border border-yellow-600/50">
+            {/* Center Content */}
+            <div className="text-center">
+              <span className="block font-display text-4xl font-black text-yellow-300 drop-shadow-lg">
+                SPIN
+              </span>
+              <span className="block mt-1 font-mono text-sm text-yellow-500/80">
+                HOLD FOR AUTO
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        {/* Top Highlight */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 w-24 h-6 bg-gradient-to-b from-white/30 to-transparent rounded-full blur-sm" />
       </div>
     </motion.button>
   );
