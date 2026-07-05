@@ -69,6 +69,7 @@ interface GameplayArenaProps {
   attackerId: string | null;
   fireBoostTaps: number;
   reviveTargetId: string | null;
+  totalPoolCents?: number | null;
   onSpin: () => void;
   onSpinComplete: () => void;
   onStealSelect: (target: StealTarget) => void;
@@ -96,6 +97,14 @@ const skills = [
   { id: "insurance", name: "Insurance", icon: Umbrella, color: "text-yellow-500", bg: "bg-yellow-900/30", border: "border-yellow-500/50", ready: true },
 ];
 
+interface LiveFeedEvent {
+  id?: number;
+  event_type?: string;
+  message?: string;
+  metadata?: any;
+  created_at?: string;
+}
+
 export function GameplayArena({
   phase,
   round,
@@ -118,6 +127,7 @@ export function GameplayArena({
   attackerId,
   fireBoostTaps,
   reviveTargetId,
+  totalPoolCents,
   onSpin,
   onSpinComplete,
   onStealSelect,
@@ -128,11 +138,46 @@ export function GameplayArena({
 }: GameplayArenaProps) {
   const remaining = usePhaseTimer(phaseEndsAt);
   const [showSquad, setShowSquad] = useState(true); // Default to showing squad panel
-  const [spinCount, setSpinCount] = useState(3); // Mock spin count
+  const [liveFeedEvents, setLiveFeedEvents] = useState<LiveFeedEvent[]>([]);
+  const [topSquads, setTopSquads] = useState<any[]>([]);
+
+  // Load initial data
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [feedRes, squadsRes] = await Promise.all([
+          fetch("/api/live-feed"),
+          fetch("/api/squads/leaderboard"),
+        ]);
+        const feedJson = await feedRes.json();
+        const squadsJson = await squadsRes.json();
+        setLiveFeedEvents(feedJson.events);
+        setTopSquads(squadsJson.squads);
+      } catch {
+        // ignore errors
+      }
+    }
+    loadData();
+  }, []);
+
+  // Realtime feed updates
+  useEffect(() => {
+    const es = new EventSource("/api/live-feed/stream");
+    es.onmessage = (evt) => {
+      try {
+        const data = JSON.parse(evt.data);
+        setLiveFeedEvents((prev) => [
+          { ...data, created_at: new Date().toISOString() } as LiveFeedEvent,
+          ...prev.slice(0, 29),
+        ]);
+      } catch {
+        // ignore parse errors
+      }
+    };
+    return () => es.close();
+  }, []);
 
   const liveSquad = squadMembers.filter((m) => !m.is_eliminated).length;
-  const elimSquad = squadMembers.filter((m) => m.is_eliminated).length;
-
   const highestTokens = Math.max(...leaderboard.map((p) => p.session_tokens), 0);
 
   return (
@@ -158,7 +203,11 @@ export function GameplayArena({
                 <span className="text-lg sm:text-xl">$</span>
                 <div>
                   <p className="text-[8px] sm:text-[10px] uppercase tracking-wider text-phantom-muted">PRIZE POOL</p>
-                  <p className="text-base sm:text-xl font-mono font-bold text-white">$12,500</p>
+                  <p className="text-base sm:text-xl font-mono font-bold text-white">
+                    {totalPoolCents != null
+                      ? `$${(totalPoolCents / 100).toLocaleString()}`
+                      : "$0"}
+                  </p>
                 </div>
               </div>
             </div>
@@ -307,31 +356,31 @@ export function GameplayArena({
                 </p>
               </div>
               <div className="flex-1 overflow-y-auto space-y-1.5 pb-2">
-                {liveFeedEvents.slice(0, 3).map((event) => (
-                  <div key={event.id} className="glass rounded-lg border border-phantom-border/50 px-2 py-1.5 text-[8px]">
-                    {event.type === "steal" && (
-                      <div className="flex items-center gap-1">
-                        <span className="text-purple-400">💜</span>
-                        <span className="font-semibold text-white truncate">{event.user}</span>
-                        <span className="text-yellow-500 font-bold">{event.amount}</span>
-                      </div>
+              {liveFeedEvents.slice(0, 3).map((event, index) => (
+                <div key={event.id || index} className="glass rounded-lg border border-phantom-border/50 px-2 py-1.5 text-[8px]">
+                  <div className="flex items-center gap-1">
+                    {event.event_type === "steal" && (
+                      <span className="text-purple-400">💜</span>
                     )}
-                    {event.type === "revive" && (
-                      <div className="flex items-center gap-1">
-                        <span className="text-green-400">💚</span>
-                        <span className="font-semibold text-white truncate">{event.user}</span>
-                        <span className="text-phantom-muted text-[7px]">revived</span>
-                      </div>
+                    {event.event_type === "revive" && (
+                      <span className="text-green-400">💚</span>
                     )}
-                    {event.type === "eliminate" && (
-                      <div className="flex items-center gap-1">
-                        <span className="text-red-400">💀</span>
-                        <span className="font-semibold text-white truncate">{event.user}</span>
-                      </div>
+                    {event.event_type === "eliminate" && (
+                      <span className="text-red-400">💀</span>
                     )}
+                    {event.event_type === "camp" && (
+                      <span className="text-yellow-400">⭐</span>
+                    )}
+                    {event.event_type === "advance" && (
+                      <span className="text-green-400">✨</span>
+                    )}
+                    <span className="font-semibold text-white truncate">
+                      {event.message || "New event"}
+                    </span>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
+            </div>
             </aside>
 
             {/* RIGHT: Squad Panel */}
@@ -393,19 +442,16 @@ export function GameplayArena({
                       TOP SQUADS
                     </p>
                     <ul className="space-y-1.5">
-                      {[
-                        { name: "Eclipse", tokens: 18450, rank: 1 },
-                        { name: "Nightfall", tokens: 17230, rank: 2 },
-                      ].map((squad) => (
+                      {topSquads.slice(0, 2).map((squad, index) => (
                         <li
-                          key={squad.name}
+                          key={squad.id}
                           className="flex items-center justify-between glass rounded-lg px-1.5 py-1 border border-phantom-border/60"
                         >
                           <div className="flex items-center gap-1">
-                            <span className="text-[8px] font-mono text-phantom-muted">{squad.rank}</span>
+                            <span className="text-[8px] font-mono text-phantom-muted">{index + 1}</span>
                             <p className="text-[8px] font-semibold text-white truncate">{squad.name}</p>
                           </div>
-                          <span className="text-[7px] font-mono text-yellow-500">{squad.tokens.toLocaleString()}</span>
+                          <span className="text-[7px] font-mono text-yellow-500">{Number(squad.squad_tokens).toLocaleString()}</span>
                         </li>
                       ))}
                     </ul>
@@ -425,56 +471,40 @@ export function GameplayArena({
               </p>
             </div>
             <div className="flex-1 overflow-y-auto space-y-2 pb-4">
-              {liveFeedEvents.map((event) => (
-                <div key={event.id} className="glass rounded-lg border border-phantom-border/50 px-3 py-2 text-[10px]">
-                  {event.type === "steal" && (
-                    <div className="flex items-center gap-1.5">
+              {liveFeedEvents.slice(0, 30).map((event, index) => (
+                <div key={event.id || index} className="glass rounded-lg border border-phantom-border/50 px-3 py-2 text-[10px]">
+                  <div className="flex items-center gap-1.5">
+                    {event.event_type === "steal" && (
                       <span className="text-purple-400">💜</span>
-                      <span className="font-semibold text-white">{event.user}</span>
-                      <span className="text-phantom-muted">stole</span>
-                      <span className="font-bold text-yellow-500">{event.amount} TOK</span>
-                      <span className="text-phantom-muted ml-auto">{event.time}</span>
-                    </div>
-                  )}
-                  {event.type === "revive" && (
-                    <div className="flex items-center gap-1.5">
+                    )}
+                    {event.event_type === "revive" && (
                       <span className="text-green-400">💚</span>
-                      <span className="font-semibold text-white">{event.user}</span>
-                      <span className="text-phantom-muted">revived</span>
-                      <span className="text-phantom-muted ml-auto">{event.time}</span>
-                    </div>
-                  )}
-                  {event.type === "eliminate" && (
-                    <div className="flex items-center gap-1.5">
+                    )}
+                    {event.event_type === "eliminate" && (
                       <span className="text-red-400">💀</span>
-                      <span className="font-semibold text-white">{event.user}</span>
-                      <span className="text-phantom-muted">eliminated</span>
-                      <span className="text-phantom-muted">{event.target}</span>
-                      <span className="text-phantom-muted ml-auto">{event.time}</span>
-                    </div>
-                  )}
-                  {event.type === "camp" && (
-                    <div className="flex items-center gap-1.5">
+                    )}
+                    {event.event_type === "camp" && (
                       <span className="text-yellow-400">⭐</span>
-                      <span className="font-semibold text-white">{event.user}</span>
-                      <span className="text-phantom-muted">{event.message}</span>
-                      <span className="text-phantom-muted ml-auto">{event.time}</span>
-                    </div>
-                  )}
-                  {event.type === "advance" && (
-                    <div className="flex items-center gap-1.5">
+                    )}
+                    {event.event_type === "advance" && (
                       <span className="text-green-400">✨</span>
-                      <span className="font-semibold text-white">{event.user}</span>
-                      <span className="text-phantom-muted">earned</span>
-                      <span className="font-bold text-green-500">+{event.amount} TOK</span>
-                      <span className="text-phantom-muted ml-auto">{event.time}</span>
-                    </div>
-                  )}
+                    )}
+                    <span className="font-semibold text-white truncate">
+                      {event.message || "New event"}
+                    </span>
+                    {event.created_at && (
+                      <span className="text-phantom-muted ml-auto text-[9px]">
+                        {new Date(event.created_at).toLocaleTimeString()}
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))}
-              <button className="w-full text-center text-[10px] text-purple-400 hover:text-purple-300">
-                View All
-              </button>
+              {liveFeedEvents.length > 30 && (
+                <button className="w-full text-center text-[10px] text-purple-400 hover:text-purple-300">
+                  View All
+                </button>
+              )}
             </div>
           </aside>
 
@@ -545,29 +575,26 @@ export function GameplayArena({
                   TOP SQUADS
                 </p>
                 <ul className="space-y-2">
-                  {[
-                    { name: "Eclipse Squad", tokens: 18450, rank: 1 },
-                    { name: "Nightfall Crew", tokens: 17230, rank: 2 },
-                    { name: "Dark Legion", tokens: 15890, rank: 3 },
-                    { name: "Phantom Force", tokens: 15120, rank: 4 },
-                  ].map((squad) => (
+                  {topSquads.slice(0, 4).map((squad, index) => (
                     <li
-                      key={squad.name}
+                      key={squad.id}
                       className="flex items-center justify-between glass rounded-lg px-2 py-2 border border-phantom-border/60"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-phantom-muted">{squad.rank}</span>
+                        <span className="text-xs font-mono text-phantom-muted">{index + 1}</span>
                         <div>
                           <p className="text-[10px] font-semibold text-white">{squad.name}</p>
                         </div>
                       </div>
-                      <span className="text-[10px] font-mono text-yellow-500">{squad.tokens.toLocaleString()}</span>
+                      <span className="text-[10px] font-mono text-yellow-500">{Number(squad.squad_tokens).toLocaleString()}</span>
                     </li>
                   ))}
                 </ul>
-                <button className="w-full text-center text-[10px] text-purple-400 hover:text-purple-300 mt-2">
-                  +24 More
-                </button>
+                {topSquads.length > 4 && (
+                  <button className="w-full text-center text-[10px] text-purple-400 hover:text-purple-300 mt-2">
+                    +{topSquads.length - 4} More
+                  </button>
+                )}
               </div>
             </div>
           </aside>

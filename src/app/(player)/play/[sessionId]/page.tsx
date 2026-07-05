@@ -45,6 +45,7 @@ interface GameplayStateResponse {
   leaderboard?: LeaderboardRow[];
   networkPlayers?: NetworkPlayer[];
   sessionStatus?: string;
+  totalPoolCents?: number;
 }
 
 export default function PlayPage() {
@@ -94,6 +95,7 @@ export default function PlayPage() {
   const [showNetworkIntro, setShowNetworkIntro] = useState(false);
   const [introPhase, setIntroPhase] = useState(0);
   const [sessionStatus, setSessionStatus] = useState<string>("active");
+  const [totalPoolCents, setTotalPoolCents] = useState<number | null>(null);
 
   const [ready, setReady] = useState(false);
   const lastIntroPhaseRef = useRef<number | null>(null);
@@ -128,6 +130,7 @@ export default function PlayPage() {
       if (data.leaderboard) setLeaderboard(data.leaderboard);
       if (data.networkPlayers) setNetworkPlayers(data.networkPlayers);
       if (data.sessionStatus) setSessionStatus(data.sessionStatus);
+      if (data.totalPoolCents !== undefined) setTotalPoolCents(data.totalPoolCents);
     },
     [setPhase, setRound, setPhaseEndsAt, setTokens, setEliminated, setRevivable]
   );
@@ -323,6 +326,7 @@ export default function PlayPage() {
           attackerId={attackerId}
           fireBoostTaps={fireBoostTaps}
           reviveTargetId={reviveTargetId}
+          totalPoolCents={totalPoolCents}
           onSpin={handleSpin}
           onSpinComplete={handleSpinComplete}
           onStealSelect={handleStealSelect}

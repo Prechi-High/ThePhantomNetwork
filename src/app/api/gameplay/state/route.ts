@@ -30,7 +30,7 @@ export async function GET(request: Request) {
 
   const { data: subSession } = await admin
     .from("sub_sessions")
-    .select("*, sessions(title, status, phase_config)")
+    .select("*, sessions(title, status, phase_config, total_pool_cents)")
     .eq("id", subSessionId)
     .single();
 
@@ -81,6 +81,8 @@ export async function GET(request: Request) {
 
   const sessionStatus = (subSession?.sessions as { status?: string } | null)?.status;
 
+  const session = subSession?.sessions as { total_pool_cents?: number } | null;
+
   return NextResponse.json({
     player,
     subSession,
@@ -95,5 +97,6 @@ export async function GET(request: Request) {
     playerRank,
     totalPlayers: allPlayers?.length ?? 0,
     networkPlayers,
+    totalPoolCents: session?.total_pool_cents,
   });
 }
