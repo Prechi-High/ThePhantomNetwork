@@ -146,3 +146,61 @@ body {
   scrollbar-width: none;
 }
 
+/* HUD full-height layout — no browser scroll */
+.hud-root {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+}
+
+/* Surge bar shimmer */
+@keyframes shimmer-left-right {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+.shimmer {
+  animation: shimmer-left-right 2s linear infinite;
+}
+
+/* Wheel outer bloom pulse */
+@keyframes bloom-pulse {
+  0%, 100% {
+    box-shadow: 0 0 30px rgba(168,85,247,0.45), 0 0 60px rgba(168,85,247,0.15);
+  }
+  50% {
+    box-shadow: 0 0 50px rgba(168,85,247,0.7), 0 0 90px rgba(168,85,247,0.3);
+  }
+}
+.wheel-bloom {
+  animation: bloom-pulse 2.5s ease-in-out infinite;
+}
+
+/* Spin button breathe */
+@keyframes gold-breathe {
+  0%, 100% {
+    box-shadow: 0 0 25px rgba(245,158,11,0.5), 0 0 50px rgba(245,158,11,0.2);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(245,158,11,0.8), 0 0 80px rgba(245,158,11,0.4);
+  }
+}
+.spin-breathe {
+  animation: gold-breathe 2s ease-in-out infinite;
+}
+
+/* Voice bar wave */
+@keyframes voice-wave {
+  0%, 100% { transform: scaleY(0.5); }
+  50% { transform: scaleY(1); }
+}
+
+/* Feed slide-in */
+@keyframes feed-enter {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.feed-item {
+  animation: feed-enter 0.25s ease-out both;
+}
+

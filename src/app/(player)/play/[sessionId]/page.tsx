@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { GameplayArena } from "@/components/gameplay/GameplayArena";
+import { GameplayHUD } from "@/components/gameplay/hud";
 import {
   PhantomNetworkIntro,
   type NetworkPlayer,
@@ -304,47 +305,19 @@ export default function PlayPage() {
       />
 
       {!showNetworkIntro && (
-        <GameplayArena
+        <GameplayHUD
           phase={phase || 1}
-          round={round || 1}
-          maxRounds={maxRounds}
-          phaseEndsAt={phaseEndsAt}
-          tokens={tokens}
-          playerRank={playerRank}
-          totalPlayers={totalPlayers}
-          isEliminated={isEliminated}
-          isRevivable={isRevivable}
+          totalPhases={6}
+          prizePoolCents={totalPoolCents ?? 1250000}
+          tokens={tokens || 24.5}
+          playerRank={playerRank || 7}
+          alivePlayers={totalPlayers || 28}
+          surgePercent={72}
           isSpinning={isSpinning}
           spinLocked={spinLocked}
           lastOutcome={lastOutcome}
-          squadMembers={squadMembers}
-          leaderboard={leaderboard}
-          currentUserId={currentUserId}
-          showStealPicker={showStealPicker}
-          stealTargets={targets}
-          stealInProgress={stealInProgress}
-          attackerId={attackerId}
-          fireBoostTaps={fireBoostTaps}
-          reviveTargetId={reviveTargetId}
-          totalPoolCents={totalPoolCents}
           onSpin={handleSpin}
           onSpinComplete={handleSpinComplete}
-          onStealSelect={handleStealSelect}
-          onStealCancel={() => setShowStealPicker(false)}
-          onResolveSteal={handleResolveSteal}
-          onFireBoost={handleFireBoost}
-          onReviveContribute={async (amount) => {
-            await fetch("/api/gameplay/revive/contribute", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                subSessionId,
-                targetUserId: reviveTargetId,
-                amount,
-              }),
-            });
-            refreshState();
-          }}
         />
       )}
     </>
