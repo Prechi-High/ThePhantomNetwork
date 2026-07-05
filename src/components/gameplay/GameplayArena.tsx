@@ -5,6 +5,7 @@ import { PremiumWheel, ButtonAnimator } from "@/components/gameplay/premium-whee
 import { StealTargetPicker } from "@/components/gameplay/StealTargetPicker";
 import { FireBoostMeter } from "@/components/gameplay/FireBoostMeter";
 import { RevivePanel } from "@/components/gameplay/RevivePanel";
+import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { usePhaseTimer } from "@/hooks/useRealtimeSession";
 import type { SpinOutcome, StealTarget } from "@/types/gameplay";
@@ -16,6 +17,8 @@ import {
   Umbrella,
   Volume2,
   Users,
+  ArrowUp,
+  ChevronDown,
   ChevronUp,
 } from "lucide-react";
 
