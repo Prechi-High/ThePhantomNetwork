@@ -17,6 +17,9 @@ const navItems = [
 export default function BottomNav() {
   const pathname = usePathname();
 
+  // Gameplay is immersive — no nav chrome during play
+  if (pathname.startsWith("/play/")) return null;
+
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-phantom-bg border-t border-phantom-border py-3 px-4 z-50">
       <div className="flex justify-around">

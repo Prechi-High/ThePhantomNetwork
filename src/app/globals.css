@@ -154,6 +154,13 @@ body {
   touch-action: none;
 }
 
+/* Hide bottom player nav while gameplay HUD is mounted */
+body:has([data-gameplay="true"]) nav,
+body:has([data-gameplay="true"]) [data-bottom-nav],
+body:has([data-gameplay="true"]) .bottom-nav {
+  display: none !important;
+}
+
 /* Surge bar shimmer */
 @keyframes shimmer-left-right {
   0% { transform: translateX(-100%); }
