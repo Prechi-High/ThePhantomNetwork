@@ -2,6 +2,7 @@
 
 import { useCallback, useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -23,6 +24,7 @@ interface Session {
   description?: string;
   is_featured?: boolean;
   image_url?: string;
+  is_user_registered?: boolean;
 }
 
 function Countdown({ targetDate }: { targetDate: Date }) {
@@ -79,6 +81,10 @@ function Countdown({ targetDate }: { targetDate: Date }) {
 }
 
 function SessionItem({ session }: { session: Session }) {
+  const [joining, setJoining] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
+  const router = useRouter();
+
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     const today = new Date();
@@ -109,12 +115,102 @@ function SessionItem({ session }: { session: Session }) {
     }
   };
 
+  const handleJoinSession = async () => {
+    setJoining(true);
+    setJoinError(null);
+    try {
+      const res = await fetch(`/api/sessions/${session.id}/join`, {
+        method: "POST",
+        credentials: "same-origin",
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error || "Failed to join session");
+      }
+      window.location.reload();
+    } catch (err) {
+      setJoinError(err instanceof Error ? err.message : "Join failed");
+    } finally {
+      setJoining(false);
+    }
+  };
+
   const sessionImages = [
     "https://images.unsplash.com/photo-1518837695005-2083093ee35b?q=80&w=800&auto=format&fit=crop",
     "https://images.unsplash.com/photo-1451187580459-43490279850a?q=80&w=800&auto=format&fit=crop",
     "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?q=80&w=800&auto=format&fit=crop",
     "https://images.unsplash.com/photo-1470252649378-98427e0a8990?q=80&w=800&auto=format&fit=crop",
   ];
+
+  const renderActionButtons = () => {
+    switch (session.status) {
+      case "open":
+        if (session.is_user_registered) {
+          return (
+            <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+              <Button
+                variant="secondary"
+                className="px-6 py-3 bg-phantom-surface border border-phantom-border w-full md:w-auto"
+                disabled
+              >
+                ALREADY REGISTERED
+              </Button>
+            </div>
+          );
+        }
+        return (
+          <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+            <Button
+              className="px-6 py-3 bg-gradient-to-r from-phantom-purple to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white font-bold w-full md:w-auto"
+              onClick={handleJoinSession}
+              disabled={joining}
+            >
+              {joining ? "JOINING..." : "JOIN NOW"}
+            </Button>
+            <Button
+              variant="secondary"
+              className="px-6 py-3 bg-phantom-surface border border-phantom-border w-full md:w-auto"
+            >
+              <Bell className="w-5 h-5 mr-2" />
+              SET REMINDER
+            </Button>
+          </div>
+        );
+      case "locked":
+      case "completed":
+        return (
+          <Button
+            variant="secondary"
+            className="px-6 py-3 bg-phantom-surface border border-phantom-border w-full md:w-auto"
+          >
+            <Bell className="w-5 h-5 mr-2" />
+            SET REMINDER
+          </Button>
+        );
+      case "active":
+        if (session.is_user_registered) {
+          return (
+            <Button
+              className="px-6 py-3 bg-gradient-to-r from-phantom-purple to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white font-bold w-full md:w-auto"
+              onClick={() => router.push(`/play/${session.id}`)}
+            >
+              ENTER GAMEPLAY
+            </Button>
+          );
+        }
+        return (
+          <Button
+            variant="secondary"
+            className="px-6 py-3 bg-phantom-surface border border-phantom-border w-full md:w-auto"
+            disabled
+          >
+            SESSION IN PROGRESS
+          </Button>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <Card className="p-0 overflow-hidden">
@@ -174,14 +270,13 @@ function SessionItem({ session }: { session: Session }) {
           </div>
         </div>
 
-        <Button
-          variant="secondary"
-          className="px-6 py-3 bg-phantom-surface border border-phantom-border w-full md:w-auto"
-        >
-          <Bell className="w-5 h-5 mr-2" />
-          SET REMINDER
-        </Button>
+        {renderActionButtons()}
       </div>
+      {joinError && (
+        <div className="px-6 pb-6">
+          <p className="text-phantom-danger text-sm">{joinError}</p>
+        </div>
+      )}
     </Card>
   );
 }
@@ -397,13 +492,42 @@ export default function SessionsPage() {
               </div>
 
               <div className="flex items-center gap-4">
+            {featuredSession.status === "open" && (
+              featuredSession.is_user_registered ? (
+                <Button
+                  variant="secondary"
+                  className="w-full py-4"
+                  disabled
+                >
+                  ALREADY REGISTERED
+                  <ChevronRight className="w-6 h-6 ml-2" />
+                </Button>
+              ) : (
                 <Link href={`/sessions/${featuredSession.id}`} className="flex-1">
                   <Button className="w-full py-4 bg-gradient-to-r from-phantom-purple to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white font-bold shadow-[0_0_30px_rgba(139,92,246,0.5)]">
                     JOIN NOW
                     <ChevronRight className="w-6 h-6 ml-2" />
                   </Button>
                 </Link>
-              </div>
+              )
+            )}
+            {featuredSession.status === "active" && featuredSession.is_user_registered && (
+              <Link href={`/play/${featuredSession.id}`} className="flex-1">
+                <Button className="w-full py-4 bg-gradient-to-r from-phantom-purple to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white font-bold shadow-[0_0_30px_rgba(139,92,246,0.5)]">
+                  ENTER GAMEPLAY
+                  <ChevronRight className="w-6 h-6 ml-2" />
+                </Button>
+              </Link>
+            )}
+            {(featuredSession.status === "locked" || featuredSession.status === "completed" || (featuredSession.status === "active" && !featuredSession.is_user_registered)) && (
+              <Link href={`/sessions/${featuredSession.id}`} className="flex-1">
+                <Button className="w-full py-4 bg-gradient-to-r from-phantom-purple to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white font-bold shadow-[0_0_30px_rgba(139,92,246,0.5)]">
+                  VIEW DETAILS
+                  <ChevronRight className="w-6 h-6 ml-2" />
+                </Button>
+              </Link>
+            )}
+          </div>
             </div>
           </Card>
         </div>
