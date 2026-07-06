@@ -3,6 +3,7 @@ import { Syne, Inter } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { NotificationProvider } from "@/components/ui/NotificationProvider";
+import { TelegramProvider } from "@/components/providers/TelegramProvider";
 
 const syne = Syne({ subsets: ["latin"], variable: "--font-syne" });
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -19,14 +20,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${syne.variable} ${inter.variable}`}>
-      <head>
+      <body className="min-h-screen antialiased">
+        {/* Telegram SDK must be loaded in body for App Router */}
         <Script
           src="https://telegram.org/js/telegram-web-app.js"
           strategy="beforeInteractive"
         />
-      </head>
-      <body className="min-h-screen antialiased">
-        <NotificationProvider>{children}</NotificationProvider>
+        <TelegramProvider>
+          <NotificationProvider>{children}</NotificationProvider>
+        </TelegramProvider>
       </body>
     </html>
   );

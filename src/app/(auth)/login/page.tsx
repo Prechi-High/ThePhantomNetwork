@@ -1,21 +1,15 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { createClient } from "@/lib/supabase/client";
 import { establishSession } from "@/lib/auth/establish-session";
+import { useTelegram } from "@/components/providers/TelegramProvider";
 
 declare global {
   interface Window {
-    Telegram?: {
-      WebApp?: {
-        initData: string;
-        ready: () => void;
-        expand: () => void;
-      };
-    };
     grecaptcha?: {
       ready: (cb: () => void) => void;
       execute: (siteKey: string, options: { action: string }) => Promise<string>;
@@ -25,27 +19,29 @@ declare global {
 
 export default function LoginPage() {
   const router = useRouter();
+  const { webApp, isLoading: telegramLoading, isInTelegram } = useTelegram();
   const [loading, setLoading] = useState(false);
-  const [needsCaptcha, setNeedsCaptcha] = useState(false);
-  const [checkingTelegram, setCheckingTelegram] = useState(true);
   const [error, setError] = useState("");
   const isDev = process.env.NODE_ENV === "development";
 
-  const handleTelegramAuth = useCallback(async () => {
-    const initData = window.Telegram?.WebApp?.initData;
-    if (!initData) {
-      setNeedsCaptcha(true);
-      setCheckingTelegram(false);
-      return;
+  // Auto-login with Telegram when available
+  useEffect(() => {
+    if (telegramLoading) return;
+    
+    if (isInTelegram && webApp?.initData) {
+      handleTelegramAuth();
     }
+  }, [telegramLoading, isInTelegram, webApp]);
 
+  const handleTelegramAuth = async () => {
+    if (!webApp?.initData) return;
+    
     setLoading(true);
-    setCheckingTelegram(false);
     try {
       const res = await fetch("/api/auth/telegram", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ initData }),
+        body: JSON.stringify({ initData: webApp.initData }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -57,40 +53,9 @@ export default function LoginPage() {
       router.push(data.onboardingComplete ? "/home" : "/onboarding");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Auth failed");
-    } finally {
       setLoading(false);
     }
-  }, [router]);
-
-  useEffect(() => {
-    let attempts = 0;
-    const maxAttempts = 20; // Check for 2 seconds (20 * 100ms)
-    
-    const checkTelegram = () => {
-      if (window.Telegram?.WebApp) {
-        window.Telegram.WebApp.ready();
-        window.Telegram.WebApp.expand();
-        
-        if (window.Telegram.WebApp.initData) {
-          handleTelegramAuth();
-          return;
-        }
-      }
-      
-      attempts++;
-      if (attempts >= maxAttempts) {
-        // After timeout, show alternative auth methods
-        setNeedsCaptcha(true);
-        setCheckingTelegram(false);
-        return;
-      }
-      
-      // Retry after 100ms
-      setTimeout(checkTelegram, 100);
-    };
-    
-    checkTelegram();
-  }, [handleTelegramAuth]);
+  };
 
   const handleGoogleLogin = async () => {
     const supabase = createClient();
@@ -157,13 +122,22 @@ export default function LoginPage() {
       <Card glow className="w-full max-w-sm space-y-4">
         {error && <p className="text-sm text-phantom-danger">{error}</p>}
 
-        {checkingTelegram ? (
-          <div className="text-center">
-            <p className="text-sm text-phantom-muted">Connecting to Telegram...</p>
+        {telegramLoading ? (
+          <div className="text-center py-4">
+            <p className="text-sm text-phantom-muted">Initializing Telegram...</p>
+            <p className="mt-2 text-xs text-phantom-muted">
+              <a href="/telegram-debug" className="underline">
+                View diagnostics
+              </a>
+            </p>
           </div>
-        ) : !needsCaptcha ? (
+        ) : loading ? (
+          <div className="text-center py-4">
+            <p className="text-sm text-phantom-muted">Entering...</p>
+          </div>
+        ) : isInTelegram ? (
           <Button onClick={handleTelegramAuth} disabled={loading} className="w-full">
-            {loading ? "Entering..." : "Enter via Telegram"}
+            Enter via Telegram
           </Button>
         ) : (
           <>
@@ -178,6 +152,11 @@ export default function LoginPage() {
                 Dev Login (local only)
               </Button>
             )}
+            <p className="mt-2 text-center text-xs text-phantom-muted">
+              <a href="/telegram-debug" className="underline">
+                View Telegram diagnostics
+              </a>
+            </p>
           </>
         )}
       </Card>
