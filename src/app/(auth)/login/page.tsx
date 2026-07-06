@@ -27,6 +27,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [needsCaptcha, setNeedsCaptcha] = useState(false);
+  const [checkingTelegram, setCheckingTelegram] = useState(true);
   const [error, setError] = useState("");
   const isDev = process.env.NODE_ENV === "development";
 
@@ -34,10 +35,12 @@ export default function LoginPage() {
     const initData = window.Telegram?.WebApp?.initData;
     if (!initData) {
       setNeedsCaptcha(true);
+      setCheckingTelegram(false);
       return;
     }
 
     setLoading(true);
+    setCheckingTelegram(false);
     try {
       const res = await fetch("/api/auth/telegram", {
         method: "POST",
@@ -60,13 +63,33 @@ export default function LoginPage() {
   }, [router]);
 
   useEffect(() => {
-    window.Telegram?.WebApp?.ready();
-    window.Telegram?.WebApp?.expand();
-    if (window.Telegram?.WebApp?.initData) {
-      handleTelegramAuth();
-    } else {
-      setNeedsCaptcha(true);
-    }
+    let attempts = 0;
+    const maxAttempts = 20; // Check for 2 seconds (20 * 100ms)
+    
+    const checkTelegram = () => {
+      if (window.Telegram?.WebApp) {
+        window.Telegram.WebApp.ready();
+        window.Telegram.WebApp.expand();
+        
+        if (window.Telegram.WebApp.initData) {
+          handleTelegramAuth();
+          return;
+        }
+      }
+      
+      attempts++;
+      if (attempts >= maxAttempts) {
+        // After timeout, show alternative auth methods
+        setNeedsCaptcha(true);
+        setCheckingTelegram(false);
+        return;
+      }
+      
+      // Retry after 100ms
+      setTimeout(checkTelegram, 100);
+    };
+    
+    checkTelegram();
   }, [handleTelegramAuth]);
 
   const handleGoogleLogin = async () => {
@@ -134,7 +157,11 @@ export default function LoginPage() {
       <Card glow className="w-full max-w-sm space-y-4">
         {error && <p className="text-sm text-phantom-danger">{error}</p>}
 
-        {!needsCaptcha ? (
+        {checkingTelegram ? (
+          <div className="text-center">
+            <p className="text-sm text-phantom-muted">Connecting to Telegram...</p>
+          </div>
+        ) : !needsCaptcha ? (
           <Button onClick={handleTelegramAuth} disabled={loading} className="w-full">
             {loading ? "Entering..." : "Enter via Telegram"}
           </Button>
