@@ -9,6 +9,7 @@
 import { useCallback } from 'react';
 import { useStudioStore } from '../../systems/state/store';
 import { commandHistory } from '../../systems/history/CommandHistory';
+import { AlignmentTools } from './AlignmentTools';
 import styles from '../../styles/panels.module.css';
 
 /**
@@ -72,6 +73,9 @@ export function Toolbar() {
           ↷
         </button>
       </div>
+
+      {/* Alignment Tools */}
+      <AlignmentTools />
 
       <div className={styles.toolbarSection}>
         <button
