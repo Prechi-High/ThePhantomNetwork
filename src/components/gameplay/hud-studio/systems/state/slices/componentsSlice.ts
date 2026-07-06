@@ -36,7 +36,7 @@ export interface ComponentInstance {
   visible: boolean;
   locked: boolean;
   opacity: number;
-  props: Record<string, any>;
+  props: Record<string, unknown>;
   styleOverrides: StyleOverrides;
 }
 
@@ -59,7 +59,8 @@ export const componentsSlice: StateCreator<ComponentsSlice> = (set) => ({
 
   removeComponent: (id) =>
     set((state) => {
-      const { [id]: removed, ...rest } = state.components;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { [id]: _removed, ...rest } = state.components;
       return { components: rest };
     }),
 

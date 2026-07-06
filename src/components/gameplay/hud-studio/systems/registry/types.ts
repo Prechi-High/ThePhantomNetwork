@@ -30,11 +30,11 @@ export interface EditableProp {
   key: string;
   label: string;
   type: PropType;
-  defaultValue: any;
+  defaultValue: unknown;
   min?: number;
   max?: number;
   step?: number;
-  options?: Array<{ label: string; value: any }>;
+  options?: Array<{ label: string; value: unknown }>;
 }
 
 export interface ComponentConstraints {
@@ -50,15 +50,15 @@ export interface ComponentConstraints {
 export interface ComponentState {
   id: string;
   label: string;
-  props: Record<string, any>;
+  props: Record<string, unknown>;
 }
 
 export interface HUDComponentMetadata {
   id: string;
   displayName: string;
   category: ComponentCategory;
-  component: ComponentType<any>;
-  defaultProps: Record<string, any>;
+  component: ComponentType<Record<string, unknown>>;
+  defaultProps: Record<string, unknown>;
   editableProps: EditableProp[];
   constraints: ComponentConstraints;
   states?: ComponentState[];

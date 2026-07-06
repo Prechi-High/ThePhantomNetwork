@@ -12,9 +12,9 @@ export class PropertyCommand implements Command {
   constructor(
     private componentId: string,
     private property: string,
-    private oldValue: any,
-    private newValue: any,
-    private updateFn: (id: string, prop: string, value: any) => void
+    private oldValue: unknown,
+    private newValue: unknown,
+    private updateFn: (id: string, prop: string, value: unknown) => void
   ) {
     this.description = `Change ${property} of ${componentId}`;
   }

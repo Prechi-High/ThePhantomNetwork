@@ -67,7 +67,7 @@ export function useKeyboard() {
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
         if (selectedComponentId) {
           e.preventDefault();
-          const step = e.shiftKey ? 10 : 1;
+          // const step = e.shiftKey ? 10 : 1;
           // TODO: Implement nudge command
           return;
         }
