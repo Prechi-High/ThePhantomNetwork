@@ -24,6 +24,7 @@ import { VoiceWidgetHUD } from "./VoiceWidget";
 import { RecordingWidgetHUD } from "./RecordingWidget";
 import { ActiveEffects } from "./ActiveEffects";
 import { SkillDockHUD } from "./SkillDockHUD";
+import { TestWidget } from "./TestWidget";
 
 interface GameplayHUDProps {
   phase?: number;
@@ -195,6 +196,11 @@ export function GameplayHUD({
       </div>
 
       <div />
+
+      {/* ════════════════════════════════════
+          HUD STUDIO TEST WIDGET (Dev Only)
+      ════════════════════════════════════ */}
+      <TestWidget />
     </div>
   );
 }
