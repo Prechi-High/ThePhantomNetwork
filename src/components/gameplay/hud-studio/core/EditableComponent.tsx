@@ -63,8 +63,12 @@ export function EditableComponent({
 
     applyTransform(
       containerRef.current,
-      component.position,
-      component.size,
+      {
+        x: component.position.x,
+        y: component.position.y,
+        width: component.size.width,
+        height: component.size.height,
+      },
       canvasSize,
       {
         scale: component.styleOverrides.scale,
