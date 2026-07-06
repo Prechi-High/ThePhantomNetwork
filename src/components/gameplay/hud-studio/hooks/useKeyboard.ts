@@ -11,8 +11,14 @@ import { useStudioStore } from '../systems/state/store';
 import { commandHistory } from '../systems/history/CommandHistory';
 
 export function useKeyboard() {
-  const { toggleEditMode, isEditMode, selectComponent, selectedComponentId } =
-    useStudioStore();
+  const { 
+    toggleEditMode, 
+    isEditMode, 
+    selectComponent, 
+    selectedComponentId,
+    editorSettings,
+    updateSettings,
+  } = useStudioStore();
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -73,29 +79,36 @@ export function useKeyboard() {
         }
       }
 
-      // S: Toggle snap (future implementation)
+      // S: Toggle snap
       if (e.key === 's' && !isMod) {
         e.preventDefault();
-        // TODO: Toggle snap
+        updateSettings({ snapEnabled: !editorSettings.snapEnabled });
         return;
       }
 
-      // G: Toggle grid (future implementation)
+      // G: Toggle grid
       if (e.key === 'g' && !isMod) {
         e.preventDefault();
-        // TODO: Toggle grid
+        updateSettings({ showGrid: !editorSettings.showGrid });
         return;
       }
 
-      // R: Toggle rulers (future implementation)
+      // R: Toggle rulers
       if (e.key === 'r' && !isMod) {
         e.preventDefault();
-        // TODO: Toggle rulers
+        updateSettings({ showRulers: !editorSettings.showRulers });
         return;
       }
     }
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isEditMode, selectedComponentId, toggleEditMode, selectComponent]);
+  }, [
+    isEditMode, 
+    selectedComponentId, 
+    toggleEditMode, 
+    selectComponent,
+    editorSettings,
+    updateSettings,
+  ]);
 }

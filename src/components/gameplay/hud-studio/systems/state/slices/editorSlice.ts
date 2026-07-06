@@ -5,6 +5,7 @@
  */
 
 import type { StateCreator } from 'zustand';
+import type { SnapLine } from '../../snap/types';
 
 export interface ViewportConfig {
   width: number;
@@ -35,6 +36,10 @@ export interface EditorSlice {
   selectedComponentId: string | null;
   selectComponent: (id: string | null) => void;
 
+  // Snap Lines
+  activeSnapLines: SnapLine[];
+  setActiveSnapLines: (lines: SnapLine[]) => void;
+
   // Viewport
   viewport: ViewportConfig;
   setViewport: (viewport: ViewportConfig) => void;
@@ -60,6 +65,9 @@ export const editorSlice: StateCreator<EditorSlice> = (set) => ({
 
   selectedComponentId: null,
   selectComponent: (id) => set({ selectedComponentId: id }),
+
+  activeSnapLines: [],
+  setActiveSnapLines: (lines) => set({ activeSnapLines: lines }),
 
   viewport: {
     width: 390,

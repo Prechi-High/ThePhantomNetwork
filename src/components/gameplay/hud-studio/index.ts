@@ -23,11 +23,16 @@ export { Toolbar } from './panels/Toolbar';
 export { componentRegistry } from './systems/registry/ComponentRegistry';
 export { useStudioStore } from './systems/state/store';
 export { commandHistory } from './systems/history/CommandHistory';
+export { SnapEngine } from './systems/snap/SnapEngine';
+export { GridSnap } from './systems/snap/GridSnap';
+export { EdgeSnap } from './systems/snap/EdgeSnap';
+export { CenterGuides } from './systems/snap/CenterGuides';
 
 // Types
 export type { HUDComponentMetadata, ComponentCategory, EditableProp } from './systems/registry/types';
 export type { ComponentInstance, NormalizedPosition, NormalizedSize } from './systems/state/slices/componentsSlice';
 export type { Command } from './systems/history/types';
+export type { SnapResult, SnapLine, SnapConfig, SnapTarget } from './systems/snap/types';
 
 // Hooks
 export { useSelection } from './hooks/useSelection';

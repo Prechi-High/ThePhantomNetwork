@@ -11,6 +11,7 @@ import { useStudioStore } from '../systems/state/store';
 import { clampNormalized } from '../systems/layout/normalizer';
 import { MoveCommand } from '../systems/history/commands/MoveCommand';
 import { commandHistory } from '../systems/history/CommandHistory';
+import { SnapEngine } from '../systems/snap/SnapEngine';
 import type { NormalizedPosition } from '../systems/state/slices/componentsSlice';
 
 /**
@@ -32,9 +33,11 @@ export function useDragDrop(componentId: string) {
   const rafId = useRef<number | null>(null);
 
   const component = useStudioStore(state => state.components[componentId]);
+  const components = useStudioStore(state => state.components);
   const updateComponent = useStudioStore(state => state.updateComponent);
   const editorSettings = useStudioStore(state => state.editorSettings);
   const viewport = useStudioStore(state => state.viewport);
+  const setActiveSnapLines = useStudioStore(state => state.setActiveSnapLines);
 
   /**
    * Handle drag start (mouse or touch)
@@ -73,12 +76,30 @@ export function useDragDrop(componentId: string) {
     let newX = componentStartPos.current.x + normalizedDeltaX;
     let newY = componentStartPos.current.y + normalizedDeltaY;
 
-    // TODO: Apply snapping if enabled
-    // if (editorSettings.snapEnabled) {
-    //   const snapped = applySnapping({ x: newX, y: newY }, componentId, editorSettings);
-    //   newX = snapped.x;
-    //   newY = snapped.y;
-    // }
+    // Apply snapping if enabled
+    if (editorSettings.snapEnabled) {
+      const snapResult = SnapEngine.applySnapping(
+        { x: newX, y: newY },
+        componentId,
+        components,
+        {
+          enabled: editorSettings.snapEnabled,
+          snapToGrid: editorSettings.snapToGrid,
+          snapToComponents: editorSettings.snapToComponents,
+          snapToSafeArea: editorSettings.snapToSafeArea,
+          gridSize: editorSettings.gridSize,
+          threshold: 8, // 8px snap threshold
+        },
+        viewport.width,
+        viewport.height
+      );
+      
+      newX = snapResult.position.x;
+      newY = snapResult.position.y;
+      setActiveSnapLines(snapResult.snapLines);
+    } else {
+      setActiveSnapLines([]);
+    }
 
     // Clamp to canvas bounds (0-1)
     newX = clampNormalized(newX);
@@ -103,6 +124,7 @@ export function useDragDrop(componentId: string) {
     if (!isDragging) return;
 
     setIsDragging(false);
+    setActiveSnapLines([]); // Clear snap lines
 
     // Cancel any pending RAF
     if (rafId.current) {

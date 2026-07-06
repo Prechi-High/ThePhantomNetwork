@@ -15,6 +15,7 @@ import { PropertyInspector } from '../panels/PropertyInspector';
 import { LayersPanel } from '../panels/LayersPanel';
 import { ComponentLibrary } from '../panels/ComponentLibrary';
 import { Toolbar } from '../panels/Toolbar';
+import { SnapGuidesOverlay } from './SnapGuidesOverlay';
 import styles from '../styles/editor.module.css';
 
 interface EditModeWrapperProps {
@@ -66,6 +67,7 @@ export function EditModeWrapper({ children }: EditModeWrapperProps) {
       {/* Editor Panels */}
       {isEditMode && (
         <>
+          <SnapGuidesOverlay />
           <Toolbar />
           <PropertyInspector />
           <LayersPanel />
