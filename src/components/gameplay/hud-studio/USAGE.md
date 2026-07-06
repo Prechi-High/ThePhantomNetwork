@@ -1,11 +1,12 @@
 # HUD Studio - Usage Guide
 
-## Phase 2: Core Editing - COMPLETE ✅
+## Phase 3: UI Panels - COMPLETE ✅
 
-Phase 2 implementation is now complete! You can now visually select, drag, and resize HUD components.
+Phase 3 implementation is complete! Full visual editor with Property Inspector, Layers Panel, Component Library, and Toolbar.
 
 ## What's Working
 
+### Phase 1 & 2 - Core Systems ✅
 ✅ **EditableComponent wrapper** - Wraps HUD components to make them editable  
 ✅ **Selection system** - Click to select components, visual feedback  
 ✅ **Drag & drop** - Drag components with mouse or touch (GPU-accelerated)  
@@ -14,7 +15,16 @@ Phase 2 implementation is now complete! You can now visually select, drag, and r
 ✅ **History integration** - Undo/redo support for move and resize operations  
 ✅ **Visual feedback** - Selection outline with purple glow, component info label  
 ✅ **Constraints** - Canvas boundary clamping, min/max size enforcement  
-✅ **Locked components** - Respects locked state (no drag/resize)  
+✅ **Locked components** - Respects locked state (no drag/resize)
+
+### Phase 3 - UI Panels ✅
+✅ **Property Inspector** - Edit position, size, style, and layout properties via UI  
+✅ **Layers Panel** - Manage z-index, visibility, lock state, delete/duplicate  
+✅ **Component Library** - Add registered components to canvas with one click  
+✅ **Toolbar** - Quick access to undo/redo, snap/grid toggles, panel controls  
+✅ **Input Components** - Number inputs with +/-, sliders, toggles, dropdowns  
+✅ **Real-time Updates** - All property changes apply immediately  
+✅ **Collapsible Groups** - Organized property sections  
 
 ## Quick Start
 
@@ -109,6 +119,41 @@ addComponent({
 - **Shift + Arrow Keys** - Nudge position (10px)
 - **Cmd/Ctrl + Z** - Undo
 - **Cmd/Ctrl + Shift + Z** - Redo
+- **S** - Toggle snap (toolbar)
+- **G** - Toggle grid (toolbar)
+
+## UI Panels
+
+### Property Inspector (Right Side)
+Edit all properties of the selected component:
+- **Layout**: Z-index, Visible toggle, Locked toggle
+- **Position**: X, Y coordinates (in pixels)
+- **Size**: Width, Height (in pixels)
+- **Style**: Opacity, Blur, Border Radius, Scale, Shadow
+
+### Layers Panel (Left Side)
+Manage all components:
+- View components sorted by z-index (highest first)
+- Click to select
+- 👁 - Toggle visibility
+- 🔒 - Toggle lock
+- 📋 - Duplicate component
+- 🗑 - Delete component
+
+### Component Library (Bottom Left)
+Add new components:
+- Browse registered components by category
+- Click component card to add to canvas
+- Components appear at canvas center
+
+### Toolbar (Top Center)
+Quick access to tools:
+- ↶ / ↷ - Undo / Redo
+- 🧲 - Toggle snap
+- ⊞ - Toggle grid
+- ⚙ - Toggle Property Inspector
+- ☰ - Toggle Layers Panel
+- 📦 - Toggle Component Library
 
 ## Mouse Controls
 
@@ -120,24 +165,24 @@ addComponent({
 
 ## Current Limitations
 
-### Not Yet Implemented (Phase 3+):
+### Not Yet Implemented (Phase 4+):
 
-- ❌ Property Inspector UI (can only move/resize, can't edit properties via UI)
-- ❌ Layers Panel (no visual layer management)
-- ❌ Component Library (can't add new components from UI)
-- ❌ Toolbar (no alignment/snap controls in UI)
-- ❌ Snap system (grid/component snapping)
+- ❌ Snap system implementation (grid/component snapping logic)
+- ❌ Alignment tools (align left/right/top/bottom, distribute)
 - ❌ Validation panel (no warnings for overlaps, safe areas)
-- ❌ Layout save/load/export UI
-- ❌ Device preview switcher
+- ❌ Safe area guides visualization
+- ❌ Layout save/load/export functionality
+- ❌ Device preview switcher (preset selector is placeholder)
 - ❌ Live data toggle
+- ❌ Drag to reorder layers
 
 ### Known Issues:
 
 - Component state must be manually initialized (no automatic detection yet)
-- No visual grid or guides yet
-- Snap to grid is not implemented yet
-- Aspect ratio constraint (Shift key) needs refinement
+- Snap toggle exists but snapping logic not implemented
+- Grid toggle exists but grid not rendered
+- Device selector is placeholder only
+- Component Library only shows registered components (manual registration required)
 
 ## Architecture
 
@@ -145,7 +190,11 @@ addComponent({
 
 ```
 HUDStudioProvider (dev-only wrapper)
-  └── EditModeWrapper (toggle button)
+  └── EditModeWrapper (toggle button + panels)
+      ├── Toolbar (top center)
+      ├── PropertyInspector (right side)
+      ├── LayersPanel (left side)
+      ├── ComponentLibrary (bottom left)
       └── Your HUD Components
           └── EditableComponent (wrapper per component)
               ├── Children (actual HUD content)
@@ -179,19 +228,24 @@ All positions are **normalized (0.0 - 1.0)** for responsive layouts:
 2. Wrap individual components with EditableComponent
 3. Initialize component state in the store
 4. Press Cmd/Ctrl+E to enter edit mode
-5. Click, drag, and resize components!
+5. Use the UI panels to edit properties!
+   - **Property Inspector** - Edit position, size, style
+   - **Layers Panel** - Manage z-index, visibility, lock
+   - **Component Library** - Add registered components
+   - **Toolbar** - Undo/redo, toggle panels
 
-### To Continue Development (Phase 3):
+### To Continue Development (Phase 4):
 
-Run the implementation tasks for Phase 3:
-- Task 3.1: Property Inspector Panel
-- Task 3.2: Layers Panel
-- Task 3.3: Component Library Panel
-- Task 3.4: Toolbar
+Run the implementation tasks for Phase 4:
+- Task 4.2: Snap System
+- Task 4.3: Alignment Tools
+- Task 4.4: Validation System
+- Task 4.5: Safe Area Guides
 
 ---
 
-**Status**: Phase 2 Complete (4/4 tasks done)  
-**Next Phase**: Phase 3 - UI Panels  
-**Version**: 1.0.0-phase2  
+**Status**: Phase 3 Complete (4/4 tasks done)  
+**Next Phase**: Phase 4 - Systems (Snap, Alignment, Validation)  
+**Overall Progress**: 17/33 tasks (52%)  
+**Version**: 1.0.0-phase3  
 **Last Updated**: 2025-01-XX

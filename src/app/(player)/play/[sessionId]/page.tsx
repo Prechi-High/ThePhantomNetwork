@@ -8,6 +8,7 @@ import {
   PhantomNetworkIntro,
   type NetworkPlayer,
 } from "@/components/gameplay/PhantomNetworkIntro";
+import { HUDStudioProvider } from "@/components/gameplay/hud-studio";
 import { useGameplayStore } from "@/stores/useGameplayStore";
 import { useStealStore } from "@/stores/useStealStore";
 import { useSessionStore } from "@/stores/useSessionStore";
@@ -305,20 +306,22 @@ export default function PlayPage() {
       />
 
       {!showNetworkIntro && (
-        <GameplayHUD
-          phase={phase || 1}
-          totalPhases={6}
-          prizePoolCents={totalPoolCents ?? 1250000}
-          tokens={tokens || 24.5}
-          playerRank={playerRank || 7}
-          alivePlayers={totalPlayers || 28}
-          surgePercent={72}
-          isSpinning={isSpinning}
-          spinLocked={spinLocked}
-          lastOutcome={lastOutcome}
-          onSpin={handleSpin}
-          onSpinComplete={handleSpinComplete}
-        />
+        <HUDStudioProvider>
+          <GameplayHUD
+            phase={phase || 1}
+            totalPhases={6}
+            prizePoolCents={totalPoolCents ?? 1250000}
+            tokens={tokens || 24.5}
+            playerRank={playerRank || 7}
+            alivePlayers={totalPlayers || 28}
+            surgePercent={72}
+            isSpinning={isSpinning}
+            spinLocked={spinLocked}
+            lastOutcome={lastOutcome}
+            onSpin={handleSpin}
+            onSpinComplete={handleSpinComplete}
+          />
+        </HUDStudioProvider>
       )}
     </>
   );
