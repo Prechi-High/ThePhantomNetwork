@@ -46,3 +46,4 @@ export { useValidation } from './hooks/useValidation';
 
 // Utilities
 export { pixelsToNormalized, normalizedToPixels } from './systems/layout/normalizer';
+export { getSafeAreasForDevice, isInSafeArea, getSafeContentArea, clampToSafeArea } from './utils/safe-areas';
