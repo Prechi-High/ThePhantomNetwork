@@ -11,6 +11,7 @@ import type { ReactNode } from 'react';
 import { useStudioStore } from '../systems/state/store';
 import { useKeyboard } from '../hooks/useKeyboard';
 import { useSelection } from '../hooks/useSelection';
+import { useValidation } from '../hooks/useValidation';
 import { PropertyInspector } from '../panels/PropertyInspector';
 import { LayersPanel } from '../panels/LayersPanel';
 import { ComponentLibrary } from '../panels/ComponentLibrary';
@@ -30,6 +31,9 @@ export function EditModeWrapper({ children }: EditModeWrapperProps) {
   
   // Setup selection management
   useSelection();
+  
+  // Setup validation
+  useValidation();
 
   return (
     <div className={styles.editorRoot}>

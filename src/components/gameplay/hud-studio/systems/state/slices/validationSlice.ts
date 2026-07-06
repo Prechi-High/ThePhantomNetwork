@@ -5,32 +5,19 @@
  */
 
 import type { StateCreator } from 'zustand';
-
-export type ValidationSeverity = 'error' | 'warning' | 'info';
-
-export interface ValidationIssue {
-  id: string;
-  componentId: string | null;
-  severity: ValidationSeverity;
-  message: string;
-  rule: string;
-  autoFixable: boolean;
-}
+import type { ValidationResult } from '../../validation/types';
 
 export interface ValidationSlice {
-  issues: ValidationIssue[];
-  setIssues: (issues: ValidationIssue[]) => void;
-  clearIssues: () => void;
-  removeIssue: (id: string) => void;
+  validationResult: ValidationResult | null;
+  validationEnabled: boolean;
+  setValidationResult: (result: ValidationResult | null) => void;
+  setValidationEnabled: (enabled: boolean) => void;
 }
 
 export const validationSlice: StateCreator<ValidationSlice> = (set) => ({
-  issues: [],
+  validationResult: null,
+  validationEnabled: true,
 
-  setIssues: (issues) => set({ issues }),
-  clearIssues: () => set({ issues: [] }),
-  removeIssue: (id) =>
-    set((state) => ({
-      issues: state.issues.filter((issue) => issue.id !== id),
-    })),
+  setValidationResult: (result) => set({ validationResult: result }),
+  setValidationEnabled: (enabled) => set({ validationEnabled: enabled }),
 });

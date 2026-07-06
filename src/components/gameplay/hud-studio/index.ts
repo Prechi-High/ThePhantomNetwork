@@ -28,6 +28,7 @@ export { GridSnap } from './systems/snap/GridSnap';
 export { EdgeSnap } from './systems/snap/EdgeSnap';
 export { CenterGuides } from './systems/snap/CenterGuides';
 export { AlignmentEngine } from './systems/alignment/AlignmentEngine';
+export { validator } from './systems/validation/Validator';
 
 // Types
 export type { HUDComponentMetadata, ComponentCategory, EditableProp } from './systems/registry/types';
@@ -35,11 +36,13 @@ export type { ComponentInstance, NormalizedPosition, NormalizedSize } from './sy
 export type { Command } from './systems/history/types';
 export type { SnapResult, SnapLine, SnapConfig, SnapTarget } from './systems/snap/types';
 export type { AlignmentType, DistributionType, SizeMatchType, AlignmentResult } from './systems/alignment/types';
+export type { ValidationIssue, ValidationResult, ValidationRule, ValidationSeverity } from './systems/validation/types';
 
 // Hooks
 export { useSelection } from './hooks/useSelection';
 export { useDragDrop } from './hooks/useDragDrop';
 export { useResize } from './hooks/useResize';
+export { useValidation } from './hooks/useValidation';
 
 // Utilities
 export { pixelsToNormalized, normalizedToPixels } from './systems/layout/normalizer';
