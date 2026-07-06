@@ -47,7 +47,7 @@ export class SnapEngine {
       };
     }
 
-    let snappedPosition = { ...position };
+    const snappedPosition = { ...position };
     const snapLines: SnapLine[] = [];
     let hasSnapped = false;
 

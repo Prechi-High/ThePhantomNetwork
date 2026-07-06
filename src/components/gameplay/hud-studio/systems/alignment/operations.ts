@@ -292,7 +292,7 @@ export function matchSize(
   const reference = referenceComponent || components[0];
 
   return components.map(component => {
-    let newSize: NormalizedSize = { ...component.size };
+    const newSize: NormalizedSize = { ...component.size };
 
     if (matchType === 'width' || matchType === 'both') {
       newSize.width = reference.size.width;
