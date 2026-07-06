@@ -10,7 +10,7 @@
 // Core Components
 export { HUDStudioProvider } from './HUDStudioProvider';
 export { EditModeWrapper } from './core/EditModeWrapper';
-export { EditableComponent } from './core/EditableComponent';
+// Note: EditableComponent not yet implemented
 
 // Systems
 export { componentRegistry } from './systems/registry/ComponentRegistry';
