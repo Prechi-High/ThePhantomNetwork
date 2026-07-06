@@ -13,6 +13,12 @@ export { EditModeWrapper } from './core/EditModeWrapper';
 export { EditableComponent } from './core/EditableComponent';
 export { SelectionOverlay } from './core/SelectionOverlay';
 
+// Panels
+export { PropertyInspector } from './panels/PropertyInspector';
+export { LayersPanel } from './panels/LayersPanel';
+export { ComponentLibrary } from './panels/ComponentLibrary';
+export { Toolbar } from './panels/Toolbar';
+
 // Systems
 export { componentRegistry } from './systems/registry/ComponentRegistry';
 export { useStudioStore } from './systems/state/store';
