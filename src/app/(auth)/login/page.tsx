@@ -31,6 +31,7 @@ export default function LoginPage() {
     if (isInTelegram && webApp?.initData) {
       handleTelegramAuth();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [telegramLoading, isInTelegram, webApp]);
 
   const handleTelegramAuth = async () => {

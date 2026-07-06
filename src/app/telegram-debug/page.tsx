@@ -8,7 +8,13 @@ import { Card } from "@/components/ui/Card";
 export default function TelegramDebugPage() {
   const { webApp, status, isLoading, isInTelegram } = useTelegram();
   const [logs, setLogs] = useState<string[]>([]);
-  const [rawWindow, setRawWindow] = useState<any>(null);
+  const [rawWindow, setRawWindow] = useState<{
+    hasTelegram: boolean;
+    hasWebApp: boolean;
+    initData: string | null;
+    platform: string | null;
+    version: string | null;
+  } | null>(null);
 
   useEffect(() => {
     const sdk = TelegramSDK.getInstance();
@@ -167,7 +173,7 @@ export default function TelegramDebugPage() {
             </p>
             <p>
               <strong className="text-phantom-white">To test properly:</strong> Open
-              this URL in Telegram Desktop/Mobile via your bot's menu button.
+              this URL in Telegram Desktop/Mobile via your bot&apos;s menu button.
             </p>
           </div>
         </Card>
@@ -189,12 +195,12 @@ function StatusItem({ label, value }: { label: string; value: boolean }) {
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: any }) {
+function InfoRow({ label, value }: { label: string; value: string | number | boolean }) {
   return (
     <div className="flex items-center justify-between border-b border-phantom-gray-800 py-1">
       <span className="text-phantom-muted">{label}</span>
       <span className="font-mono text-phantom-white">
-        {typeof value === "object" ? JSON.stringify(value) : String(value)}
+        {String(value)}
       </span>
     </div>
   );
