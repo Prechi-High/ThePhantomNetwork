@@ -401,14 +401,6 @@
   line-height: 1.5;
 }
 
-/* Accessibility */
-@media (prefers-reduced-motion: reduce) {
-  :global(*) {
-    animation: none !important;
-    transition: none !important;
-  }
-}
-
 /* High contrast mode */
 @media (prefers-contrast: high) {
   .panel {
