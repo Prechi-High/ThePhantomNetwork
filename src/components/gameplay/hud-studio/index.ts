@@ -10,7 +10,8 @@
 // Core Components
 export { HUDStudioProvider } from './HUDStudioProvider';
 export { EditModeWrapper } from './core/EditModeWrapper';
-// Note: EditableComponent not yet implemented
+export { EditableComponent } from './core/EditableComponent';
+export { SelectionOverlay } from './core/SelectionOverlay';
 
 // Systems
 export { componentRegistry } from './systems/registry/ComponentRegistry';
@@ -21,6 +22,11 @@ export { commandHistory } from './systems/history/CommandHistory';
 export type { HUDComponentMetadata, ComponentCategory, EditableProp } from './systems/registry/types';
 export type { ComponentInstance, NormalizedPosition, NormalizedSize } from './systems/state/slices/componentsSlice';
 export type { Command } from './systems/history/types';
+
+// Hooks
+export { useSelection } from './hooks/useSelection';
+export { useDragDrop } from './hooks/useDragDrop';
+export { useResize } from './hooks/useResize';
 
 // Utilities
 export { pixelsToNormalized, normalizedToPixels } from './systems/layout/normalizer';
