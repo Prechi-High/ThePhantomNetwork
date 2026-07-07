@@ -8,8 +8,8 @@ import { createSubSessions } from "@/lib/gameplay/matchmaking";
 
 describe("spin engine", () => {
   it("returns valid outcomes", () => {
-    const result = rollSpinOutcome(42);
-    expect(["ADVANCE", "ACQUIRE", "DISCOVER", "STEAL", "VOID"]).toContain(result.outcome);
+    const result = rollSpinOutcome("test-seed", 0);
+    expect(["ADVANCE", "ACQUIRE", "DISCOVER", "STEAL", "VOID"]).toContain(result.winningSector);
   });
 
   it("applies token deltas", () => {
@@ -49,7 +49,12 @@ describe("steal engine", () => {
 
 describe("revive", () => {
   it("completes when enough contributed", () => {
-    let state = { targetUserId: "b", required: 3, contributed: 0, contributors: [] };
+    let state: ReturnType<typeof contributeToRevive> = { 
+      targetUserId: "b", 
+      required: 3, 
+      contributed: 0, 
+      contributors: [] 
+    };
     state = contributeToRevive(state, "a", 2);
     state = contributeToRevive(state, "c", 1);
     expect(isReviveComplete(state)).toBe(true);

@@ -1,25 +1,11 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect, useRef } from "react";
+import { useSessionStore } from "@/stores/useSessionStore";
+import { useLiveFeedStore, type FeedEvent } from "@/stores/useLiveFeedStore";
+import { useLiveFeedUpdates } from "@/hooks/useLiveFeedUpdates";
 
-type EventType = "steal" | "revive" | "lead" | "phase" | "shield" | "surge" | "jackpot" | "cloak" | "multiplier";
-
-interface FeedEvent {
-  id: number;
-  type: EventType;
-  text: string;
-  time: string;
-}
-
-const EVENT_POOL: FeedEvent[] = [
-  { id: 1, type: "steal", text: "NovaQueen stole 2,250", time: "10s" },
-  { id: 2, type: "revive", text: "Ghost revived PhantomX", time: "20s" },
-  { id: 3, type: "lead", text: "Camp Eclipse takes 1st", time: "30s" },
-  { id: 4, type: "phase", text: "Nightfall entered Phase 2", time: "45s" },
-  { id: 5, type: "shield", text: "ShadowX activated Shield", time: "1m" },
-  { id: 6, type: "surge", text: "Shadow Surge Activated", time: "1m" },
-];
+type EventType = "steal" | "revive" | "lead" | "phase" | "shield" | "surge" | "jackpot" | "cloak" | "multiplier" | "effect" | "elimination";
 
 const EVENT_COLORS: Record<EventType, { accent: string; dot: string }> = {
   steal: { accent: "#ef4444", dot: "#ef4444" },
@@ -31,26 +17,94 @@ const EVENT_COLORS: Record<EventType, { accent: string; dot: string }> = {
   jackpot: { accent: "#fbbf24", dot: "#fbbf24" },
   cloak: { accent: "#818cf8", dot: "#818cf8" },
   multiplier: { accent: "#ec4899", dot: "#ec4899" },
+  effect: { accent: "#38bdf8", dot: "#38bdf8" },
+  elimination: { accent: "#ef4444", dot: "#ef4444" },
 };
 
 const VISIBLE = 5;
 
-export function LiveFeed() {
-  const [events, setEvents] = useState<FeedEvent[]>(EVENT_POOL.slice(0, VISIBLE));
-  const nextIdRef = useRef(EVENT_POOL.length + 1);
+// Helper to format relative time
+function formatRelativeTime(isoTimestamp: string): string {
+  const now = Date.now();
+  const eventTime = new Date(isoTimestamp).getTime();
+  const diffMs = now - eventTime;
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const pool = EVENT_POOL;
-      const next: FeedEvent = {
-        ...pool[Math.floor(Math.random() * pool.length)],
-        id: nextIdRef.current++,
-        time: "now",
-      };
-      setEvents((prev) => [next, ...prev.slice(0, VISIBLE - 1)]);
-    }, 4000);
-    return () => clearInterval(timer);
-  }, []);
+  if (diffMs < 1000) return "now";
+  if (diffMs < 60000) return `${Math.floor(diffMs / 1000)}s`;
+  if (diffMs < 3600000) return `${Math.floor(diffMs / 60000)}m`;
+  return `${Math.floor(diffMs / 3600000)}h`;
+}
+
+// Helper to format event text from backend data
+function formatEventText(event: FeedEvent): string {
+  const actor = event.actor?.username || "Player";
+  const target = event.target?.username || "Target";
+  const details = event.details || {};
+
+  switch (event.type) {
+    case "steal":
+      return `${actor} stole ${details.amount ?? 0}`;
+    case "revive":
+      return `${actor} revived ${target}`;
+    case "lead":
+      return `${actor} takes 1st place`;
+    case "phase":
+      return `${details.phaseName ?? "Phase"} entered`;
+    case "effect":
+      return `${actor} activated ${details.effect ?? "Effect"}`;
+    case "elimination":
+      return `${actor} eliminated`;
+    case "surge":
+      return "Shadow Surge Activated";
+    default:
+      return `${actor} ${event.type}`;
+  }
+}
+
+export function LiveFeed() {
+  const { subSessionId } = useSessionStore();
+  const events = useLiveFeedStore((s) => s.events);
+
+  // Subscribe to live feed updates
+  useLiveFeedUpdates(subSessionId);
+
+  const displayedEvents = events.slice(0, VISIBLE);
+
+  if (displayedEvents.length === 0) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", width: "100%", gap: "clamp(6px, 0.8vw, 9px)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "clamp(5px, 0.6vw, 7px)" }}>
+          <motion.div
+            animate={{ opacity: [1, 0.3, 1] }}
+            transition={{ duration: 1.4, repeat: Infinity }}
+            style={{
+              width: "clamp(5px, 0.6vw, 7px)",
+              height: "clamp(5px, 0.6vw, 7px)",
+              borderRadius: "50%",
+              background: "#22c55e",
+              boxShadow: "0 0 6px rgba(34,197,94,0.8)",
+              flexShrink: 0,
+            }}
+          />
+          <span
+            className="text-xs"
+            style={{
+              fontWeight: 800,
+              letterSpacing: "0.14em",
+              color: "#22c55e",
+              textTransform: "uppercase",
+              textShadow: "0 0 8px rgba(34,197,94,0.45)",
+            }}
+          >
+            LIVE FEED
+          </span>
+        </div>
+        <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "12px" }}>
+          Waiting for events...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", width: "100%", gap: "clamp(6px, 0.8vw, 9px)" }}>
@@ -85,8 +139,12 @@ export function LiveFeed() {
       {/* Activity Stream */}
       <div style={{ display: "flex", flexDirection: "column", gap: "clamp(4px, 0.5vw, 6px)" }}>
         <AnimatePresence initial={false} mode="popLayout">
-          {events.map((event) => {
-            const colors = EVENT_COLORS[event.type];
+          {displayedEvents.map((event) => {
+            const eventType = (event.type as EventType) || "steal";
+            const colors = EVENT_COLORS[eventType] || EVENT_COLORS.steal;
+            const text = formatEventText(event);
+            const time = formatRelativeTime(event.timestamp);
+
             return (
               <motion.div
                 key={event.id}
@@ -125,7 +183,7 @@ export function LiveFeed() {
                     lineHeight: 1.3,
                   }}
                 >
-                  {event.text}
+                  {text}
                 </span>
 
                 {/* Time */}
@@ -138,7 +196,7 @@ export function LiveFeed() {
                     flexShrink: 0,
                   }}
                 >
-                  {event.time}
+                  {time}
                 </span>
               </motion.div>
             );

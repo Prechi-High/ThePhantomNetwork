@@ -5,6 +5,7 @@ import { FloatingNotification, type Notification } from "./FloatingNotification"
 
 interface NotificationContextType {
   addNotification: (notification: Omit<Notification, "id">) => void;
+  notify: (message: string, type?: Notification["type"]) => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -20,12 +21,16 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     setNotifications((prev) => [newNotification, ...prev]);
   };
 
+  const notify = (message: string, type: Notification["type"] = "info") => {
+    addNotification({ title: message, type });
+  };
+
   const removeNotification = (id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
   return (
-    <NotificationContext.Provider value={{ addNotification }}>
+    <NotificationContext.Provider value={{ addNotification, notify }}>
       {children}
       <FloatingNotification notifications={notifications} onDismiss={removeNotification} />
     </NotificationContext.Provider>

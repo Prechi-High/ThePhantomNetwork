@@ -13,6 +13,11 @@ import { useGameplayStore } from "@/stores/useGameplayStore";
 import { useStealStore } from "@/stores/useStealStore";
 import { useSessionStore } from "@/stores/useSessionStore";
 import { useRealtimeSession, usePhaseTimer } from "@/hooks/useRealtimeSession";
+import { useLiveFeedUpdates } from "@/hooks/useLiveFeedUpdates";
+import { useLeaderboardUpdates } from "@/hooks/useLeaderboardUpdates";
+import { useEffectsUpdates } from "@/hooks/useEffectsUpdates";
+import { useInventoryUpdates } from "@/hooks/useInventoryUpdates";
+import { useServerTime } from "@/hooks/useServerTime";
 import type { StealTarget } from "@/types/gameplay";
 import { reportClientError } from "@/lib/monitoring/client-report";
 
@@ -101,6 +106,13 @@ export default function PlayPage() {
 
   const [ready, setReady] = useState(false);
   const lastIntroPhaseRef = useRef<number | null>(null);
+
+  // Hook calls at top level - all 5 custom hooks for real-time subscriptions
+  useServerTime();
+  useLiveFeedUpdates(subSessionId);
+  useLeaderboardUpdates(subSessionId);
+  useEffectsUpdates(currentUserId || null, subSessionId);
+  useInventoryUpdates(currentUserId || null, subSessionId);
 
   useEffect(() => {
     resetGameplay();
@@ -310,10 +322,10 @@ export default function PlayPage() {
           <GameplayHUD
             phase={phase || 1}
             totalPhases={6}
-            prizePoolCents={totalPoolCents ?? 1250000}
-            tokens={tokens || 24.5}
-            playerRank={playerRank || 7}
-            alivePlayers={totalPlayers || 28}
+            prizePoolCents={totalPoolCents}
+            tokens={tokens}
+            playerRank={playerRank}
+            alivePlayers={totalPlayers}
             surgePercent={72}
             isSpinning={isSpinning}
             spinLocked={spinLocked}

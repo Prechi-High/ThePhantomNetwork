@@ -1,0 +1,62 @@
+{
+  "specName": "Gameplay Real-Time Integration",
+  "description": "Complete real-time integration of gameplay UI with backend data, eliminating all mock data and placeholder values",
+  "status": "ready_for_implementation",
+  "documentationFiles": [
+    "requirements.md",
+    "design.md"
+  ],
+  "tasksFile": "tasks.md",
+  "estimatedDuration": "5-6 days",
+  "priority": "high",
+  "tags": [
+    "gameplay",
+    "real-time",
+    "integration",
+    "backend-connection",
+    "zustand-stores",
+    "websocket"
+  ],
+  "keyObjectives": [
+    "Replace all mock data with live backend data",
+    "Implement 4 new Zustand stores for state management",
+    "Create 5 custom hooks for real-time subscriptions",
+    "Implement 5 new API endpoints",
+    "Configure WebSocket event emission",
+    "Remove all fallback values and placeholder data",
+    "Ensure 60 FPS performance",
+    "Full error recovery and reconnection"
+  ],
+  "deliverables": [
+    "4 new Zustand stores (Live Feed, Leaderboard, Effects, Inventory)",
+    "5 new custom hooks (Live Feed Updates, Leaderboard Updates, Effects Updates, Inventory Updates, Server Time)",
+    "5 refactored components (LiveFeed, Leaderboard, ActiveEffects, SkillDockHUD, PlayPage)",
+    "5 new API endpoints (/api/gameplay/livefeed, /api/gameplay/leaderboard, /api/player/effects, /api/player/inventory, /api/server-time)",
+    "Real-time event configuration (WebSocket events)",
+    "Error handling and reconnection logic",
+    "Integration validation report",
+    "End-to-end test suite"
+  ],
+  "dependencies": [
+    "Existing Zustand store pattern in useGameplayStore",
+    "Existing real-time hook pattern in useRealtimeSession",
+    "EventSource/WebSocket service implementation",
+    "Database schema with livefeed_events, player_effects, skill_cooldowns tables"
+  ],
+  "risks": [
+    "Real-time event ordering if not properly timestamped",
+    "Memory leaks if subscriptions not cleaned up properly",
+    "Network instability requiring robust error handling",
+    "Performance impact from frequent polling (mitigated with batching)"
+  ],
+  "successMetrics": [
+    "100% mock data removed",
+    "All 4 API endpoints working",
+    "Real-time events firing correctly",
+    "Polling fallback functional",
+    "Data accuracy 100%",
+    "Reconnection time < 3 seconds",
+    "Countdown accuracy ±100ms",
+    "Performance 60 FPS maintained"
+  ]
+}

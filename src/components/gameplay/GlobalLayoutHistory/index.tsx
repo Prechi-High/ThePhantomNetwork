@@ -111,15 +111,18 @@ export function GlobalLayoutHistory() {
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to restore layout';
-      notify(errorMessage, 'error');
+      notify(errorMessage, 'danger');
     } finally {
       setIsRestoring(false);
     }
   }
 
-  const handleOpenRestore = (version: GlobalLayoutVersionInfo) => {
-    setSelectedVersion(version);
-    setShowRestoreDialog(true);
+  const handleOpenRestore = (versionId: string) => {
+    const version = versions.find((v) => v.id === versionId);
+    if (version) {
+      setSelectedVersion(version);
+      setShowRestoreDialog(true);
+    }
   };
 
   return (

@@ -1,46 +1,14 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useSessionStore } from "@/stores/useSessionStore";
+import { useEffectsStore, type ActiveEffect } from "@/stores/useEffectsStore";
+import { useEffectsUpdates } from "@/hooks/useEffectsUpdates";
+import { useServerTime } from "@/hooks/useServerTime";
 
-interface Effect {
-  id: string;
-  label: string;
-  duration: number; // seconds remaining
-  color: string;
-  glowColor: string;
-  icon: React.ReactNode;
-}
-
-const INITIAL_EFFECTS: Effect[] = [
-  {
-    id: "steal_boost",
-    label: "Steal Boost",
-    duration: 18,
-    color: "#a855f7",
-    glowColor: "rgba(168,85,247,0.45)",
-    icon: (
-      <svg width="clamp(10px, 1.2vw, 13px)" height="clamp(10px, 1.2vw, 13px)" viewBox="0 0 24 24" fill="none">
-        <path d="M13 2L4.5 13.5H11L10 22L20.5 10H14L13 2Z" fill="#a855f7" />
-      </svg>
-    ),
-  },
-  {
-    id: "cloak",
-    label: "Cloak",
-    duration: 12,
-    color: "#818cf8",
-    glowColor: "rgba(129,140,248,0.45)",
-    icon: (
-      <svg width="clamp(10px, 1.2vw, 13px)" height="clamp(10px, 1.2vw, 13px)" viewBox="0 0 24 24" fill="none">
-        <path d="M12 3C8 3 5 6.5 5 10v9l2.5-2 2.5 2 2.5-2 2.5 2 2.5-2 2.5 2V10C22 6.5 19 3 12 3Z" fill="#818cf8" />
-      </svg>
-    ),
-  },
-  {
-    id: "shield",
-    label: "Shield",
-    duration: 8,
+// Map effect types to display properties
+const EFFECT_CONFIG: Record<string, { color: string; glowColor: string; icon: React.ReactNode }> = {
+  shield: {
     color: "#38bdf8",
     glowColor: "rgba(56,189,248,0.45)",
     icon: (
@@ -49,23 +17,43 @@ const INITIAL_EFFECTS: Effect[] = [
       </svg>
     ),
   },
-];
+  cloak: {
+    color: "#818cf8",
+    glowColor: "rgba(129,140,248,0.45)",
+    icon: (
+      <svg width="clamp(10px, 1.2vw, 13px)" height="clamp(10px, 1.2vw, 13px)" viewBox="0 0 24 24" fill="none">
+        <path d="M12 3C8 3 5 6.5 5 10v9l2.5-2 2.5 2 2.5-2 2.5 2 2.5-2 2.5 2V10C22 6.5 19 3 12 3Z" fill="#818cf8" />
+      </svg>
+    ),
+  },
+  multiplier: {
+    color: "#a855f7",
+    glowColor: "rgba(168,85,247,0.45)",
+    icon: (
+      <svg width="clamp(10px, 1.2vw, 13px)" height="clamp(10px, 1.2vw, 13px)" viewBox="0 0 24 24" fill="none">
+        <path d="M13 2L4.5 13.5H11L10 22L20.5 10H14L13 2Z" fill="#a855f7" />
+      </svg>
+    ),
+  },
+  insurance: {
+    color: "#fbbf24",
+    glowColor: "rgba(251,191,36,0.45)",
+    icon: (
+      <svg width="clamp(10px, 1.2vw, 13px)" height="clamp(10px, 1.2vw, 13px)" viewBox="0 0 24 24" fill="none">
+        <path d="M12 3C7 3 3 7 3 12H21C21 7 17 3 12 3Z" fill="#fbbf24" />
+        <line x1="12" y1="12" x2="12" y2="19" stroke="#fbbf24" strokeWidth="2.5" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+};
 
 export function ActiveEffects() {
-  const [effects, setEffects] = useState<Effect[]>(INITIAL_EFFECTS);
+  const { currentUserId, subSessionId } = useSessionStore();
+  const effects = useEffectsStore((s) => s.effects);
+  const serverTime = useServerTime();
 
-  // Countdown timer - updates every second
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setEffects((prev) =>
-        prev
-          .map((effect) => ({ ...effect, duration: effect.duration - 1 }))
-          .filter((effect) => effect.duration > 0)
-      );
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
+  // Subscribe to effects updates
+  useEffectsUpdates(currentUserId, subSessionId);
 
   if (effects.length === 0) return null;
 
@@ -83,59 +71,66 @@ export function ActiveEffects() {
         ACTIVE EFFECTS
       </span>
       <div className="effects-row">
-        {effects.map((effect) => (
-          <motion.div
-            key={effect.id}
-            layout
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{
-              scale: 1,
-              opacity: 1,
-              boxShadow: [
-                `0 0 8px ${effect.glowColor}`,
-                `0 0 14px ${effect.glowColor}`,
-                `0 0 8px ${effect.glowColor}`,
-              ],
-            }}
-            exit={{ scale: 0, opacity: 0 }}
-            transition={{
-              layout: { duration: 0.3 },
-              boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" },
-            }}
-            className="effect-pill"
-            style={{
-              background: "rgba(10,4,22,0.65)",
-              border: `1px solid ${effect.color}44`,
-              backdropFilter: "blur(8px)",
-            }}
-          >
-            <div style={{ filter: `drop-shadow(0 0 3px ${effect.color}80)` }}>
-              {effect.icon}
-            </div>
-            <span
-              className="text-md"
-              style={{ fontWeight: 700, color: "#fff", lineHeight: 1 }}
-            >
-              {effect.label}
-            </span>
-            <motion.span
-              key={effect.duration}
-              initial={{ scale: 1.2 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 0.2 }}
-              className="text-md"
+        {effects.map((effect) => {
+          const config = EFFECT_CONFIG[effect.type] || EFFECT_CONFIG.shield;
+          const remainingMs = serverTime.getCountdown(effect.expires_at);
+          const remainingSeconds = Math.ceil(remainingMs / 1000);
+          const isExpiring = remainingSeconds <= 3;
+
+          return (
+            <motion.div
+              key={effect.id}
+              layout
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{
+                scale: 1,
+                opacity: 1,
+                boxShadow: [
+                  `0 0 8px ${config.glowColor}`,
+                  `0 0 14px ${config.glowColor}`,
+                  `0 0 8px ${config.glowColor}`,
+                ],
+              }}
+              exit={{ scale: 0, opacity: 0 }}
+              transition={{
+                layout: { duration: 0.3 },
+                boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" },
+              }}
+              className="effect-pill"
               style={{
-                fontWeight: 700,
-                color: effect.duration <= 3 ? "#ef4444" : effect.color,
-                lineHeight: 1,
-                textShadow: `0 0 5px ${effect.color}70`,
-                fontVariantNumeric: "tabular-nums",
+                background: "rgba(10,4,22,0.65)",
+                border: `1px solid ${config.color}44`,
+                backdropFilter: "blur(8px)",
               }}
             >
-              {effect.duration}s
-            </motion.span>
-          </motion.div>
-        ))}
+              <div style={{ filter: `drop-shadow(0 0 3px ${config.color}80)` }}>
+                {config.icon}
+              </div>
+              <span
+                className="text-md"
+                style={{ fontWeight: 700, color: "#fff", lineHeight: 1 }}
+              >
+                {effect.name}
+              </span>
+              <motion.span
+                key={`${effect.id}-${remainingSeconds}`}
+                initial={{ scale: 1.2 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.2 }}
+                className="text-md"
+                style={{
+                  fontWeight: 700,
+                  color: isExpiring ? "#ef4444" : config.color,
+                  lineHeight: 1,
+                  textShadow: `0 0 5px ${config.color}70`,
+                  fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                {remainingSeconds}s
+              </motion.span>
+            </motion.div>
+          );
+        })}
       </div>
     </div>
   );

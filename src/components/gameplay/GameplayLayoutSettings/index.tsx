@@ -88,7 +88,7 @@ export function GameplayLayoutSettings() {
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to reset layout';
-      notify(errorMessage, 'error');
+      notify(errorMessage, 'danger');
       throw err;
     }
   }

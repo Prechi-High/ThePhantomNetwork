@@ -4,24 +4,29 @@
  * Tests for all 6 API endpoints with authentication and authorization
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
+
+interface MockLayoutConfig {
+  components: Record<string, unknown>;
+  version?: string;
+}
 
 interface MockResponse {
   status: number;
-  json: () => Promise<any>;
+  json: () => Promise<MockLayoutConfig | { success: boolean; error?: string }>;
   headers: Record<string, string>;
 }
 
 interface MockRequest {
   method: string;
   headers: Record<string, string>;
-  json: () => Promise<any>;
+  json: () => Promise<MockLayoutConfig | undefined>;
   nextUrl: { pathname: string };
 }
 
 const createMockRequest = (
   method: string,
-  body?: any,
+  body?: MockLayoutConfig,
   userId?: string,
   token?: string
 ): MockRequest => ({
@@ -34,7 +39,10 @@ const createMockRequest = (
   nextUrl: { pathname: '/api/test' },
 });
 
-const createMockResponse = (status: number, data: any): MockResponse => ({
+const createMockResponse = (
+  status: number,
+  data: MockLayoutConfig | { success: boolean; error?: string }
+): MockResponse => ({
   status,
   json: async () => data,
   headers: { 'Content-Type': 'application/json' },

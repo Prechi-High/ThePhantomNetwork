@@ -48,7 +48,7 @@ export function LayoutEditorShell({
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : 'Failed to load layout';
-        notify(errorMessage, 'error');
+        notify(errorMessage, 'danger');
       } finally {
         setIsLoading(false);
       }
@@ -69,7 +69,7 @@ export function LayoutEditorShell({
    */
   const handleSavePrivate = async () => {
     if (!editorRef.current) {
-      notify('Editor not found', 'error');
+      notify('Editor not found', 'danger');
       return;
     }
 
@@ -99,7 +99,7 @@ export function LayoutEditorShell({
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to save layout';
-      notify(errorMessage, 'error');
+      notify(errorMessage, 'danger');
     } finally {
       setIsSaving(false);
     }
@@ -110,7 +110,7 @@ export function LayoutEditorShell({
    */
   const handlePublishGlobal = async (changeNotes: string) => {
     if (!editorRef.current) {
-      notify('Editor not found', 'error');
+      notify('Editor not found', 'danger');
       return;
     }
 
@@ -142,7 +142,7 @@ export function LayoutEditorShell({
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to publish layout';
-      notify(errorMessage, 'error');
+      notify(errorMessage, 'danger');
     } finally {
       setIsSaving(false);
     }
