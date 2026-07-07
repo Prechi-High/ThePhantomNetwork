@@ -7,6 +7,7 @@ import { AVATARS } from "@/types/gameplay";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
+import { GameplayLayoutSettings } from "@/components/gameplay/GameplayLayoutSettings";
 
 import {
   Trophy,
@@ -228,6 +229,15 @@ export default function ProfilePage() {
 
       {activeTab === "overview" && (
         <div className="space-y-8">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-phantom-muted">
+                Gameplay Layout
+              </h3>
+            </div>
+            <GameplayLayoutSettings />
+          </div>
+
           <div>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold uppercase tracking-widest text-phantom-muted">
