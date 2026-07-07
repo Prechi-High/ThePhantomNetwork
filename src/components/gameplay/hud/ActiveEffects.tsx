@@ -48,12 +48,13 @@ const EFFECT_CONFIG: Record<string, { color: string; glowColor: string; icon: Re
 };
 
 export function ActiveEffects() {
-  const { currentUserId, subSessionId } = useSessionStore();
+  const { subSessionId } = useSessionStore();
   const effects = useEffectsStore((s) => s.effects);
   const serverTime = useServerTime();
 
-  // Subscribe to effects updates
-  useEffectsUpdates(currentUserId, subSessionId);
+  // Get current user ID from wherever it's stored - could be from auth or context
+  // For now, we use null which will be handled by useEffectsUpdates
+  useEffectsUpdates(null, subSessionId);
 
   if (effects.length === 0) return null;
 

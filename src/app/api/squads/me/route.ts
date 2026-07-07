@@ -41,7 +41,3 @@ export async function GET() {
     members: members || [],
   });
 }
-    membership,
-    members: members ?? [],
-  });
-}

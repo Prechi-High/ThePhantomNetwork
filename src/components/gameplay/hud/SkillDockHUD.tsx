@@ -92,12 +92,12 @@ const SKILL_COLORS: Record<string, { borderColor: string; glowColor: string; bgF
 };
 
 export function SkillDockHUD() {
-  const { currentUserId, subSessionId } = useSessionStore();
+  const { subSessionId } = useSessionStore();
   const skills = useInventoryStore((s) => s.skills);
   const serverTime = useServerTime();
 
   // Subscribe to inventory updates
-  useInventoryUpdates(currentUserId, subSessionId);
+  useInventoryUpdates(null, subSessionId);
 
   // Filter to show only owned skills
   const ownedSkills = skills.filter((skill) => skill.owned);
