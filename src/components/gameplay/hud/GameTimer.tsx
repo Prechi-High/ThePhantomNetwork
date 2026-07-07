@@ -23,7 +23,7 @@ export function GameTimer() {
       if (!currentSession) return;
 
       // Get phase end time from session
-      const phaseEndTime = (currentSession as any).phase_end_time;
+      const phaseEndTime = (currentSession as Record<string, unknown>).phase_end_time as string;
       if (!phaseEndTime) return;
 
       // Calculate remaining ms using server time

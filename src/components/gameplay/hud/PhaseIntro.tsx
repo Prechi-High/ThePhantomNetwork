@@ -1,1 +1,130 @@
-'use client';\n\nimport { useEffect } from 'react';\nimport { motion, AnimatePresence } from 'framer-motion';\nimport { useGameplayEvents } from '@/hooks/useGameplayEvents';\nimport { GAMEPLAY_EVENTS } from '@/lib/events/eventTypes';\n\ninterface PhaseIntroProps {\n  phaseNumber: number;\n  phaseName: string;\n  phaseDescription?: string;\n  onComplete: () => void;\n}\n\nexport function PhaseIntro({\n  phaseNumber,\n  phaseName,\n  phaseDescription,\n  onComplete,\n}: PhaseIntroProps) {\n  const { emit } = useGameplayEvents();\n\n  useEffect(() => {\n    // Emit event for sound system\n    emit(GAMEPLAY_EVENTS.PHASE.STARTED, { phaseNumber, phaseName });\n\n    // Auto-complete after animation\n    const timer = setTimeout(onComplete, 2500);\n    return () => clearTimeout(timer);\n  }, [phaseNumber, phaseName, emit, onComplete]);\n\n  return (\n    <AnimatePresence>\n      <motion.div\n        className=\"fixed inset-0 flex items-center justify-center\"\n        initial={{ opacity: 0 }}\n        animate={{ opacity: 1 }}\n        exit={{ opacity: 0 }}\n        transition={{ duration: 0.3 }}\n        style={{\n          background: 'rgba(0, 0, 0, 0.8)',\n          zIndex: 1000,\n          backdropFilter: 'blur(6px)',\n        }}\n      >\n        {/* Center card */}\n        <motion.div\n          initial={{ scale: 0.8, opacity: 0, y: 50 }}\n          animate={{ scale: 1, opacity: 1, y: 0 }}\n          exit={{ scale: 0.8, opacity: 0, y: -50 }}\n          transition={{\n            type: 'spring',\n            stiffness: 120,\n            damping: 20,\n          }}\n          style={{\n            background: 'linear-gradient(135deg, #1e1b4b 0%, #0f0d27 100%)',\n            border: '2px solid #a78bfa',\n            borderRadius: '12px',\n            padding: '60px 80px',\n            textAlign: 'center',\n            boxShadow: '0 0 60px rgba(167,139,250,0.3)',\n          }}\n        >\n          {/* Phase label */}\n          <motion.div\n            initial={{ opacity: 0, y: 10 }}\n            animate={{ opacity: 1, y: 0 }}\n            transition={{ delay: 0.2 }}\n            style={{\n              fontSize: '14px',\n              fontWeight: 700,\n              letterSpacing: '0.2em',\n              color: 'rgba(167,139,250,0.6)',\n              textTransform: 'uppercase',\n              marginBottom: '16px',\n            }}\n          >\n            PHASE {phaseNumber}\n          </motion.div>\n\n          {/* Phase name */}\n          <motion.h1\n            initial={{ opacity: 0, scale: 0.9 }}\n            animate={{ opacity: 1, scale: 1 }}\n            transition={{ delay: 0.3, type: 'spring' }}\n            style={{\n              fontSize: '48px',\n              fontWeight: 900,\n              color: '#c084fc',\n              textShadow: '0 0 30px rgba(192,132,252,0.5)',\n              marginBottom: '12px',\n              letterSpacing: '0.05em',\n            }}\n          >\n            {phaseName}\n          </motion.h1>\n\n          {/* Phase description */}\n          {phaseDescription && (\n            <motion.p\n              initial={{ opacity: 0 }}\n              animate={{ opacity: 1 }}\n              transition={{ delay: 0.4 }}\n              style={{\n                fontSize: '14px',\n                color: 'rgba(255,255,255,0.6)',\n                marginTop: '8px',\n                maxWidth: '400px',\n              }}\n            >\n              {phaseDescription}\n            </motion.p>\n          )}\n        </motion.div>\n\n        {/* Glow background */}\n        <motion.div\n          className=\"absolute inset-0 pointer-events-none\"\n          initial={{ opacity: 0 }}\n          animate={{ opacity: 1 }}\n          exit={{ opacity: 0 }}\n          style={{\n            background: 'radial-gradient(circle at center, rgba(167,139,250,0.2) 0%, transparent 70%)',\n          }}\n        />\n      </motion.div>\n    </AnimatePresence>\n  );\n}\n
+'use client';
+
+import { useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useGameplayEvents } from '@/hooks/useGameplayEvents';
+import { GAMEPLAY_EVENTS } from '@/lib/events/eventTypes';
+
+interface PhaseIntroProps {
+  phaseNumber: number;
+  phaseName: string;
+  phaseDescription?: string;
+  onComplete: () => void;
+}
+
+export function PhaseIntro({
+  phaseNumber,
+  phaseName,
+  phaseDescription,
+  onComplete,
+}: PhaseIntroProps) {
+  const { emit } = useGameplayEvents();
+
+  useEffect(() => {
+    // Emit event for sound system
+    emit(GAMEPLAY_EVENTS.PHASE.STARTED, { phaseNumber, phaseName });
+
+    // Auto-complete after animation
+    const timer = setTimeout(onComplete, 2500);
+    return () => clearTimeout(timer);
+  }, [phaseNumber, phaseName, emit, onComplete]);
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        className="fixed inset-0 flex items-center justify-center"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
+        style={{
+          background: 'rgba(0, 0, 0, 0.8)',
+          zIndex: 1000,
+          backdropFilter: 'blur(6px)',
+        }}
+      >
+        {/* Center card */}
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0, y: 50 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.8, opacity: 0, y: -50 }}
+          transition={{
+            type: 'spring',
+            stiffness: 120,
+            damping: 20,
+          }}
+          style={{
+            background: 'linear-gradient(135deg, #1e1b4b 0%, #0f0d27 100%)',
+            border: '2px solid #a78bfa',
+            borderRadius: '12px',
+            padding: '60px 80px',
+            textAlign: 'center',
+            boxShadow: '0 0 60px rgba(167,139,250,0.3)',
+          }}
+        >
+          {/* Phase label */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            style={{
+              fontSize: '14px',
+              fontWeight: 700,
+              letterSpacing: '0.2em',
+              color: 'rgba(167,139,250,0.6)',
+              textTransform: 'uppercase',
+              marginBottom: '16px',
+            }}
+          >
+            PHASE {phaseNumber}
+          </motion.div>
+
+          {/* Phase name */}
+          <motion.h1
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3, type: 'spring' }}
+            style={{
+              fontSize: '48px',
+              fontWeight: 900,
+              color: '#c084fc',
+              textShadow: '0 0 30px rgba(192,132,252,0.5)',
+              marginBottom: '12px',
+              letterSpacing: '0.05em',
+            }}
+          >
+            {phaseName}
+          </motion.h1>
+
+          {/* Phase description */}
+          {phaseDescription && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              style={{
+                fontSize: '14px',
+                color: 'rgba(255,255,255,0.6)',
+                marginTop: '8px',
+                maxWidth: '400px',
+              }}
+            >
+              {phaseDescription}
+            </motion.p>
+          )}
+        </motion.div>
+
+        {/* Glow background */}
+        <motion.div
+          className="absolute inset-0 pointer-events-none"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          style={{
+            background: 'radial-gradient(circle at center, rgba(167,139,250,0.2) 0%, transparent 70%)',
+          }}
+        />
+      </motion.div>
+    </AnimatePresence>
+  );
+}
