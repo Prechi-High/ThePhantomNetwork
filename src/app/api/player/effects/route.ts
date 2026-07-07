@@ -59,7 +59,16 @@ export async function GET(request: Request) {
     .eq("sub_session_id", subSessionId)
     .filter("expires_at", "gt", new Date().toISOString());
 
-  const formattedEffects: ActiveEffect[] = (effects || []).map((e: any) => ({
+  interface EffectRow {
+    id: string;
+    type: string;
+    name: string;
+    duration_ms: number;
+    started_at: string;
+    expires_at: string;
+    icon: string | null;
+  }
+  const formattedEffects: ActiveEffect[] = (effects || []).map((e: EffectRow) => ({
     id: e.id,
     type: e.type,
     name: e.name,

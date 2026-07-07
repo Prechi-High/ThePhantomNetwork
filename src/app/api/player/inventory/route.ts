@@ -68,7 +68,7 @@ export async function GET(request: Request) {
 
   // Build cooldown map
   const cooldownMap = new Map<string, string>();
-  (cooldowns || []).forEach((cd: any) => {
+  (cooldowns || []).forEach((cd: { skill_id: string; cooldown_until: string }) => {
     cooldownMap.set(cd.skill_id, cd.cooldown_until);
   });
 
@@ -83,8 +83,15 @@ export async function GET(request: Request) {
   ];
 
   // Build skills list
-  const ownedSkillMap = new Map<string, any>();
-  (ownedSkills || []).forEach((skill: any) => {
+  interface OwnedSkill {
+    skill_id: string;
+    skill_name: string;
+    owned: boolean;
+    charges: number;
+    max_charges: number;
+  }
+  const ownedSkillMap = new Map<string, OwnedSkill>();
+  (ownedSkills || []).forEach((skill: OwnedSkill) => {
     ownedSkillMap.set(skill.skill_id, skill);
   });
 

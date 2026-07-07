@@ -52,7 +52,14 @@ export async function GET(request: Request) {
       .eq("sub_session_id", subSessionId)
       .order("rank", { ascending: true });
 
-    const formattedSquads: SquadLeaderboardEntry[] = (squads || []).map((s: any) => ({
+    const formattedSquads: SquadLeaderboardEntry[] = (squads || []).map((s: {
+      rank: number;
+      squad_id: string;
+      squad_name: string;
+      squad_tokens: number;
+      member_count: number;
+      leader_name: string;
+    }) => ({
       rank: s.rank,
       squad_id: s.squad_id,
       squad_name: s.squad_name,
@@ -82,7 +89,14 @@ export async function GET(request: Request) {
 
   // Calculate ranks
   const leaderboard: LeaderboardEntry[] = (players || [])
-    .map((player: any, index: number) => ({
+    .map((player: {
+      user_id: string;
+      session_tokens: number;
+      squad_id: string;
+      is_eliminated: boolean;
+      profiles: { username: string } | null;
+      squads: { name: string } | null;
+    }, index: number) => ({
       rank: index + 1,
       user_id: player.user_id,
       username: player.profiles?.username || "Player",

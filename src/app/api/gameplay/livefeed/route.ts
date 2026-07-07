@@ -57,7 +57,18 @@ export async function GET(request: Request) {
     .limit(limit);
 
   // Transform to frontend format
-  const formattedEvents: FeedEvent[] = (events || []).map((event: any) => ({
+  interface LiveFeedEventRow {
+    id: string;
+    type: string;
+    timestamp: string;
+    actor_id: string;
+    actor_name: string;
+    actor_avatar: string | null;
+    target_id: string | null;
+    target_name: string | null;
+    details: Record<string, unknown> | null;
+  }
+  const formattedEvents: FeedEvent[] = (events || []).map((event: LiveFeedEventRow) => ({
     id: event.id,
     type: event.type,
     timestamp: event.timestamp,
