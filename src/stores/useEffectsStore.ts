@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export interface ActiveEffect {
+interface ActiveEffect {
   id: string;
   type: 'shield' | 'cloak' | 'multiplier' | 'insurance';
   name: string;
@@ -12,41 +12,48 @@ export interface ActiveEffect {
 
 interface EffectsStore {
   effects: ActiveEffect[];
+  serverTime: number;
   addEffect: (effect: ActiveEffect) => void;
   removeEffect: (effectId: string) => void;
   setEffects: (effects: ActiveEffect[]) => void;
-  getTimeRemaining: (effectId: string) => number;
-  isExpired: (effectId: string) => boolean;
+  setServerTime: (time: number) => void;
+  getTimeRemaining: (effect: ActiveEffect) => number;
+  isExpired: (effect: ActiveEffect) => boolean;
 }
 
 export const useEffectsStore = create<EffectsStore>((set, get) => ({
   effects: [],
+  serverTime: Date.now(),
 
-  addEffect: (effect: ActiveEffect) =>
+  addEffect: (effect: ActiveEffect) => {
     set((state) => ({
       effects: [...state.effects, effect],
-    })),
-
-  removeEffect: (effectId: string) =>
-    set((state) => ({
-      effects: state.effects.filter((effect) => effect.id !== effectId),
-    })),
-
-  setEffects: (effects: ActiveEffect[]) =>
-    set({ effects }),
-
-  getTimeRemaining: (effectId: string): number => {
-    const effect = get().effects.find((e) => e.id === effectId);
-    if (!effect) return 0;
-    const expiresAtMs = new Date(effect.expires_at).getTime();
-    const nowMs = Date.now();
-    return Math.max(0, expiresAtMs - nowMs);
+    }));
   },
 
-  isExpired: (effectId: string): boolean => {
-    const effect = get().effects.find((e) => e.id === effectId);
-    if (!effect) return true;
+  removeEffect: (effectId: string) => {
+    set((state) => ({
+      effects: state.effects.filter((e) => e.id !== effectId),
+    }));
+  },
+
+  setEffects: (effects: ActiveEffect[]) => {
+    set({ effects });
+  },
+
+  setServerTime: (time: number) => {
+    set({ serverTime: time });
+  },
+
+  getTimeRemaining: (effect: ActiveEffect) => {
+    const state = get();
     const expiresAtMs = new Date(effect.expires_at).getTime();
-    return expiresAtMs <= Date.now();
+    return Math.max(0, expiresAtMs - state.serverTime);
+  },
+
+  isExpired: (effect: ActiveEffect) => {
+    const state = get();
+    const expiresAtMs = new Date(effect.expires_at).getTime();
+    return state.serverTime > expiresAtMs;
   },
 }));

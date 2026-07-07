@@ -1,52 +1,55 @@
 import { create } from 'zustand';
 
-export interface FeedEventActor {
-  user_id: string;
-  username: string;
-  avatar: string;
-}
-
-export interface FeedEventTarget {
-  user_id: string;
-  username: string;
-}
-
-export interface FeedEvent {
+interface FeedEvent {
   id: string;
   type: 'steal' | 'revive' | 'elimination' | 'phase' | 'effect' | 'lead' | 'surge';
   timestamp: string;
-  actor: FeedEventActor;
-  target?: FeedEventTarget;
-  details: Record<string, unknown>;
+  actor?: {
+    id: string;
+    username: string;
+  };
+  target?: {
+    id: string;
+    username: string;
+  };
+  details?: Record<string, unknown>;
 }
 
 interface LiveFeedStore {
   events: FeedEvent[];
   addEvent: (event: FeedEvent) => void;
-  removeOldestEvent: () => void;
   setEvents: (events: FeedEvent[]) => void;
+  removeOldestEvent: () => void;
   clear: () => void;
 }
+
+const MAX_EVENTS = 50;
 
 export const useLiveFeedStore = create<LiveFeedStore>((set) => ({
   events: [],
 
-  addEvent: (event: FeedEvent) =>
+  addEvent: (event: FeedEvent) => {
     set((state) => {
-      const newEvents = [event, ...state.events];
-      // Keep max 50 events
-      return { events: newEvents.slice(0, 50) };
-    }),
+      const updated = [event, ...state.events];
+      // Keep only latest MAX_EVENTS
+      if (updated.length > MAX_EVENTS) {
+        return { events: updated.slice(0, MAX_EVENTS) };
+      }
+      return { events: updated };
+    });
+  },
 
-  removeOldestEvent: () =>
-    set((state) => {
-      const newEvents = [...state.events];
-      newEvents.pop();
-      return { events: newEvents };
-    }),
+  setEvents: (events: FeedEvent[]) => {
+    set({ events: events.slice(0, MAX_EVENTS) });
+  },
 
-  setEvents: (events: FeedEvent[]) =>
-    set({ events: events.slice(0, 50) }),
+  removeOldestEvent: () => {
+    set((state) => ({
+      events: state.events.slice(0, -1),
+    }));
+  },
 
-  clear: () => set({ events: [] }),
+  clear: () => {
+    set({ events: [] });
+  },
 }));

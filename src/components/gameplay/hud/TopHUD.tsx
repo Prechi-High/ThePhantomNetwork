@@ -1,185 +1,96 @@
-"use client";
+'use client';
 
-import { motion } from "framer-motion";
-import { GameTimer } from "./GameTimer";
+import React, { useMemo } from 'react';
+import { useGameplayStore } from '@/stores/useGameplayStore';
+import { useLeaderboardStore } from '@/stores/useLeaderboardStore';
+import { useServerTime } from '@/hooks/useServerTime';
 
 interface TopHUDProps {
-  prizePoolCents: number;
-  phase: number;
-  totalPhases: number;
-  tokens: number;
-  playerRank: number;
-  alivePlayers: number;
+  currentUserId?: string;
 }
 
-export function TopHUD({
-  prizePoolCents,
-  phase,
-  totalPhases,
-  tokens,
-  playerRank,
-  alivePlayers,
-}: TopHUDProps) {
-  const prize = `$${(prizePoolCents / 100).toLocaleString()}`;
-  const rankSuffix =
-    playerRank === 1 ? "st" : playerRank === 2 ? "nd" : playerRank === 3 ? "rd" : "th";
+export function TopHUD({ currentUserId }: TopHUDProps) {
+  const { tokens, phase, phaseEndsAt } = useGameplayStore((s) => ({
+    tokens: s.tokens,
+    phase: s.phase,
+    phaseEndsAt: s.phaseEndsAt,
+  }));
+
+  const { individual: leaderboard } = useLeaderboardStore((s) => ({
+    individual: s.individual,
+  }));
+
+  const { now } = useServerTime();
+
+  // Find current player rank
+  const playerRank = useMemo(() => {
+    if (!currentUserId || !leaderboard || leaderboard.length === 0) return null;
+    const entry = leaderboard.find((e) => e.user_id === currentUserId);
+    return entry?.rank ?? null;
+  }, [currentUserId, leaderboard]);
+
+  // Calculate remaining time
+  const remaining = phaseEndsAt ? Math.max(0, phaseEndsAt - now()) : 0;
+  const remainingSeconds = Math.ceil(remaining / 1000);
+  const minutes = Math.floor(remainingSeconds / 60);
+  const seconds = remainingSeconds % 60;
+
+  const formatTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+  // Show loading if critical data missing
+  if (tokens === null || phase === null || playerRank === null || leaderboard.length === 0) {
+    return (
+      <div className="top-hud flex items-center justify-between gap-8 bg-black/80 px-6 py-4 rounded-lg border border-purple-500/30 backdrop-blur animate-pulse">
+        <div className="h-12 w-16 bg-gray-700 rounded" />
+        <div className="h-12 w-16 bg-gray-700 rounded" />
+        <div className="h-12 w-16 bg-gray-700 rounded" />
+        <div className="h-12 w-16 bg-gray-700 rounded" />
+        <div className="h-12 w-16 bg-gray-700 rounded" />
+      </div>
+    );
+  }
 
   return (
-    <div className="top-hud-grid">
-      {/* Prize Pool — 3 cols */}
-      <div className="col-span-3 glass-panel top-card">
-        <span className="top-card-label" style={{ color: "#22c55e" }}>
-          PRIZE POOL
-        </span>
-        <motion.span
-          className="top-card-value"
-          key={prizePoolCents}
-          initial={{ scale: 1.15, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.3 }}
-          style={{
-            color: "#22c55e",
-            textShadow: "0 0 12px rgba(34,197,94,0.65)",
-          }}
-        >
-          ${prize}
-        </motion.span>
-      </div>
-
-      {/* Phase + Timer — 3 cols */}
-      <div className="col-span-3 glass-panel top-card" style={{ alignItems: "center" }}>
+    <div className="top-hud flex items-center justify-between gap-8 bg-black/80 px-6 py-4 rounded-lg border border-purple-500/30 backdrop-blur">
+      {/* Timer */}
+      <div className="flex flex-col items-center">
+        <span className="text-xs text-gray-400 uppercase tracking-wider">Phase Time</span>
         <span
-          className="text-md"
-          style={{
-            fontWeight: 800,
-            letterSpacing: "0.14em",
-            color: "#c084fc",
-            lineHeight: 1,
-            marginBottom: "clamp(3px, 0.4vw, 5px)",
-            textShadow: "0 0 8px rgba(192,132,252,0.5)",
-            textTransform: "uppercase",
-          }}
+          className="text-4xl font-black text-cyan-400"
+          style={{ fontVariantNumeric: 'tabular-nums' }}
         >
-          PHASE {phase}/{totalPhases}
-        </span>
-
-        {/* Phase dots */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "clamp(3px, 0.5vw, 5px)",
-            marginBottom: "clamp(3px, 0.4vw, 5px)",
-          }}
-        >
-          {Array.from({ length: totalPhases }).map((_, i) => (
-            <motion.div
-              key={i}
-              className="rounded-full"
-              initial={false}
-              animate={{
-                width: i + 1 === phase ? "clamp(16px, 2vw, 22px)" : "clamp(5px, 0.7vw, 7px)",
-                background:
-                  i + 1 < phase
-                    ? "#7c3aed"
-                    : i + 1 === phase
-                    ? "linear-gradient(90deg,#a855f7,#c084fc)"
-                    : "rgba(168,85,247,0.18)",
-              }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-              style={{
-                height: "clamp(5px, 0.7vw, 7px)",
-                boxShadow: i + 1 === phase ? "0 0 7px rgba(168,85,247,0.8)" : "none",
-              }}
-            />
-          ))}
-        </div>
-
-        {/* Timer - Live from backend */}
-        <GameTimer />
-      </div>
-
-      {/* MY TOKENS — 3 cols */}
-      <div className="col-span-3 glass-panel top-card" style={{ alignItems: "center" }}>
-        <span className="top-card-label" style={{ color: "rgba(168,85,247,0.75)", marginBottom: "clamp(2px, 0.3vw, 3px)" }}>
-          MY TOKENS
-        </span>
-        <div style={{ display: "flex", alignItems: "center", gap: "clamp(3px, 0.4vw, 5px)", marginBottom: "clamp(2px, 0.3vw, 3px)" }}>
-          <svg width="clamp(14px, 1.8vw, 18px)" height="clamp(14px, 1.8vw, 18px)" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="9" fill="url(#tokenGrad)" stroke="#fbbf24" strokeWidth="1.5" />
-            <path d="M12 8v8M8 12h8" stroke="#78350f" strokeWidth="2" strokeLinecap="round" />
-            <defs>
-              <linearGradient id="tokenGrad" x1="12" y1="3" x2="12" y2="21" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#fcd34d" />
-                <stop offset="1" stopColor="#f59e0b" />
-              </linearGradient>
-            </defs>
-          </svg>
-          <motion.span
-            className="top-card-value"
-            key={tokens}
-            initial={{ scale: 1.15 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            style={{
-              color: "#fbbf24",
-              textShadow: "0 0 12px rgba(251,191,36,0.65)",
-            }}
-          >
-            {tokens}
-          </motion.span>
-        </div>
-        <span className="text-xs" style={{ fontWeight: 700, color: "rgba(251,191,36,0.55)", lineHeight: 1 }}>
-          Ranking: Top 18%
+          {formatTime}
         </span>
       </div>
 
-      {/* Alive + Rank — 3 cols */}
-      <div className="col-span-3 glass-panel top-card">
-        {/* Alive */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: "clamp(3px, 0.4vw, 5px)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "clamp(2px, 0.3vw, 4px)", marginBottom: "1px" }}>
-            <svg width="clamp(9px, 1.1vw, 12px)" height="clamp(9px, 1.1vw, 12px)" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="7" r="4" fill="rgba(168,85,247,0.75)" />
-              <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="rgba(168,85,247,0.75)" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-            <motion.span
-              className="top-card-value"
-              key={alivePlayers}
-              initial={{ scale: 1.15 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              style={{ color: "#fff" }}
-            >
-              {alivePlayers}
-            </motion.span>
-          </div>
-          <span className="top-card-label" style={{ color: "rgba(168,85,247,0.75)" }}>
-            ALIVE
-          </span>
-        </div>
+      {/* Phase indicator */}
+      <div className="flex flex-col items-center">
+        <span className="text-xs text-gray-400 uppercase tracking-wider">Phase</span>
+        <span className="text-3xl font-black text-purple-400">{phase}</span>
+      </div>
 
-        <div style={{ width: "100%", height: "1px", background: "linear-gradient(90deg,transparent,rgba(168,85,247,0.35),transparent)", margin: "clamp(2px, 0.3vw, 4px) 0" }} />
+      {/* Tokens - LIVE from backend */}
+      <div className="flex flex-col items-center">
+        <span className="text-xs text-gray-400 uppercase tracking-wider">Your Tokens</span>
+        <span className="text-3xl font-black text-yellow-400">{tokens.toFixed(1)}</span>
+      </div>
 
-        {/* Rank */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span className="top-card-label" style={{ color: "rgba(168,85,247,0.75)", marginBottom: "1px" }}>
-            MY RANK
-          </span>
-          <motion.span
-            className="top-card-value"
-            key={playerRank}
-            initial={{ scale: 1.15 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            style={{
-              color: "#c084fc",
-              textShadow: "0 0 10px rgba(192,132,252,0.55)",
-            }}
-          >
-            {playerRank}{rankSuffix}
-          </motion.span>
-        </div>
+      {/* Rank - LIVE from leaderboard */}
+      <div className="flex flex-col items-center">
+        <span className="text-xs text-gray-400 uppercase tracking-wider">Your Rank</span>
+        <span className="text-3xl font-black text-emerald-400">#{playerRank}</span>
+      </div>
+
+      {/* Total players - from leaderboard length */}
+      <div className="flex flex-col items-center">
+        <span className="text-xs text-gray-400 uppercase tracking-wider">Players</span>
+        <span className="text-3xl font-black text-orange-400">{leaderboard.length}</span>
+      </div>
+
+      {/* Live indicator */}
+      <div className="flex items-center gap-2">
+        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+        <span className="text-xs text-green-500 font-bold">LIVE</span>
       </div>
     </div>
   );

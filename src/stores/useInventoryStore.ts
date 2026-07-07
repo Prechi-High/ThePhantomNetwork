@@ -1,12 +1,12 @@
 import { create } from 'zustand';
 
-export interface SkillInInventory {
+interface SkillInInventory {
   id: string;
   name: string;
   owned: boolean;
   available: boolean;
   cooldown_ms: number;
-  cooldown_until: string | null;
+  cooldown_until?: string;
   charges: number;
   max_charges: number;
   icon: string;
@@ -14,10 +14,10 @@ export interface SkillInInventory {
 
 interface InventoryStore {
   skills: SkillInInventory[];
-  serverTime: string;
+  serverTime: number;
   setSkills: (skills: SkillInInventory[]) => void;
-  setServerTime: (time: string) => void;
-  updateSkillCooldown: (skillId: string, cooldownMs: number) => void;
+  setServerTime: (time: number) => void;
+  updateSkillCooldown: (skillId: string, cooldownUntil: string) => void;
   updateSkillCharges: (skillId: string, charges: number) => void;
   getSkillAvailability: (skillId: string) => boolean;
   getSkillCooldownRemaining: (skillId: string) => number;
@@ -25,54 +25,50 @@ interface InventoryStore {
 
 export const useInventoryStore = create<InventoryStore>((set, get) => ({
   skills: [],
-  serverTime: new Date().toISOString(),
+  serverTime: Date.now(),
 
-  setSkills: (skills: SkillInInventory[]) =>
-    set({ skills }),
-
-  setServerTime: (time: string) =>
-    set({ serverTime: time }),
-
-  updateSkillCooldown: (skillId: string, cooldownMs: number) =>
-    set((state) => ({
-      skills: state.skills.map((skill) => {
-        if (skill.id === skillId) {
-          if (cooldownMs === 0) {
-            return { ...skill, available: true, cooldown_until: null };
-          }
-          const cooldownUntil = new Date(
-            Date.now() + cooldownMs
-          ).toISOString();
-          return {
-            ...skill,
-            available: false,
-            cooldown_ms: cooldownMs,
-            cooldown_until: cooldownUntil,
-          };
-        }
-        return skill;
-      }),
-    })),
-
-  updateSkillCharges: (skillId: string, charges: number) =>
-    set((state) => ({
-      skills: state.skills.map((skill) =>
-        skill.id === skillId ? { ...skill, charges } : skill
-      ),
-    })),
-
-  getSkillAvailability: (skillId: string): boolean => {
-    const skill = get().skills.find((s) => s.id === skillId);
-    if (!skill) return false;
-    if (!skill.owned) return false;
-    return skill.available;
+  setSkills: (skills: SkillInInventory[]) => {
+    set({ skills });
   },
 
-  getSkillCooldownRemaining: (skillId: string): number => {
-    const skill = get().skills.find((s) => s.id === skillId);
+  setServerTime: (time: number) => {
+    set({ serverTime: time });
+  },
+
+  updateSkillCooldown: (skillId: string, cooldownUntil: string) => {
+    set((state) => ({
+      skills: state.skills.map((s) =>
+        s.id === skillId
+          ? { ...s, cooldown_until: cooldownUntil, available: false }
+          : s
+      ),
+    }));
+  },
+
+  updateSkillCharges: (skillId: string, charges: number) => {
+    set((state) => ({
+      skills: state.skills.map((s) =>
+        s.id === skillId ? { ...s, charges } : s
+      ),
+    }));
+  },
+
+  getSkillAvailability: (skillId: string) => {
+    const state = get();
+    const skill = state.skills.find((s) => s.id === skillId);
+    if (!skill || !skill.owned) return false;
+    if (!skill.cooldown_until) return true;
+
+    const cooldownExpires = new Date(skill.cooldown_until).getTime();
+    return state.serverTime > cooldownExpires;
+  },
+
+  getSkillCooldownRemaining: (skillId: string) => {
+    const state = get();
+    const skill = state.skills.find((s) => s.id === skillId);
     if (!skill || !skill.cooldown_until) return 0;
-    const cooldownUntilMs = new Date(skill.cooldown_until).getTime();
-    const nowMs = Date.now();
-    return Math.max(0, cooldownUntilMs - nowMs);
+
+    const cooldownExpires = new Date(skill.cooldown_until).getTime();
+    return Math.max(0, cooldownExpires - state.serverTime);
   },
 }));
