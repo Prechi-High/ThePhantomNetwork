@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { GameTimer } from "./GameTimer";
 
 interface TopHUDProps {
   prizePoolCents: number;
@@ -94,21 +95,8 @@ export function TopHUD({
           ))}
         </div>
 
-        {/* Timer */}
-        <motion.span
-          className="text-3xl"
-          key={Math.floor(Date.now() / 1000)}
-          style={{
-            fontWeight: 900,
-            letterSpacing: "0.05em",
-            color: "#ffffff",
-            lineHeight: 1,
-            fontVariantNumeric: "tabular-nums",
-            textShadow: "0 0 16px rgba(255,255,255,0.25)",
-          }}
-        >
-          02:45
-        </motion.span>
+        {/* Timer - Live from backend */}
+        <GameTimer />
       </div>
 
       {/* MY TOKENS — 3 cols */}
