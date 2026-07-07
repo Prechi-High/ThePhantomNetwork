@@ -322,7 +322,7 @@ export default function PlayPage() {
           <GameplayHUD
             phase={phase || 1}
             totalPhases={6}
-            prizePoolCents={totalPoolCents}
+            prizePoolCents={totalPoolCents ?? undefined}
             tokens={tokens}
             playerRank={playerRank}
             alivePlayers={totalPlayers}
