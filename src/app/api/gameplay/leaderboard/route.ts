@@ -88,21 +88,22 @@ export async function GET(request: Request) {
     .order("session_tokens", { ascending: false });
 
   // Calculate ranks
-  const leaderboard: LeaderboardEntry[] = (players || [])
-    .map((player: {
-      user_id: string;
-      session_tokens: number;
-      squad_id: string;
-      is_eliminated: boolean;
-      profiles: { username: string } | null;
-      squads: { name: string } | null;
-    }, index: number) => ({
+  interface PlayerRow {
+    user_id: string;
+    session_tokens: number;
+    squad_id: string;
+    is_eliminated: boolean;
+    profiles?: Array<{ username: string }> | null;
+    squads?: Array<{ name: string }> | null;
+  }
+  const leaderboard: LeaderboardEntry[] = (players as PlayerRow[] || [])
+    .map((player: PlayerRow, index: number) => ({
       rank: index + 1,
       user_id: player.user_id,
-      username: player.profiles?.username || "Player",
+      username: (player.profiles && player.profiles[0]?.username) || "Player",
       session_tokens: player.session_tokens,
       squad_id: player.squad_id,
-      squad_name: player.squads?.name || "",
+      squad_name: (player.squads && player.squads[0]?.name) || "",
       alive: !player.is_eliminated,
       position: { x: 0.5, y: 0.5 }, // Default position, can be extended if needed
     }));

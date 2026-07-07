@@ -114,8 +114,8 @@ export async function POST(request: Request) {
     shop_item_id: itemId,
     session_id: sessionId ?? null,
     squad_id: squadId ?? null,
-    amount_paid_cents: item.price_cents,
-    amount_paid_tokens: item.price_squad_tokens,
+    amount_paid_cents: item.price_cents ?? 0,
+    amount_paid_tokens: item.price_squad_tokens ?? 0,
   });
 
   return NextResponse.json({ success: true });

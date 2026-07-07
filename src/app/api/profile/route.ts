@@ -7,11 +7,15 @@ export async function GET() {
   if (error) return error;
 
   const supabase = await createClient();
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", user!.id)
     .single();
+
+  if (profileError || !profile) {
+    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+  }
 
   return NextResponse.json({ profile });
 }

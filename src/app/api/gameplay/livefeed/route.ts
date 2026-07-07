@@ -59,7 +59,7 @@ export async function GET(request: Request) {
   // Transform to frontend format
   interface LiveFeedEventRow {
     id: string;
-    type: string;
+    type: "steal" | "revive" | "elimination" | "phase" | "effect" | "lead" | "surge";
     timestamp: string;
     actor_id: string;
     actor_name: string;

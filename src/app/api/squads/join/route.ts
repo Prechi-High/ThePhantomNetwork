@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   const { inviteId } = await request.json();
   const admin = createAdminClient();
 
-  const { data: invite } = await admin
+  const { data: invite, error: inviteError } = await admin
     .from("squad_invites")
     .select("*, squads(*)")
     .eq("id", inviteId)
@@ -17,11 +17,20 @@ export async function POST(request: Request) {
     .eq("status", "pending")
     .single();
 
-  if (!invite) {
+  if (inviteError || !invite) {
     return NextResponse.json({ error: "Invite not found" }, { status: 404 });
   }
 
-  const squad = invite.squads as { id: string; member_count: number };
+  // Handle the squads relationship - it can be an array or object depending on Supabase query
+  const squadData = Array.isArray(invite.squads) 
+    ? invite.squads[0] 
+    : invite.squads;
+
+  if (!squadData || !squadData.id) {
+    return NextResponse.json({ error: "Squad data invalid" }, { status: 400 });
+  }
+
+  const squad = squadData as { id: string; member_count: number };
   if (squad.member_count >= 5) {
     return NextResponse.json({ error: "Squad is full" }, { status: 400 });
   }
@@ -43,6 +52,7 @@ export async function POST(request: Request) {
     .eq("id", inviteId);
 
   return NextResponse.json({ success: true });
+}
 }
 
 export async function DELETE() {

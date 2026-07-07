@@ -61,7 +61,7 @@ export async function GET(request: Request) {
 
   interface EffectRow {
     id: string;
-    type: string;
+    type: "shield" | "cloak" | "multiplier" | "insurance";
     name: string;
     duration_ms: number;
     started_at: string;
