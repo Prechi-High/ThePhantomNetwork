@@ -1,1 +1,77 @@
-'use client';\n\nimport { useEffect, useState } from 'react';\nimport { motion } from 'framer-motion';\nimport { useSessionStore } from '@/stores/useSessionStore';\nimport { useServerTime } from '@/hooks/useServerTime';\n\n/**\n * Live Game Timer\n * \n * Displays the remaining time for the current phase.\n * Reads from backend and stays synchronized via server time drift calculation.\n */\nexport function GameTimer() {\n  const currentSession = useSessionStore((s) => s.currentSession);\n  const serverTime = useServerTime();\n  const [remaining, setRemaining] = useState<number>(0);\n  const [key, setKey] = useState<number>(0);\n\n  // Update countdown every 100ms for smooth animation\n  useEffect(() => {\n    const interval = setInterval(() => {\n      if (!currentSession) return;\n\n      // Get phase end time from session\n      const phaseEndTime = (currentSession as any).phase_end_time;\n      if (!phaseEndTime) return;\n\n      // Calculate remaining ms using server time\n      const remainingMs = serverTime.getCountdown(phaseEndTime);\n      const remainingClamped = Math.max(0, remainingMs);\n\n      setRemaining(remainingClamped);\n      setKey((prev) => prev + 1); // Trigger re-render\n    }, 100);\n\n    return () => clearInterval(interval);\n  }, [currentSession, serverTime]);\n\n  // Format milliseconds to MM:SS\n  const formatTime = (ms: number): string => {\n    const totalSeconds = Math.ceil(ms / 1000);\n    const minutes = Math.floor(totalSeconds / 60);\n    const seconds = totalSeconds % 60;\n    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;\n  };\n\n  const displayTime = formatTime(remaining);\n\n  // Determine color based on time remaining\n  const getTimerColor = () => {\n    const secondsRemaining = remaining / 1000;\n    if (secondsRemaining <= 10) return '#ef4444'; // Red for < 10s\n    if (secondsRemaining <= 30) return '#f59e0b'; // Amber for < 30s\n    return '#ffffff'; // White for > 30s\n  };\n\n  return (\n    <motion.span\n      className=\"text-3xl\"\n      key={key}\n      initial={{ scale: 1 }}\n      animate={{ scale: 1 }}\n      transition={{ duration: 0.05 }}\n      style={{\n        fontWeight: 900,\n        letterSpacing: '0.05em',\n        color: getTimerColor(),\n        lineHeight: 1,\n        fontVariantNumeric: 'tabular-nums',\n        textShadow: `0 0 16px ${getTimerColor()}40`,\n      }}\n    >\n      {displayTime}\n    </motion.span>\n  );\n}\n
+'use client';
+
+import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { useSessionStore } from '@/stores/useSessionStore';
+import { useServerTime } from '@/hooks/useServerTime';
+
+/**
+ * Live Game Timer
+ * 
+ * Displays the remaining time for the current phase.
+ * Reads from backend and stays synchronized via server time drift calculation.
+ */
+export function GameTimer() {
+  const currentSession = useSessionStore((s) => s.currentSession);
+  const serverTime = useServerTime();
+  const [remaining, setRemaining] = useState<number>(0);
+  const [key, setKey] = useState<number>(0);
+
+  // Update countdown every 100ms for smooth animation
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!currentSession) return;
+
+      // Get phase end time from session
+      const phaseEndTime = (currentSession as any).phase_end_time;
+      if (!phaseEndTime) return;
+
+      // Calculate remaining ms using server time
+      const remainingMs = serverTime.getCountdown(phaseEndTime);
+      const remainingClamped = Math.max(0, remainingMs);
+
+      setRemaining(remainingClamped);
+      setKey((prev) => prev + 1); // Trigger re-render
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [currentSession, serverTime]);
+
+  // Format milliseconds to MM:SS
+  const formatTime = (ms: number): string => {
+    const totalSeconds = Math.ceil(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const displayTime = formatTime(remaining);
+
+  // Determine color based on time remaining
+  const getTimerColor = () => {
+    const secondsRemaining = remaining / 1000;
+    if (secondsRemaining <= 10) return '#ef4444'; // Red for < 10s
+    if (secondsRemaining <= 30) return '#f59e0b'; // Amber for < 30s
+    return '#ffffff'; // White for > 30s
+  };
+
+  return (
+    <motion.span
+      className="text-3xl"
+      key={key}
+      initial={{ scale: 1 }}
+      animate={{ scale: 1 }}
+      transition={{ duration: 0.05 }}
+      style={{
+        fontWeight: 900,
+        letterSpacing: '0.05em',
+        color: getTimerColor(),
+        lineHeight: 1,
+        fontVariantNumeric: 'tabular-nums',
+        textShadow: `0 0 16px ${getTimerColor()}40`,
+      }}
+    >
+      {displayTime}
+    </motion.span>
+  );
+}
