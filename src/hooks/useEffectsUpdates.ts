@@ -17,8 +17,8 @@ interface EffectsResponse {
  */
 export function useEffectsUpdates(userId: string | null, subSessionId: string | null) {
   const store = useEffectsStore();
-  const syncTimerRef = useRef<NodeJS.Timeout>();
-  const cleanupTimerRef = useRef<NodeJS.Timeout>();
+  const syncTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const cleanupTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   useEffect(() => {
     if (!userId || !subSessionId) return;

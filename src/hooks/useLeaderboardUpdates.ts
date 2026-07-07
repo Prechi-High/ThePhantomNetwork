@@ -19,7 +19,7 @@ interface SquadLeaderboardResponse {
  */
 export function useLeaderboardUpdates(subSessionId: string | null) {
   const store = useLeaderboardStore();
-  const pollIntervalRef = useRef<NodeJS.Timeout>();
+  const pollIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   useEffect(() => {
     if (!subSessionId) return;

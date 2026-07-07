@@ -11,7 +11,7 @@ import { useLiveFeedStore, type FeedEvent } from '@/stores/useLiveFeedStore';
  */
 export function useLiveFeedUpdates(subSessionId: string | null) {
   const { addEvent, setEvents } = useLiveFeedStore();
-  const pollIntervalRef = useRef<NodeJS.Timeout>();
+  const pollIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   useEffect(() => {
     if (!subSessionId) return;

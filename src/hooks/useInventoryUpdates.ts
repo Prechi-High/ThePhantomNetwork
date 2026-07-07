@@ -16,7 +16,7 @@ interface InventoryResponse {
  */
 export function useInventoryUpdates(userId: string | null, subSessionId: string | null) {
   const store = useInventoryStore();
-  const pollIntervalRef = useRef<NodeJS.Timeout>();
+  const pollIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   useEffect(() => {
     if (!userId || !subSessionId) return;

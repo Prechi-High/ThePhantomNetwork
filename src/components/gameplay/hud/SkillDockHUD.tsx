@@ -125,8 +125,8 @@ export function SkillDockHUD() {
           const colors = SKILL_COLORS[skill.id] || SKILL_COLORS.shield;
           const icon = SKILL_ICONS[skill.id];
           const isLocked = !skill.owned;
-          const isOnCooldown = !skill.available && skill.cooldown_until;
-          const cooldownRemaining = isOnCooldown ? serverTime.getCountdown(skill.cooldown_until) : 0;
+          const isOnCooldown = !skill.available && !!skill.cooldown_until;
+          const cooldownRemaining = isOnCooldown && skill.cooldown_until ? serverTime.getCountdown(skill.cooldown_until) : 0;
           const cooldownSeconds = Math.ceil(cooldownRemaining / 1000);
 
           let statusText = "READY";
