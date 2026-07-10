@@ -8,6 +8,7 @@ import { SPIN_TIMINGS, WHEEL_CONFIG, OUTCOME_CONFIG } from "@/config/spinConfig"
 import { SpinWheelCore } from "./SpinWheelCore";
 import { OutcomeCard } from "./OutcomeCard";
 import { TokenCollectionAnimator } from "./TokenCollectionAnimator";
+import { OutcomeCelebration } from "./OutcomeCelebration";
 
 interface PremiumSpinWheelProps {
   isSpinning: boolean;
@@ -35,17 +36,33 @@ export function PremiumSpinWheel({
   const [stateMachine] = useState(() => new SpinStateMachine());
   const [showOutcome, setShowOutcome] = useState(false);
   const [showTokenAnimation, setShowTokenAnimation] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
   const [cameraZoom, setCameraZoom] = useState(1);
   const [screenDarken, setScreenDarken] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Reset when not spinning
+  useEffect(() => {
+    if (!isSpinning && !isProcessing) {
+      stateMachine.reset();
+      setShowOutcome(false);
+      setShowTokenAnimation(false);
+      setShowCelebration(false);
+      setCameraZoom(1);
+      setScreenDarken(0);
+    }
+  }, [isSpinning, isProcessing, stateMachine]);
 
   // Start spin sequence
   useEffect(() => {
-    if (isSpinning && outcome && stateMachine.canSpin()) {
+    if (isSpinning && outcome && stateMachine.canSpin() && !isProcessing) {
+      setIsProcessing(true);
       startSpinSequence();
     }
-  }, [isSpinning, outcome]);
+  }, [isSpinning, outcome, isProcessing]);
 
   const startSpinSequence = useCallback(async () => {
+    console.log('[PremiumSpinWheel] Starting spin sequence');
     // PHASE 1: Spin Start (0-300ms)
     stateMachine.transition('START_SPIN');
     setCameraZoom(WHEEL_CONFIG.CAMERA_ZOOM_SCALE);
@@ -56,6 +73,7 @@ export function PremiumSpinWheel({
   }, [stateMachine]);
 
   const handleWheelSpinComplete = useCallback(async () => {
+    console.log('[PremiumSpinWheel] Wheel spin complete');
     // PHASE 5: Wheel Locked
     stateMachine.transition('SPIN_COMPLETE');
     stateMachine.transition('SPIN_COMPLETE'); // SPINNING -> DECELERATING
@@ -75,6 +93,7 @@ export function PremiumSpinWheel({
   const startRevealSequence = useCallback(async () => {
     if (!outcome) return;
 
+    console.log('[PremiumSpinWheel] Starting reveal sequence for:', outcome);
     stateMachine.transition('REVEAL_BEGIN');
 
     // Darken screen slightly
@@ -91,6 +110,7 @@ export function PremiumSpinWheel({
 
     // Outcome card appears
     setShowOutcome(true);
+    setShowCelebration(true); // Start celebration animation
     stateMachine.transition('REVEAL_COMPLETE');
 
     // Play outcome sound
@@ -102,52 +122,75 @@ export function PremiumSpinWheel({
     // PHASE 7: Token Collection or Steal
     await delay(SPIN_TIMINGS.REVEAL_CARD_APPEAR - SPIN_TIMINGS.REVEAL_BURST);
 
-    const config = OUTCOME_CONFIG[outcome];
     const tokenValue = getTokenValue(outcome);
 
     if (outcome === 'STEAL') {
+      console.log('[PremiumSpinWheel] Steal outcome - transitioning to steal selection');
       // Transition to steal selection
       stateMachine.transition('STEAL_SELECTED');
       await delay(1000);
       setShowOutcome(false);
       setScreenDarken(0);
-      onStealActivated?.();
-      stateMachine.transition('COOLDOWN_END');
-      stateMachine.transition('COOLDOWN_END');
-      stateMachine.transition('RESET');
-      onSpinComplete();
+      
+      // Award tokens first (steal gives tokens too)
+      if (onTokensAwarded) {
+        onTokensAwarded(tokenValue);
+      }
+      
+      // Then activate steal
+      if (onStealActivated) {
+        onStealActivated();
+      }
+      
+      // Complete and reset
+      finishSpinSequence();
     } else if (tokenValue > 0) {
+      console.log('[PremiumSpinWheel] Token outcome - starting collection animation');
       // Start token collection
       stateMachine.transition('TOKENS_COLLECTED');
       setShowTokenAnimation(true);
     } else {
+      console.log('[PremiumSpinWheel] Void outcome - fading away');
       // VOID - just fade away
       await delay(1500);
       setShowOutcome(false);
       setScreenDarken(0);
-      stateMachine.transition('COOLDOWN_END');
-      stateMachine.transition('COOLDOWN_END');
-      stateMachine.transition('RESET');
-      onSpinComplete();
+      finishSpinSequence();
     }
-  }, [outcome, stateMachine, onSpinComplete, onStealActivated]);
+  }, [outcome, stateMachine, onSpinComplete, onStealActivated, onTokensAwarded]);
 
   const handleTokenCollectionComplete = useCallback(async () => {
     if (!outcome) return;
 
+    console.log('[PremiumSpinWheel] Token collection complete');
     const tokenValue = getTokenValue(outcome);
-    onTokensAwarded?.(tokenValue);
+    
+    // Award tokens
+    if (onTokensAwarded) {
+      onTokensAwarded(tokenValue);
+    }
 
     setShowTokenAnimation(false);
     await delay(300);
     setShowOutcome(false);
     setScreenDarken(0);
 
+    finishSpinSequence();
+  }, [outcome, onTokensAwarded]);
+
+  const finishSpinSequence = useCallback(() => {
+    console.log('[PremiumSpinWheel] Finishing spin sequence');
+    // Transition through final states
     stateMachine.transition('COOLDOWN_END');
     stateMachine.transition('COOLDOWN_END');
     stateMachine.transition('RESET');
+    
+    // Reset processing flag
+    setIsProcessing(false);
+    
+    // Notify parent that spin is complete
     onSpinComplete();
-  }, [outcome, stateMachine, onSpinComplete, onTokensAwarded]);
+  }, [stateMachine, onSpinComplete]);
 
   return (
     <div className="relative w-full h-full">
@@ -186,6 +229,13 @@ export function PremiumSpinWheel({
       <AnimatePresence>
         {showOutcome && outcome && (
           <OutcomeCard outcome={outcome} visible={showOutcome} />
+        )}
+      </AnimatePresence>
+
+      {/* Outcome Celebration Effects */}
+      <AnimatePresence>
+        {showCelebration && outcome && (
+          <OutcomeCelebration outcome={outcome} visible={showCelebration} />
         )}
       </AnimatePresence>
 

@@ -12,7 +12,6 @@
  */
 
 import "./responsive.css";
-import { useState } from "react";
 import type { SpinOutcome } from "@/types/gameplay";
 import { TopHUD } from "./TopHUD";
 import { ShadowSurge } from "./ShadowSurge";
@@ -39,6 +38,7 @@ interface GameplayHUDProps {
   lastOutcome?: SpinOutcome | null;
   onSpin?: () => void;
   onSpinComplete?: () => void;
+  onTokensAwarded?: (amount: number) => void;
 }
 
 export function GameplayHUD({
@@ -54,17 +54,15 @@ export function GameplayHUD({
   lastOutcome = null,
   onSpin,
   onSpinComplete = () => {},
+  onTokensAwarded,
 }: GameplayHUDProps) {
-  const [spinning, setSpinning] = useState(isSpinning);
-
+  // Use parent's isSpinning state directly, no local state needed
   const handleSpin = () => {
-    if (spinLocked || spinning) return;
-    setSpinning(true);
+    if (spinLocked || isSpinning) return;
     onSpin?.();
   };
 
   const handleSpinComplete = () => {
-    setSpinning(false);
     onSpinComplete();
   };
 
@@ -153,9 +151,10 @@ export function GameplayHUD({
       <div className="zone-wheel">
         <div className="wheel-container">
           <WheelHUD
-            isSpinning={spinning}
+            isSpinning={isSpinning}
             outcome={lastOutcome}
             onSpinComplete={handleSpinComplete}
+            onTokensAwarded={onTokensAwarded}
           />
 
           {/* Live Feed overlay (left) */}
@@ -176,9 +175,9 @@ export function GameplayHUD({
       <div className="zone-controls">
         <div className="spin-button-container">
           <SpinButton
-            disabled={spinning || spinLocked}
+            disabled={isSpinning || spinLocked}
             onClick={handleSpin}
-            isSpinning={spinning}
+            isSpinning={isSpinning}
           />
         </div>
         <div className="controls-row">

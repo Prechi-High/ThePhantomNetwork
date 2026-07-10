@@ -260,6 +260,13 @@ export default function PlayPage() {
     setTimeout(() => setSpinLocked(false), 500);
   }, [setSpinning, setSpinLocked]);
 
+  const handleTokensAwarded = useCallback((amount: number) => {
+    console.log('[PlayPage] Tokens awarded:', amount);
+    // Update tokens in store - get current value and add
+    const currentTokens = useGameplayStore.getState().tokens || 0;
+    setTokens(currentTokens + amount);
+  }, [setTokens]);
+
   const handleStealSelect = async (target: StealTarget) => {
     await fetch("/api/gameplay/steal/execute", {
       method: "POST",
@@ -332,6 +339,7 @@ export default function PlayPage() {
             lastOutcome={lastOutcome}
             onSpin={handleSpin}
             onSpinComplete={handleSpinComplete}
+            onTokensAwarded={handleTokensAwarded}
           />
         </HUDStudioProvider>
       )}

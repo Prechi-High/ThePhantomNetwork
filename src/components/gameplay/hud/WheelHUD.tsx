@@ -7,13 +7,14 @@ interface WheelHUDProps {
   isSpinning: boolean;
   outcome: SpinOutcome | null;
   onSpinComplete: () => void;
+  onTokensAwarded?: (amount: number) => void;
 }
 
 /**
  * Wheel HUD - Premium Cinematic Spin Wheel
  * Integrates the redesigned 5-segment wheel system into the gameplay HUD
  */
-export function WheelHUD({ isSpinning, outcome, onSpinComplete }: WheelHUDProps) {
+export function WheelHUD({ isSpinning, outcome, onSpinComplete, onTokensAwarded }: WheelHUDProps) {
   return (
     <div
       style={{
@@ -30,6 +31,7 @@ export function WheelHUD({ isSpinning, outcome, onSpinComplete }: WheelHUDProps)
         isSpinning={isSpinning}
         outcome={outcome}
         onSpinComplete={onSpinComplete}
+        onTokensAwarded={onTokensAwarded}
       />
     </div>
   );

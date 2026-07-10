@@ -7,6 +7,7 @@ export { PremiumSpinWheel } from './PremiumSpinWheel';
 export { SpinWheelCore } from './SpinWheelCore';
 export { OutcomeCard } from './OutcomeCard';
 export { TokenCollectionAnimator } from './TokenCollectionAnimator';
+export { OutcomeCelebration } from './OutcomeCelebration';
 
 // Re-export ButtonAnimator if it exists
 export { ButtonAnimator } from './ButtonAnimator';
