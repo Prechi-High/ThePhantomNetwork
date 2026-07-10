@@ -1,9 +1,12 @@
-export { PremiumWheel } from "./PremiumWheel";
-export { ButtonAnimator } from "./ButtonAnimator";
-export {
-  WHEEL_SECTORS,
-  getTargetAngle,
-  getSectorIndex,
-  ARTWORK_ROTATION_OFFSET,
-  SECTOR_WIDTH,
-} from "./config";
+/**
+ * Premium Spin Wheel System
+ * Cinematic, state-driven wheel with 5 segments and dramatic reveals
+ */
+
+export { PremiumSpinWheel } from './PremiumSpinWheel';
+export { SpinWheelCore } from './SpinWheelCore';
+export { OutcomeCard } from './OutcomeCard';
+export { TokenCollectionAnimator } from './TokenCollectionAnimator';
+
+// Re-export ButtonAnimator if it exists
+export { ButtonAnimator } from './ButtonAnimator';

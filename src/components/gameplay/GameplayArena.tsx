@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { PremiumWheel, ButtonAnimator } from "@/components/gameplay/premium-wheel";
+import { PremiumSpinWheel, ButtonAnimator } from "@/components/gameplay/premium-wheel";
 import { StealTargetPicker } from "@/components/gameplay/StealTargetPicker";
 import { FireBoostMeter } from "@/components/gameplay/FireBoostMeter";
 import { RevivePanel } from "@/components/gameplay/RevivePanel";
@@ -286,7 +286,7 @@ export function GameplayArena({
             <div className="flex-1 flex flex-col items-center order-1 lg:order-2">
               {/* Spin Wheel */}
               <div className="mb-4">
-                <PremiumWheel
+                <PremiumSpinWheel
                   isSpinning={isSpinning}
                   outcome={lastOutcome}
                   onSpinComplete={onSpinComplete}

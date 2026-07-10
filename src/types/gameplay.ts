@@ -106,7 +106,8 @@ export const SPIN_OUTCOME_WEIGHTS: Record<SpinOutcome, number> = {
   VOID: 20,
 };
 
-export const SPIN_DURATION_MS = 8000;
+/** @deprecated Use SPIN_TIMINGS from spinConfig.ts instead */
+export const SPIN_DURATION_MS = 6000;
 export const REVIVE_COST = 3;
 export const BASE_STEAL_AMOUNT = 1;
 export const MAX_FIRE_BOOST_TAPS = 5;
