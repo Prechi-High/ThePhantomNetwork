@@ -28,7 +28,7 @@ export function SpinWheelCore({ isSpinning, outcome, onSpinComplete }: SpinWheel
 
     // Calculate final rotation
     const targetAngle = targetIndex * WHEEL_CONFIG.SEGMENT_ANGLE;
-    const spins = WHEEL_CONFIG.BASE_ROTATION_SPEED;
+    const spins = WHEEL_CONFIG.BASE_ROTATIONS * 360;
     const finalRotation = spins + (360 - targetAngle); // Needle is at top, pointing down
 
     // Multi-phase animation
@@ -36,7 +36,7 @@ export function SpinWheelCore({ isSpinning, outcome, onSpinComplete }: SpinWheel
       rotate: finalRotation,
       transition: {
         duration: SPIN_TIMINGS.SPIN_DURATION / 1000,
-        ease: EASING.SPIN_END,
+        ease: EASING.SPIN_EASE,
       },
     }).then(() => {
       currentRotationRef.current = finalRotation;
