@@ -6,40 +6,46 @@
 import type { SpinOutcome } from "@/types/gameplay";
 
 // ============================================================================
-// TIMING CONSTANTS
+// TIMING CONSTANTS (In Milliseconds)
 // ============================================================================
 
 export const SPIN_TIMINGS = {
   /** Total spin duration (6 seconds) */
   SPIN_DURATION: 6000,
   
-  /** Initial impulse phase */
+  /** Initial impulse phase (0.0s - 0.3s) */
   IMPULSE_DURATION: 300,
   
-  /** High-speed spinning phase */
+  /** High-speed spinning phase (0.3s - 4.8s) */
   FAST_SPIN_START: 300,
   FAST_SPIN_END: 4800,
   
-  /** Progressive slowdown phase */
+  /** Progressive slowdown phase (4.8s - 5.6s) */
   SLOWDOWN_START: 4800,
   SLOWDOWN_END: 5600,
   
-  /** Final precise stop */
+  /** Final precise stop & needle lock (5.6s - 6.0s) */
   STOP_START: 5600,
   STOP_END: 6000,
   
   /** Reveal sequence (3 seconds total) */
   REVEAL_DURATION: 3000,
-  REVEAL_PAUSE: 300,
-  REVEAL_ENERGY_START: 800,
-  REVEAL_BURST: 1100,
-  REVEAL_FLASH: 1300,
-  REVEAL_CARD_APPEAR: 1500,
-  REVEAL_PARTICLES_END: 3000,
+  /** 0.0s - 0.3s pause */
+  REVEAL_PAUSE_END: 300,
+  /** 0.3s - 0.8s energy formation */
+  REVEAL_ENERGY_START: 300,
+  /** 0.8s - 1.1s large light burst */
+  REVEAL_BURST_START: 800,
+  /** 1.1s - 1.3s screen flash */
+  REVEAL_FLASH_START: 1100,
+  /** 1.3s card explodes into view */
+  REVEAL_CARD_EXPLODE: 1300,
+  /** 1.5s animation & particles start */
+  REVEAL_ANIM_START: 1500,
   
-  /** Token collection animation */
+  /** Token collection animation (1 second) */
   TOKEN_FLY_DURATION: 1000,
-  TOKEN_INCREMENT_DELAY: 100,
+  TOKEN_INCREMENT_DELAY: 150,
 } as const;
 
 // ============================================================================
@@ -64,19 +70,19 @@ export const OUTCOME_CONFIG: Record<SpinOutcome, {
     glow: 'rgba(255, 215, 0, 0.6)',
     glowStrength: 'very-strong',
     particles: ['golden-shards', 'light-rays', 'spark-bursts'],
-    cardTitle: '+3 TOKENS',
+    cardTitle: 'ADVANCE',
     cardSubtitle: 'Momentum Increased',
     icon: '👑',
     soundType: 'legendary',
     cameraShake: 'strong',
   },
   ACQUIRE: {
-    primary: '#10B981',      // Emerald
-    accent: '#34D399',
+    primary: '#10B981',      // Emerald Green
+    accent: '#A7F3D0',       // Mint
     glow: 'rgba(16, 185, 129, 0.5)',
     glowStrength: 'medium',
     particles: ['green-crystals', 'floating-fragments'],
-    cardTitle: '+1 TOKEN',
+    cardTitle: 'ACQUIRE',
     cardSubtitle: 'Resources Secured',
     icon: '💎',
     soundType: 'reward',
@@ -84,11 +90,11 @@ export const OUTCOME_CONFIG: Record<SpinOutcome, {
   },
   DISCOVER: {
     primary: '#3B82F6',      // Blue
-    accent: '#60A5FA',
+    accent: '#93C5FD',       // Light Blue
     glow: 'rgba(59, 130, 246, 0.4)',
     glowStrength: 'soft',
     particles: ['floating-energy', 'small-sparks'],
-    cardTitle: '+0.5 TOKEN',
+    cardTitle: 'DISCOVER',
     cardSubtitle: 'Hidden Opportunity',
     icon: '✨',
     soundType: 'magical',
@@ -97,10 +103,10 @@ export const OUTCOME_CONFIG: Record<SpinOutcome, {
   STEAL: {
     primary: '#EF4444',      // Red
     accent: '#991B1B',       // Dark crimson
-    glow: 'rgba(239, 68, 68, 0.5)',
+    glow: 'rgba(239, 68, 68, 0.6)',
     glowStrength: 'strong',
     particles: ['smoke', 'red-streaks', 'sharp-lines'],
-    cardTitle: 'STEAL READY',
+    cardTitle: 'STEAL',
     cardSubtitle: 'Choose Your Target',
     icon: '🗡️',
     soundType: 'sharp',
@@ -109,14 +115,14 @@ export const OUTCOME_CONFIG: Record<SpinOutcome, {
   VOID: {
     primary: '#6B7280',      // Gray
     accent: '#374151',       // Dark charcoal
-    glow: 'rgba(107, 114, 128, 0.3)',
+    glow: 'rgba(107, 114, 128, 0.2)',
     glowStrength: 'soft',
     particles: ['dust', 'smoke', 'fading-particles'],
     cardTitle: 'VOID',
     cardSubtitle: 'No Opportunity Found',
     icon: '💨',
     soundType: 'empty',
-    cameraShake: 'none',
+    cameraShake: 'subtle', // Soft pulse / subtle shake
   },
 };
 
@@ -128,54 +134,56 @@ export const WHEEL_CONFIG = {
   /** Number of segments (MUST be 5) */
   SEGMENTS: 5,
   
-  /** Degrees per segment */
+  /** Degrees per segment (360 / 5) */
   SEGMENT_ANGLE: 72,
   
-  /** Segment order on wheel */
-  SEGMENT_ORDER: ['ADVANCE', 'DISCOVER', 'ACQUIRE', 'VOID', 'STEAL'] as SpinOutcome[],
+  /** Segment order on wheel clockwise starting from top (0 degrees center) */
+  SEGMENT_ORDER: ['ADVANCE', 'ACQUIRE', 'STEAL', 'VOID', 'DISCOVER'] as SpinOutcome[],
   
-  /** Base rotation speed */
-  BASE_ROTATION_SPEED: 360 * 5, // 5 full rotations
+  /** Base rotations during spin (e.g. 5 rotations) */
+  BASE_ROTATIONS: 5,
   
   /** Camera zoom during spin */
   CAMERA_ZOOM_SCALE: 1.05,
   
-  /** Screen darken opacity */
-  DARKEN_OPACITY: 0.3,
+  /** Screen darken opacity during spin */
+  DARKEN_OPACITY: 0.35,
 } as const;
 
 // ============================================================================
-// EASING FUNCTIONS
+// EASING CURVES
 // ============================================================================
 
 export const EASING = {
-  /** Smooth start with acceleration */
-  SPIN_START: [0.25, 0.1, 0.25, 1] as const,
+  /** Easing for the start impulse (0.0s - 0.3s) */
+  IMPULSE: [0.12, 0, 0.39, 0] as const,
   
-  /** Natural deceleration with tiny bounce */
-  SPIN_END: [0.15, 0.85, 0.3, 1.02] as const,
+  /** Easing for high speed and deceleration with subtle bounce lock */
+  SPIN_EASE: [0.25, 0.1, 0.25, 1.02] as const,
   
-  /** Reveal card entrance */
-  REVEAL_ENTRANCE: [0.34, 1.56, 0.64, 1] as const,
+  /** Reveal card explosion */
+  CARD_EXPLOSION: [0.34, 1.56, 0.64, 1] as const,
   
-  /** Token fly curve */
-  TOKEN_CURVE: [0.42, 0, 0.58, 1] as const,
+  /** Token bezier-like flight curve */
+  TOKEN_FLIGHT: [0.42, 0, 0.58, 1] as const,
 } as const;
 
 // ============================================================================
-// PARTICLE SYSTEM
+// PARTICLE CONFIGURATION
 // ============================================================================
 
 export const PARTICLE_CONFIG = {
-  /** Maximum particles per effect */
-  MAX_PARTICLES: 50,
+  /** Target count per outcome */
+  COUNTS: {
+    ADVANCE: 80,
+    ACQUIRE: 50,
+    DISCOVER: 40,
+    STEAL: 60,
+    VOID: 25,
+  },
   
-  /** Particle lifetime (ms) */
-  PARTICLE_LIFETIME: 2000,
-  
-  /** GPU optimization */
-  USE_TRANSFORM: true,
-  USE_WILL_CHANGE: true,
+  /** Max lifetime (ms) */
+  LIFETIME: 2000,
 } as const;
 
 // ============================================================================
@@ -185,10 +193,10 @@ export const PARTICLE_CONFIG = {
 export const AUDIO_CONFIG = {
   VOLUME: {
     SPIN_START: 0.7,
-    SPIN_LOOP: 0.4,
+    SPIN_LOOP: 0.45,
     SPIN_STOP: 0.8,
     REVEAL: 0.9,
-    TOKEN_COLLECT: 0.5,
+    TOKEN_COLLECT: 0.6,
   },
   PATHS: {
     SPIN_START: '/audio/wheel/spin-start.mp3',
@@ -203,22 +211,4 @@ export const AUDIO_CONFIG = {
     OUTCOME_VOID: '/audio/wheel/outcome-void.mp3',
     TOKEN_TICK: '/audio/wheel/token-tick.mp3',
   },
-} as const;
-
-// ============================================================================
-// PERFORMANCE
-// ============================================================================
-
-export const PERFORMANCE_CONFIG = {
-  /** Target frame rate */
-  TARGET_FPS: 60,
-  
-  /** Enable GPU acceleration */
-  GPU_ACCELERATION: true,
-  
-  /** Preload assets */
-  PRELOAD_ASSETS: true,
-  
-  /** Optimize for mobile */
-  MOBILE_OPTIMIZED: true,
 } as const;

@@ -10,138 +10,179 @@ interface OutcomeCardProps {
 }
 
 /**
- * Cinematic Outcome Reveal Card
- * Displays the spin result with dramatic entrance animation,
- * themed lighting, particles, and sound effects
+ * OutcomeCard Component
+ * Displays the outcome result in a cinematic 3D floating reward card.
+ * Features:
+ * - 3D card flip & explode entrance animation
+ * - Animated glowing borders and drop-shadows matched to outcome theme
+ * - Clear 3-tier typography (Category, Big Value, Narrative Subtitle)
+ * - Internal ambient ember particle emitter
  */
 export function OutcomeCard({ outcome, visible }: OutcomeCardProps) {
   const config = OUTCOME_CONFIG[outcome];
 
   if (!visible) return null;
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.5, y: 50 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.8 }}
-      transition={{
-        duration: 0.5,
-        ease: EASING.REVEAL_ENTRANCE,
-      }}
-      className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
-    >
-      {/* Environment Lighting Overlay */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 0.4 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.3 }}
-        className="absolute inset-0"
-        style={{
-          background: `radial-gradient(circle at center, ${config.glow} 0%, transparent 70%)`,
-        }}
-      />
+  // Get distinct labels based on the specification
+  const getCardDetails = (out: SpinOutcome) => {
+    switch (out) {
+      case "ADVANCE":
+        return { value: "+3 TOKENS", label: "ADVANCE", sub: "Momentum Increased" };
+      case "ACQUIRE":
+        return { value: "+1 TOKEN", label: "ACQUIRE", sub: "Resources Secured" };
+      case "DISCOVER":
+        return { value: "+0.5 TOKEN", label: "DISCOVER", sub: "Hidden Opportunity" };
+      case "STEAL":
+        return { value: "STEAL READY", label: "STEAL", sub: "Choose Your Target" };
+      case "VOID":
+        return { value: "VOID", label: "VOID", sub: "Nothing Found" };
+      default:
+        return { value: "", label: "", sub: "" };
+    }
+  };
 
-      {/* Outcome Card */}
+  const details = getCardDetails(outcome);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none select-none">
+      {/* 3D Container */}
       <motion.div
-        initial={{ rotateY: -90 }}
-        animate={{ rotateY: 0 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
+        initial={{ opacity: 0, scale: 0.35, rotateX: 60, y: 100 }}
+        animate={{ opacity: 1, scale: 1, rotateX: 0, y: 0 }}
+        exit={{ opacity: 0, scale: 0.85, y: -50 }}
+        transition={{
+          duration: 0.6,
+          ease: EASING.CARD_EXPLOSION,
+        }}
         className="relative"
-        style={{ perspective: 1000 }}
+        style={{ perspective: 1200 }}
       >
+        {/* Neon Ambient Backlight */}
+        <div 
+          className="absolute -inset-6 rounded-3xl blur-[40px] opacity-80"
+          style={{
+            background: `radial-gradient(circle, ${config.glow} 20%, transparent 75%)`,
+            willChange: "transform, opacity",
+          }}
+        />
+
+        {/* Card Body */}
         <div
-          className="relative rounded-2xl border-4 p-8 backdrop-blur-xl shadow-2xl min-w-[320px]"
+          className="relative rounded-2xl border-2 p-10 backdrop-blur-md shadow-2xl flex flex-col items-center justify-center min-w-[340px] max-w-[400px]"
           style={{
             borderColor: config.primary,
-            background: `linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 100%)`,
-            boxShadow: `0 0 60px ${config.glow}, 0 0 120px ${config.glow}`,
+            background: "linear-gradient(135deg, rgba(12, 8, 28, 0.95) 0%, rgba(5, 3, 14, 0.98) 100%)",
+            boxShadow: `0 0 45px ${config.glow}, inset 0 0 25px rgba(255,255,255,0.03)`,
           }}
         >
-          {/* Animated Border Glow */}
+          {/* Neon Border Glow Animation */}
           <motion.div
             animate={{
-              opacity: [0.5, 1, 0.5],
-              scale: [1, 1.02, 1],
+              opacity: [0.3, 0.75, 0.3],
+              scale: [1, 1.01, 1],
             }}
             transition={{
-              duration: 2,
+              duration: 2.5,
               repeat: Infinity,
               ease: "easeInOut",
             }}
-            className="absolute inset-0 rounded-2xl"
+            className="absolute inset-0 rounded-2xl pointer-events-none"
             style={{
-              background: `linear-gradient(45deg, ${config.primary}, ${config.accent}, ${config.primary})`,
-              backgroundSize: '200% 200%',
-              opacity: 0.3,
-              filter: 'blur(20px)',
+              border: `2px solid ${config.accent}`,
+              filter: "blur(8px)",
+              willChange: "transform, opacity",
             }}
           />
 
-          {/* Icon */}
+          {/* 1. Category Pill (Top) */}
           <motion.div
-            initial={{ scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="text-center mb-4"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35, duration: 0.4 }}
+            className="px-4 py-1.5 rounded-full border text-[0.7rem] font-bold tracking-[0.25em] uppercase mb-5"
+            style={{
+              borderColor: `${config.primary}50`,
+              color: config.primary,
+              background: `${config.primary}12`,
+              boxShadow: `0 0 10px ${config.glow}`,
+            }}
           >
-            <span className="text-7xl drop-shadow-2xl">{config.icon}</span>
+            {details.label}
           </motion.div>
 
-          {/* Title */}
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.4 }}
-            className="font-display text-4xl font-bold text-center mb-2 tracking-wider"
-            style={{ color: config.primary, textShadow: `0 0 20px ${config.glow}` }}
+          {/* Icon (Floating) */}
+          <motion.div
+            initial={{ scale: 0, rotateY: -180 }}
+            animate={{ scale: 1, rotateY: 0 }}
+            transition={{ type: "spring", damping: 10, stiffness: 90, delay: 0.25 }}
+            className="mb-5 drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]"
           >
-            {config.cardTitle}
+            <span className="text-7xl">{config.icon}</span>
+          </motion.div>
+
+          {/* 2. Large Value/Title */}
+          <motion.h2
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.45, duration: 0.35 }}
+            className="font-display text-4.5xl font-black text-center mb-3 tracking-wider"
+            style={{
+              color: "#ffffff",
+              textShadow: `0 0 25px ${config.glow}, 0 2px 4px rgba(0,0,0,0.8)`,
+            }}
+          >
+            {details.value}
           </motion.h2>
 
-          {/* Subtitle */}
+          {/* 3. Narrative Subtitle (Bottom) */}
           <motion.p
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.5 }}
-            className="text-center text-sm uppercase tracking-widest"
+            animate={{ opacity: 0.85 }}
+            transition={{ delay: 0.55, duration: 0.4 }}
+            className="text-center text-xs font-semibold uppercase tracking-[0.18em]"
             style={{ color: config.accent }}
           >
-            {config.cardSubtitle}
+            {details.sub}
           </motion.p>
 
-          {/* Particle Effects Container */}
+          {/* Ambient ember particle flare inside card boundary */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
-            {[...Array(20)].map((_, i) => (
-              <motion.div
-                key={i}
-                initial={{
-                  x: '50%',
-                  y: '50%',
-                  scale: 0,
-                  opacity: 1,
-                }}
-                animate={{
-                  x: `${50 + (Math.random() - 0.5) * 200}%`,
-                  y: `${50 + (Math.random() - 0.5) * 200}%`,
-                  scale: Math.random() * 2 + 1,
-                  opacity: 0,
-                }}
-                transition={{
-                  duration: Math.random() * 1.5 + 1,
-                  delay: Math.random() * 0.5,
-                  ease: "easeOut",
-                }}
-                className="absolute w-2 h-2 rounded-full"
-                style={{
-                  background: config.primary,
-                  boxShadow: `0 0 10px ${config.glow}`,
-                }}
-              />
-            ))}
+            {Array.from({ length: 15 }).map((_, i) => {
+              const xStart = Math.random() * 80 + 10;
+              const delay = Math.random() * 0.8;
+              const duration = Math.random() * 1.5 + 1.2;
+
+              return (
+                <motion.div
+                  key={`ember-${i}`}
+                  initial={{
+                    x: `${xStart}%`,
+                    y: "110%",
+                    scale: Math.random() * 0.8 + 0.4,
+                    opacity: 0.9,
+                  }}
+                  animate={{
+                    y: "-10%",
+                    x: `${xStart + (Math.random() - 0.5) * 15}%`,
+                    opacity: [0.9, 0.4, 0],
+                  }}
+                  transition={{
+                    duration,
+                    delay,
+                    repeat: Infinity,
+                    ease: "easeOut",
+                  }}
+                  className="absolute w-1.5 h-1.5 rounded-full"
+                  style={{
+                    background: config.primary,
+                    boxShadow: `0 0 8px ${config.glow}`,
+                  }}
+                />
+              );
+            })}
           </div>
         </div>
       </motion.div>
-    </motion.div>
+    </div>
   );
 }

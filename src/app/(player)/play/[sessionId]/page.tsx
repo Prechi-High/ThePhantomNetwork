@@ -106,6 +106,11 @@ export default function PlayPage() {
 
   const [ready, setReady] = useState(false);
   const lastIntroPhaseRef = useRef<number | null>(null);
+  const pendingSpinData = useRef<{
+    outcome: SpinOutcome;
+    tokens: number;
+    requiresTargetSelection: boolean;
+  } | null>(null);
 
   // Hook calls at top level - all 5 custom hooks for real-time subscriptions
   useServerTime();
@@ -240,32 +245,39 @@ export default function PlayPage() {
     const data = await res.json();
 
     if (data.outcome) {
+      pendingSpinData.current = data;
       setLastOutcome(data.outcome);
-      if (data.tokens !== undefined) setTokens(data.tokens);
-      if (data.requiresTargetSelection) {
-        const targetsRes = await fetch("/api/gameplay/steal/targets", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ subSessionId }),
-        });
-        const targetsData = await targetsRes.json();
-        setTargets(targetsData.targets ?? []);
-        setShowStealPicker(true);
-      }
     }
-  }, [subSessionId, spinLocked, setSpinning, setSpinLocked, setLastOutcome, setTokens, setTargets]);
+  }, [subSessionId, spinLocked, setSpinning, setSpinLocked, setLastOutcome]);
 
   const handleSpinComplete = useCallback(() => {
     setSpinning(false);
     setTimeout(() => setSpinLocked(false), 500);
-  }, [setSpinning, setSpinLocked]);
+
+    // Hard sync client tokens with server's finalized state on animation resolve
+    if (pendingSpinData.current && pendingSpinData.current.tokens !== undefined) {
+      setTokens(pendingSpinData.current.tokens);
+    }
+    pendingSpinData.current = null;
+  }, [setSpinning, setSpinLocked, setTokens]);
 
   const handleTokensAwarded = useCallback((amount: number) => {
-    console.log('[PlayPage] Tokens awarded:', amount);
-    // Update tokens in store - get current value and add
-    const currentTokens = useGameplayStore.getState().tokens || 0;
-    setTokens(currentTokens + amount);
+    console.log('[PlayPage] Token particle arrived, incrementing client tokens by:', amount);
+    setTokens((prev) => Math.round((prev + amount) * 10) / 10);
   }, [setTokens]);
+
+  const handleStealActivated = useCallback(async () => {
+    console.log('[PlayPage] Steal activated. Fetching targets...');
+    if (!subSessionId) return;
+    const targetsRes = await fetch("/api/gameplay/steal/targets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subSessionId }),
+    });
+    const targetsData = await targetsRes.json();
+    setTargets(targetsData.targets ?? []);
+    setShowStealPicker(true);
+  }, [subSessionId, setTargets]);
 
   const handleStealSelect = async (target: StealTarget) => {
     await fetch("/api/gameplay/steal/execute", {
@@ -340,6 +352,7 @@ export default function PlayPage() {
             onSpin={handleSpin}
             onSpinComplete={handleSpinComplete}
             onTokensAwarded={handleTokensAwarded}
+            onStealActivated={handleStealActivated}
           />
         </HUDStudioProvider>
       )}

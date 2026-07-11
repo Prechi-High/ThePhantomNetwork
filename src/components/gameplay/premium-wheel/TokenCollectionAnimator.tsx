@@ -1,140 +1,182 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { SPIN_TIMINGS, OUTCOME_CONFIG, EASING } from "@/config/spinConfig";
+import { motion, AnimatePresence } from "framer-motion";
 import type { SpinOutcome } from "@/types/gameplay";
+import { SPIN_TIMINGS, OUTCOME_CONFIG, EASING } from "@/config/spinConfig";
+import { spinAudio } from "./SpinAudioController";
 
 interface TokenCollectionAnimatorProps {
   outcome: SpinOutcome;
   tokenAmount: number;
   onComplete: () => void;
+  onTokenArrived?: (amount: number) => void;
   targetElementId?: string;
 }
 
 interface FlyingToken {
   id: number;
   delay: number;
-  curve: { x: number; y: number }[];
+  keyframesX: string[];
+  keyframesY: string[];
+  amount: number;
 }
 
 /**
- * Token Collection Animator
- * Animates tokens flying from the reveal card to the player's token counter
- * with curved bezier motion and sequential counter increments
+ * TokenCollectionAnimator Component
+ * Animates tokens flying from the center of the reveal card to the player's token counter.
+ * Features:
+ * - Real-time viewport query for the actual position of the token counter element.
+ * - Dynamic Bezier curve keyframe generation with random offsets to create a "scatter spray" effect.
+ * - Progressive sequential timing so tokens fly one after another.
+ * - Custom event emitters for arrival tick sound and counter incrementing.
  */
 export function TokenCollectionAnimator({
   outcome,
   tokenAmount,
   onComplete,
+  onTokenArrived,
   targetElementId = "token-counter",
 }: TokenCollectionAnimatorProps) {
   const [tokens, setTokens] = useState<FlyingToken[]>([]);
-  const [completed, setCompleted] = useState(0);
+  const [arrivedCount, setArrivedCount] = useState(0);
   const config = OUTCOME_CONFIG[outcome];
 
   useEffect(() => {
-    // Generate flying tokens
-    const tokenCount = Math.ceil(tokenAmount);
-    const newTokens: FlyingToken[] = [];
+    // 1. Locate target element or use fallback coordinates
+    let targetX = window.innerWidth * 0.9;
+    let targetY = window.innerHeight * 0.05;
 
-    for (let i = 0; i < tokenCount; i++) {
-      // Create curved path (bezier-like)
-      const curve = [];
-      const steps = 20;
-      for (let j = 0; j <= steps; j++) {
-        const t = j / steps;
-        // Bezier curve calculation
-        const x = t * 100 + Math.sin(t * Math.PI) * 30;
-        const y = -t * 100 + Math.cos(t * Math.PI * 2) * 20;
-        curve.push({ x, y });
+    const counterElement = document.getElementById(targetElementId);
+    if (counterElement) {
+      const rect = counterElement.getBoundingClientRect();
+      targetX = rect.left + rect.width / 2;
+      targetY = rect.top + rect.height / 2;
+    }
+
+    // 2. Determine number of token particles to spawn
+    let particleCount = 1;
+    let amountPerParticle = tokenAmount;
+
+    if (tokenAmount === 3) {
+      particleCount = 3;
+      amountPerParticle = 1;
+    }
+
+    // 3. Generate bezier curves for each particle
+    const startX = window.innerWidth / 2;
+    const startY = window.innerHeight / 2;
+    const generated: FlyingToken[] = [];
+
+    for (let i = 0; i < particleCount; i++) {
+      const keyframesX: string[] = [];
+      const keyframesY: string[] = [];
+      const steps = 18;
+
+      // Add random variation to control point to create scatter arc
+      const controlX = startX + (targetX - startX) * 0.35 + (Math.random() - 0.5) * 180;
+      const controlY = startY + (targetY - startY) * 0.65 - 120 + (Math.random() - 0.5) * 120;
+
+      // Compute quadratic bezier curve coordinates
+      for (let step = 0; step <= steps; step++) {
+        const t = step / steps;
+        const x = (1 - t) * (1 - t) * startX + 2 * (1 - t) * t * controlX + t * t * targetX;
+        const y = (1 - t) * (1 - t) * startY + 2 * (1 - t) * t * controlY + t * t * targetY;
+        keyframesX.push(`${x}px`);
+        keyframesY.push(`${y}px`);
       }
 
-      newTokens.push({
+      generated.push({
         id: i,
         delay: i * SPIN_TIMINGS.TOKEN_INCREMENT_DELAY,
-        curve,
+        keyframesX,
+        keyframesY,
+        amount: amountPerParticle,
       });
     }
 
-    setTokens(newTokens);
-  }, [tokenAmount]);
+    setTokens(generated);
+  }, [tokenAmount, targetElementId]);
 
-  const handleTokenComplete = () => {
-    const newCompleted = completed + 1;
-    setCompleted(newCompleted);
+  const handleArrival = (amount: number) => {
+    // Play tick sound on impact
+    spinAudio.playTokenTick();
 
-    // Play tick sound
-    const audio = new Audio('/audio/wheel/token-tick.mp3');
-    audio.volume = 0.5;
-    audio.play().catch(() => {
-      // Silent fail if audio doesn't load
-    });
-
-    if (newCompleted >= tokens.length) {
-      setTimeout(() => {
-        onComplete();
-      }, 300);
+    // Trigger visual increment in page state
+    if (onTokenArrived) {
+      onTokenArrived(amount);
     }
+
+    setArrivedCount((prev) => {
+      const next = prev + 1;
+      if (next >= tokens.length) {
+        // All tokens have landed, delay completion slightly for visual resolve
+        setTimeout(() => {
+          onComplete();
+        }, 350);
+      }
+      return next;
+    });
   };
 
   if (tokens.length === 0) return null;
 
   return (
-    <div className="fixed inset-0 z-40 pointer-events-none">
-      {tokens.map((token) => (
-        <motion.div
-          key={token.id}
-          initial={{
-            x: "50vw",
-            y: "50vh",
-            scale: 1,
-            opacity: 1,
-          }}
-          animate={{
-            x: ["50vw", "45vw", "40vw", "35vw", "30vw", "25vw", "20vw", "calc(var(--target-x, 10vw))"],
-            y: ["50vh", "45vh", "40vh", "35vh", "30vh", "25vh", "20vh", "calc(var(--target-y, 5vh))"],
-            scale: [1, 1.2, 1.1, 1, 0.8, 0.6, 0.4, 0.2],
-            opacity: [1, 1, 1, 1, 0.9, 0.7, 0.5, 0],
-          }}
-          transition={{
-            duration: SPIN_TIMINGS.TOKEN_FLY_DURATION / 1000,
-            delay: token.delay / 1000,
-            ease: EASING.TOKEN_CURVE,
-          }}
-          onAnimationComplete={handleTokenComplete}
-          className="absolute"
-        >
-          {/* Token Visual */}
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm"
-            style={{
-              background: config.primary,
-              boxShadow: `0 0 20px ${config.glow}, 0 0 40px ${config.glow}`,
-              color: outcome === 'ADVANCE' ? '#000' : '#fff',
-            }}
-          >
-            {tokenAmount === 0.5 ? '½' : '+1'}
-          </div>
-
-          {/* Trail Effect */}
+    <div className="fixed inset-0 z-50 pointer-events-none overflow-hidden select-none">
+      <AnimatePresence>
+        {tokens.map((token) => (
           <motion.div
+            key={token.id}
+            initial={{
+              x: `${window.innerWidth / 2}px`,
+              y: `${window.innerHeight / 2}px`,
+              scale: 0.8,
+              opacity: 0,
+            }}
             animate={{
-              opacity: [0.6, 0],
-              scale: [0.8, 1.5],
+              x: token.keyframesX,
+              y: token.keyframesY,
+              scale: [0.8, 1.3, 1.1, 0.7, 0.4],
+              opacity: [0, 1, 1, 1, 0],
             }}
             transition={{
-              duration: 0.4,
-              repeat: Infinity,
+              duration: SPIN_TIMINGS.TOKEN_FLY_DURATION / 1000,
+              delay: token.delay / 1000,
+              ease: EASING.TOKEN_FLIGHT,
             }}
-            className="absolute inset-0 rounded-full"
-            style={{
-              background: config.glow,
-              filter: 'blur(8px)',
-            }}
-          />
-        </motion.div>
-      ))}
+            onAnimationComplete={() => handleArrival(token.amount)}
+            className="absolute -translate-x-1/2 -translate-y-1/2"
+          >
+            {/* Inner Metallic Token Core */}
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center font-display font-black text-sm border-2 border-white/60 shadow-lg"
+              style={{
+                background: `radial-gradient(circle, ${config.primary} 30%, ${config.accent} 100%)`,
+                boxShadow: `0 0 25px ${config.glow}, 0 0 10px rgba(0,0,0,0.5)`,
+                color: outcome === "ADVANCE" ? "#1e0b36" : "#ffffff",
+              }}
+            >
+              {tokenAmount === 0.5 ? "½" : "+1"}
+            </div>
+
+            {/* Glowing Motion Blur Trail */}
+            <motion.div
+              animate={{
+                scale: [1, 1.4],
+                opacity: [0.4, 0],
+              }}
+              transition={{
+                duration: 0.35,
+                repeat: Infinity,
+              }}
+              className="absolute inset-0 rounded-full blur-[6px]"
+              style={{
+                background: config.glow,
+              }}
+            />
+          </motion.div>
+        ))}
+      </AnimatePresence>
     </div>
   );
 }

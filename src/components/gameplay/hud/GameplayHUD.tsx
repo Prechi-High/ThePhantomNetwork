@@ -39,6 +39,7 @@ interface GameplayHUDProps {
   onSpin?: () => void;
   onSpinComplete?: () => void;
   onTokensAwarded?: (amount: number) => void;
+  onStealActivated?: () => void;
 }
 
 export function GameplayHUD({
@@ -55,6 +56,7 @@ export function GameplayHUD({
   onSpin,
   onSpinComplete = () => {},
   onTokensAwarded,
+  onStealActivated,
 }: GameplayHUDProps) {
   // Use parent's isSpinning state directly, no local state needed
   const handleSpin = () => {
@@ -155,6 +157,7 @@ export function GameplayHUD({
             outcome={lastOutcome}
             onSpinComplete={handleSpinComplete}
             onTokensAwarded={onTokensAwarded}
+            onStealActivated={onStealActivated}
           />
 
           {/* Live Feed overlay (left) */}

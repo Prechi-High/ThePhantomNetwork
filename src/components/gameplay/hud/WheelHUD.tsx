@@ -8,13 +8,14 @@ interface WheelHUDProps {
   outcome: SpinOutcome | null;
   onSpinComplete: () => void;
   onTokensAwarded?: (amount: number) => void;
+  onStealActivated?: () => void;
 }
 
 /**
  * Wheel HUD - Premium Cinematic Spin Wheel
  * Integrates the redesigned 5-segment wheel system into the gameplay HUD
  */
-export function WheelHUD({ isSpinning, outcome, onSpinComplete, onTokensAwarded }: WheelHUDProps) {
+export function WheelHUD({ isSpinning, outcome, onSpinComplete, onTokensAwarded, onStealActivated }: WheelHUDProps) {
   return (
     <div
       style={{
@@ -32,6 +33,7 @@ export function WheelHUD({ isSpinning, outcome, onSpinComplete, onTokensAwarded 
         outcome={outcome}
         onSpinComplete={onSpinComplete}
         onTokensAwarded={onTokensAwarded}
+        onStealActivated={onStealActivated}
       />
     </div>
   );

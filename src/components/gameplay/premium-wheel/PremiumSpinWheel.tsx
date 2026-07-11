@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { SpinOutcome } from "@/types/gameplay";
-import { SpinStateMachine } from "@/lib/spin/stateMachine";
+import { SpinStateMachine, type SpinState } from "@/lib/spin/stateMachine";
 import { SPIN_TIMINGS, WHEEL_CONFIG, OUTCOME_CONFIG } from "@/config/spinConfig";
-import { SpinWheelCore } from "./SpinWheelCore";
+import { SpinAnimator } from "./SpinAnimator";
+import { RevealSequence } from "./RevealSequence";
 import { OutcomeCard } from "./OutcomeCard";
 import { TokenCollectionAnimator } from "./TokenCollectionAnimator";
-import { OutcomeCelebration } from "./OutcomeCelebration";
+import { ParticleController } from "./ParticleController";
+import { spinAudio } from "./SpinAudioController";
 
 interface PremiumSpinWheelProps {
   isSpinning: boolean;
@@ -19,14 +21,16 @@ interface PremiumSpinWheelProps {
 }
 
 /**
- * Premium Spin Wheel Orchestrator
- * Manages the complete cinematic experience:
- * 1. 6-second spin with camera effects
- * 2. 3-second reveal sequence
- * 3. Token collection animation
- * 4. Steal selection transition
+ * SpinWheel (PremiumSpinWheel) Orchestrator Component
+ * Central state machine coordinator for the cinematic 10-second spin experience.
+ * Orchestrates:
+ * 1. Spin Start, High-Speed, Deceleration, and Stop lock (0.0s - 6.0s)
+ * 2. Cinematic Reveal sequence (6.0s - 9.0s)
+ * 3. Particle bursts & Environment lighting overlays
+ * 4. Token Bezier flight & Sequential token awards (9.0s - 10.0s)
+ * 5. Automatic transition into Steal Target Picker (for STEAL outcomes)
  */
-export function PremiumSpinWheel({
+export function SpinWheel({
   isSpinning,
   outcome,
   onSpinComplete,
@@ -34,167 +38,205 @@ export function PremiumSpinWheel({
   onStealActivated,
 }: PremiumSpinWheelProps) {
   const [stateMachine] = useState(() => new SpinStateMachine());
-  const [showOutcome, setShowOutcome] = useState(false);
-  const [showTokenAnimation, setShowTokenAnimation] = useState(false);
-  const [showCelebration, setShowCelebration] = useState(false);
+  const [currentState, setCurrentState] = useState<SpinState>("IDLE");
+  
+  const [showCard, setShowCard] = useState(false);
+  const [particlesActive, setParticlesActive] = useState(false);
   const [cameraZoom, setCameraZoom] = useState(1);
   const [screenDarken, setScreenDarken] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Track tokens awarded to avoid double trigger
+  const tokensAwardedRef = useRef(false);
 
-  // Reset when not spinning
+  // Sync state machine updates with React local state
+  useEffect(() => {
+    const unsub = stateMachine.on(stateMachine.getCurrentState(), (state) => {
+      setCurrentState(state);
+    });
+    return () => unsub();
+  }, [stateMachine]);
+
+  // Clean up sounds and reset on unmount
+  useEffect(() => {
+    return () => {
+      spinAudio.stopAll();
+    };
+  }, []);
+
+  // Reset when not spinning & idle
   useEffect(() => {
     if (!isSpinning && !isProcessing) {
       stateMachine.reset();
-      setShowOutcome(false);
-      setShowTokenAnimation(false);
-      setShowCelebration(false);
+      setCurrentState("IDLE");
+      setShowCard(false);
+      setParticlesActive(false);
       setCameraZoom(1);
       setScreenDarken(0);
+      tokensAwardedRef.current = false;
     }
   }, [isSpinning, isProcessing, stateMachine]);
 
-  // Start spin sequence
+  // Handle automatic flow of the spin phases
   useEffect(() => {
     if (isSpinning && outcome && stateMachine.canSpin() && !isProcessing) {
       setIsProcessing(true);
-      startSpinSequence();
+      tokensAwardedRef.current = false;
+      executeSpinFlow();
     }
   }, [isSpinning, outcome, isProcessing]);
 
-  const startSpinSequence = useCallback(async () => {
-    console.log('[PremiumSpinWheel] Starting spin sequence');
-    // PHASE 1: Spin Start (0-300ms)
-    stateMachine.transition('START_SPIN');
+  const executeSpinFlow = useCallback(async () => {
+    console.log("[SpinWheel] Launching 6-second spin sequence");
+    
+    // 0.0s: Impulse / Spin Start
+    stateMachine.transition("START_SPIN");
     setCameraZoom(WHEEL_CONFIG.CAMERA_ZOOM_SCALE);
     setScreenDarken(WHEEL_CONFIG.DARKEN_OPACITY);
 
-    // PHASE 2-4: Spinning (handled by SpinWheelCore)
-    // Will call handleWheelSpinComplete when done
+    // 0.3s: Shift state to high-speed spinning
+    const spinningTimer = setTimeout(() => {
+      stateMachine.transition("SPIN_COMPLETE"); // SPIN_START -> SPINNING
+    }, SPIN_TIMINGS.IMPULSE_DURATION);
+
+    // 4.8s: Shift state to progressive deceleration
+    const deceleratingTimer = setTimeout(() => {
+      stateMachine.transition("SPIN_COMPLETE"); // SPINNING -> DECELERATING
+    }, SPIN_TIMINGS.SLOWDOWN_START);
+
+    return () => {
+      clearTimeout(spinningTimer);
+      clearTimeout(deceleratingTimer);
+    };
   }, [stateMachine]);
 
-  const handleWheelSpinComplete = useCallback(async () => {
-    console.log('[PremiumSpinWheel] Wheel spin complete');
-    // PHASE 5: Wheel Locked
-    stateMachine.transition('SPIN_COMPLETE');
-    stateMachine.transition('SPIN_COMPLETE'); // SPINNING -> DECELERATING
-    stateMachine.transition('SPIN_COMPLETE'); // DECELERATING -> LOCKED
+  // Called when physical spin stops (at 6.0s)
+  const handleWheelStop = useCallback(async () => {
+    console.log("[SpinWheel] Wheel locked at final angle");
+    stateMachine.transition("SPIN_COMPLETE"); // DECELERATING -> LOCKED
 
-    // Reset camera
+    // Reset camera zoom and darken before reveal pause
     setCameraZoom(1);
     setScreenDarken(0);
 
-    // Brief pause before reveal
+    // 0.0s - 0.3s Pause after wheel stop (audio cuts slightly, screen darkens)
     await delay(300);
 
-    // PHASE 6: Reveal Sequence
-    startRevealSequence();
+    // Transition to REVEAL_START
+    stateMachine.transition("REVEAL_BEGIN"); // LOCKED -> REVEAL_START
+    setScreenDarken(0.3); // Background darkens for reveal
   }, [stateMachine]);
 
-  const startRevealSequence = useCallback(async () => {
+  // Phase 1.3s: Card Explodes into view
+  const handleCardExplosion = useCallback(() => {
+    console.log("[SpinWheel] Outcome card exploded into view");
+    stateMachine.transition("REVEAL_COMPLETE"); // REVEAL_START -> OUTCOME_REVEAL
+    
+    // Play specific outcome sound
+    if (outcome) {
+      spinAudio.playOutcome(outcome);
+    }
+    
+    setShowCard(true);
+  }, [outcome, stateMachine]);
+
+  // Phase 1.5s: Particles and flying sequence start
+  const handleAnimateStart = useCallback(async () => {
+    console.log("[SpinWheel] Particle emissions and visual sequences activated");
+    setParticlesActive(true);
+
     if (!outcome) return;
 
-    console.log('[PremiumSpinWheel] Starting reveal sequence for:', outcome);
-    stateMachine.transition('REVEAL_BEGIN');
+    // Wait until card presentation before starting token flight or target selector
+    await delay(600); 
 
-    // Darken screen slightly
-    setScreenDarken(0.2);
-
-    // Energy formation (300ms)
-    await delay(SPIN_TIMINGS.REVEAL_PAUSE);
-
-    // Light burst (500ms)
-    await delay(SPIN_TIMINGS.REVEAL_ENERGY_START - SPIN_TIMINGS.REVEAL_PAUSE);
-
-    // Screen flash
-    await delay(SPIN_TIMINGS.REVEAL_BURST - SPIN_TIMINGS.REVEAL_ENERGY_START);
-
-    // Outcome card appears
-    setShowOutcome(true);
-    setShowCelebration(true); // Start celebration animation
-    stateMachine.transition('REVEAL_COMPLETE');
-
-    // Play outcome sound
-    playOutcomeSound(outcome);
-
-    // Apply camera shake
-    applyCameraShake(outcome);
-
-    // PHASE 7: Token Collection or Steal
-    await delay(SPIN_TIMINGS.REVEAL_CARD_APPEAR - SPIN_TIMINGS.REVEAL_BURST);
-
-    const tokenValue = getTokenValue(outcome);
-
-    if (outcome === 'STEAL') {
-      console.log('[PremiumSpinWheel] Steal outcome - transitioning to steal selection');
-      // Transition to steal selection
-      stateMachine.transition('STEAL_SELECTED');
-      await delay(1000);
-      setShowOutcome(false);
-      setScreenDarken(0);
+    if (outcome === "STEAL") {
+      // STEAL: automatic transition to target picker
+      stateMachine.transition("STEAL_SELECTED"); // OUTCOME_REVEAL -> STEAL_SELECTION
       
-      // Award tokens first (steal gives tokens too)
-      if (onTokensAwarded) {
-        onTokensAwarded(tokenValue);
-      }
-      
-      // Then activate steal
+      // Keep reveal visible for 1s to view red/smoke style
+      await delay(1200);
+
+      // Trigger victim picker
       if (onStealActivated) {
         onStealActivated();
       }
       
-      // Complete and reset
-      finishSpinSequence();
-    } else if (tokenValue > 0) {
-      console.log('[PremiumSpinWheel] Token outcome - starting collection animation');
-      // Start token collection
-      stateMachine.transition('TOKENS_COLLECTED');
-      setShowTokenAnimation(true);
+      // Complete selection and finish spin
+      stateMachine.transition("COOLDOWN_END"); // STEAL_SELECTION -> REVEAL_COMPLETE
+      finishSpin();
+    } else if (["ADVANCE", "ACQUIRE", "DISCOVER"].includes(outcome)) {
+      // TOKENS: trigger bezier collection animation
+      stateMachine.transition("TOKENS_COLLECTED"); // OUTCOME_REVEAL -> TOKEN_COLLECTION
     } else {
-      console.log('[PremiumSpinWheel] Void outcome - fading away');
-      // VOID - just fade away
-      await delay(1500);
-      setShowOutcome(false);
-      setScreenDarken(0);
-      finishSpinSequence();
+      // VOID: pause shortly, then fade out
+      await delay(1200);
+      stateMachine.transition("COOLDOWN_END"); // OUTCOME_REVEAL -> REVEAL_COMPLETE
+      finishSpin();
     }
-  }, [outcome, stateMachine, onSpinComplete, onStealActivated, onTokensAwarded]);
+  }, [outcome, stateMachine, onStealActivated]);
 
-  const handleTokenCollectionComplete = useCallback(async () => {
-    if (!outcome) return;
+  // Called when token collection bezier finishes
+  const handleTokenCollectionComplete = useCallback(() => {
+    console.log("[SpinWheel] Token collection finished");
+    stateMachine.transition("COOLDOWN_END"); // TOKEN_COLLECTION -> REVEAL_COMPLETE
+    finishSpin();
+  }, [stateMachine]);
 
-    console.log('[PremiumSpinWheel] Token collection complete');
-    const tokenValue = getTokenValue(outcome);
-    
-    // Award tokens
+  // Sequentially awards tokens as they land in HUD
+  const handleSingleTokenArrival = useCallback((amount: number) => {
     if (onTokensAwarded) {
-      onTokensAwarded(tokenValue);
+      onTokensAwarded(amount);
     }
+  }, [onTokensAwarded]);
 
-    setShowTokenAnimation(false);
-    await delay(300);
-    setShowOutcome(false);
+  const finishSpin = useCallback(async () => {
+    console.log("[SpinWheel] Cleanup and cooldown phase");
+    setShowCard(false);
+    setParticlesActive(false);
     setScreenDarken(0);
 
-    finishSpinSequence();
-  }, [outcome, onTokensAwarded]);
+    stateMachine.transition("COOLDOWN_END"); // REVEAL_COMPLETE -> COOLDOWN
+    
+    // Cooldown duration before enabling next spin (500ms)
+    await delay(500);
 
-  const finishSpinSequence = useCallback(() => {
-    console.log('[PremiumSpinWheel] Finishing spin sequence');
-    // Transition through final states
-    stateMachine.transition('COOLDOWN_END');
-    stateMachine.transition('COOLDOWN_END');
-    stateMachine.transition('RESET');
-    
-    // Reset processing flag
+    stateMachine.transition("COOLDOWN_END"); // COOLDOWN -> READY
+    stateMachine.transition("RESET"); // READY -> IDLE
+
     setIsProcessing(false);
-    
-    // Notify parent that spin is complete
     onSpinComplete();
   }, [stateMachine, onSpinComplete]);
 
+  // Build environmental lighting override style based on state and outcome
+  const getRevealLightingStyle = () => {
+    if (!outcome) return {};
+    const config = OUTCOME_CONFIG[outcome];
+
+    // Steal selection turns environment completely red
+    if (currentState === "STEAL_SELECTION") {
+      return {
+        background: "radial-gradient(circle, rgba(239, 68, 68, 0.45) 0%, rgba(12, 4, 4, 0.95) 80%)",
+        opacity: 0.85,
+        zIndex: 42,
+      };
+    }
+
+    // Default reveal overlays
+    if (["REVEAL_START", "OUTCOME_REVEAL", "TOKEN_COLLECTION"].includes(currentState)) {
+      return {
+        background: `radial-gradient(circle, ${config.glow} 0%, rgba(8, 4, 21, 0.9) 75%)`,
+        opacity: 0.6,
+        zIndex: 42,
+      };
+    }
+
+    return {};
+  };
+
   return (
     <div className="relative w-full h-full">
-      {/* Screen Darken Overlay */}
+      {/* Screen Darken / Cinematic Overlay */}
       <AnimatePresence>
         {screenDarken > 0 && (
           <motion.div
@@ -207,7 +249,21 @@ export function PremiumSpinWheel({
         )}
       </AnimatePresence>
 
-      {/* Camera Container */}
+      {/* Unique Environment Lighting Overlay */}
+      <AnimatePresence>
+        {currentState !== "IDLE" && outcome && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="fixed inset-0 pointer-events-none transition-all duration-500"
+            style={getRevealLightingStyle()}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Main Wheel Camera Container */}
       <motion.div
         animate={{
           scale: cameraZoom,
@@ -215,37 +271,49 @@ export function PremiumSpinWheel({
         transition={{ duration: 0.3 }}
         className="relative w-full h-full"
       >
-        {/* Spin Wheel */}
-        <div className="relative mx-auto h-[min(72vw,320px)] w-[min(72vw,320px)] sm:h-80 sm:w-80">
-          <SpinWheelCore
-            isSpinning={isSpinning}
-            outcome={outcome}
-            onSpinComplete={handleWheelSpinComplete}
-          />
-        </div>
+        <SpinAnimator
+          isSpinning={currentState !== "IDLE" && currentState !== "LOCKED" && currentState !== "READY" && !stateMachine.isRevealing() && currentState !== "TOKEN_COLLECTION" && currentState !== "STEAL_SELECTION" && currentState !== "REVEAL_COMPLETE" && currentState !== "COOLDOWN"}
+          outcome={outcome}
+          onSpinComplete={handleWheelStop}
+        />
       </motion.div>
 
-      {/* Outcome Reveal Card */}
+      {/* Cinematic Reveal Orchestrator */}
+      {outcome && (
+        <RevealSequence
+          outcome={outcome}
+          active={["REVEAL_START", "OUTCOME_REVEAL"].includes(currentState)}
+          onCardShow={handleCardExplosion}
+          onAnimateStart={handleAnimateStart}
+        />
+      )}
+
+      {/* Flying Particle Emitters */}
+      {outcome && particlesActive && (
+        <ParticleController
+          outcome={outcome}
+          active={particlesActive}
+        />
+      )}
+
+      {/* Floating 3D Outcome Card */}
       <AnimatePresence>
-        {showOutcome && outcome && (
-          <OutcomeCard outcome={outcome} visible={showOutcome} />
+        {showCard && outcome && (
+          <OutcomeCard
+            outcome={outcome}
+            visible={showCard}
+          />
         )}
       </AnimatePresence>
 
-      {/* Outcome Celebration Effects */}
+      {/* Bezier Flying Token Animation */}
       <AnimatePresence>
-        {showCelebration && outcome && (
-          <OutcomeCelebration outcome={outcome} visible={showCelebration} />
-        )}
-      </AnimatePresence>
-
-      {/* Token Collection Animation */}
-      <AnimatePresence>
-        {showTokenAnimation && outcome && (
+        {currentState === "TOKEN_COLLECTION" && outcome && (
           <TokenCollectionAnimator
             outcome={outcome}
             tokenAmount={getTokenValue(outcome)}
             onComplete={handleTokenCollectionComplete}
+            onTokenArrived={handleSingleTokenArrival}
           />
         )}
       </AnimatePresence>
@@ -253,8 +321,11 @@ export function PremiumSpinWheel({
   );
 }
 
+// Re-export as PremiumSpinWheel for compatibility
+export { SpinWheel as PremiumSpinWheel };
+
 // ============================================================================
-// UTILITIES
+// HELPER UTILITIES
 // ============================================================================
 
 function delay(ms: number): Promise<void> {
@@ -263,52 +334,13 @@ function delay(ms: number): Promise<void> {
 
 function getTokenValue(outcome: SpinOutcome): number {
   switch (outcome) {
-    case 'ADVANCE':
+    case "ADVANCE":
       return 3;
-    case 'ACQUIRE':
+    case "ACQUIRE":
       return 1;
-    case 'DISCOVER':
+    case "DISCOVER":
       return 0.5;
     default:
       return 0;
-  }
-}
-
-function playOutcomeSound(outcome: SpinOutcome): void {
-  const soundMap: Record<SpinOutcome, string> = {
-    ADVANCE: '/audio/wheel/outcome-advance.mp3',
-    ACQUIRE: '/audio/wheel/outcome-acquire.mp3',
-    DISCOVER: '/audio/wheel/outcome-discover.mp3',
-    STEAL: '/audio/wheel/outcome-steal.mp3',
-    VOID: '/audio/wheel/outcome-void.mp3',
-  };
-
-  const audio = new Audio(soundMap[outcome]);
-  audio.volume = 0.7;
-  audio.play().catch(() => {
-    // Silent fail if audio doesn't load
-  });
-}
-
-function applyCameraShake(outcome: SpinOutcome): void {
-  const config = OUTCOME_CONFIG[outcome];
-  if (config.cameraShake === 'none') return;
-
-  const intensity = {
-    subtle: 2,
-    medium: 4,
-    strong: 8,
-  }[config.cameraShake] || 0;
-
-  // Trigger shake animation on body or viewport element
-  if (typeof document !== 'undefined') {
-    const root = document.documentElement;
-    root.style.transform = `translate(${intensity}px, ${intensity}px)`;
-    setTimeout(() => {
-      root.style.transform = `translate(-${intensity}px, -${intensity}px)`;
-    }, 50);
-    setTimeout(() => {
-      root.style.transform = 'translate(0, 0)';
-    }, 100);
   }
 }
