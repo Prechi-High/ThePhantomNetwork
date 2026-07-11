@@ -18,7 +18,7 @@ import { useLeaderboardUpdates } from "@/hooks/useLeaderboardUpdates";
 import { useEffectsUpdates } from "@/hooks/useEffectsUpdates";
 import { useInventoryUpdates } from "@/hooks/useInventoryUpdates";
 import { useServerTime } from "@/hooks/useServerTime";
-import type { StealTarget } from "@/types/gameplay";
+import type { StealTarget, SpinOutcome } from "@/types/gameplay";
 import { reportClientError } from "@/lib/monitoring/client-report";
 
 interface SquadMemberRow {
