@@ -263,7 +263,8 @@ export default function PlayPage() {
 
   const handleTokensAwarded = useCallback((amount: number) => {
     console.log('[PlayPage] Token particle arrived, incrementing client tokens by:', amount);
-    setTokens((prev) => Math.round((prev + amount) * 10) / 10);
+    const currentTokens = useGameplayStore.getState().tokens ?? 0;
+    setTokens(Math.round((currentTokens + amount) * 10) / 10);
   }, [setTokens]);
 
   const handleStealActivated = useCallback(async () => {
