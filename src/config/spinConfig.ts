@@ -183,7 +183,7 @@ export const WHEEL_CONFIG = {
   SEGMENT_ANGLE: 72,
 
   /** Clockwise order starting from top-center (0°) */
-  SEGMENT_ORDER: ['ADVANCE', 'ACQUIRE', 'STEAL', 'VOID', 'DISCOVER'] as SpinOutcome[],
+  SEGMENT_ORDER: ['ACQUIRE', 'DISCOVER', 'VOID', 'ADVANCE', 'STEAL'] as SpinOutcome[],
 
   // ---- Legacy aliases used by existing components ----
   /** @deprecated Use CAMERA_FX.SPIN_ZOOM_SCALE */
