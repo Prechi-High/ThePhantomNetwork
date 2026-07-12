@@ -1,14 +1,18 @@
 "use client";
 
 /**
- * GameplayHUD v3 — Responsive grid rebuild.
- * Built on:
- *  - 12-column CSS Grid system
- *  - clamp() for all sizing
- *  - Percentage-based vertical zones (18% / 46% / 14% / 22%)
- *  - No fixed pixel widths/heights
- *  - Glass overlays for Live Feed + Squad
- *  - Matches reference spatial balance exactly
+ * GameplayHUD — Master HUD Orchestrator
+ *
+ * Owns layout, responsive positioning, widget priorities, and phase transitions.
+ * Never owns gameplay logic — it consumes props from the play page / runtime.
+ *
+ * Layout zones:
+ *   1. Top HUD      — session intelligence (phase, timer, pool, rank, alive)
+ *   2. Surge        — energy core progression
+ *   3. World        — wheel + flanking live panels (feed left, squad right)
+ *   4. Engage       — spin button + voice/recording
+ *   5. Effects      — active effects pills
+ *   6. Skills       — skill dock
  */
 
 import "./responsive.css";
@@ -25,27 +29,55 @@ import { ActiveEffects } from "./ActiveEffects";
 import { SkillDockHUD } from "./SkillDockHUD";
 import { TestWidget } from "./TestWidget";
 
+export type HudPhaseMode =
+  | "loading"
+  | "active"
+  | "revive"
+  | "championship"
+  | "results";
+
 interface GameplayHUDProps {
+  // Session
   phase?: number;
   totalPhases?: number;
   prizePoolCents?: number;
+  phaseEndsAt?: number | null;
+
+  // Player
   tokens?: number;
   playerRank?: number;
   alivePlayers?: number;
   surgePercent?: number;
+
+  // Spin
   isSpinning?: boolean;
   spinLocked?: boolean;
   lastOutcome?: SpinOutcome | null;
+  tokenAmount?: number;
+  streak?: number;
+  combo?: number;
+  momentum?: number;
+  recentOutcomes?: SpinOutcome[];
+
+  // Callbacks
   onSpin?: () => void;
   onSpinComplete?: () => void;
   onTokensAwarded?: (amount: number) => void;
   onStealActivated?: () => void;
+
+  // HUD phase mode
+  hudPhase?: HudPhaseMode;
+
+  // Connection
+  connectionQuality?: "good" | "degraded" | "poor";
+  isSynced?: boolean;
 }
 
 export function GameplayHUD({
   phase = 2,
   totalPhases = 6,
-  prizePoolCents = 1250000,
+  prizePoolCents = 1_250_000,
+  phaseEndsAt,
   tokens = 24.5,
   playerRank = 7,
   alivePlayers = 28,
@@ -53,12 +85,19 @@ export function GameplayHUD({
   isSpinning = false,
   spinLocked = false,
   lastOutcome = null,
+  tokenAmount = 0,
+  streak = 0,
+  combo = 1,
+  momentum = 0,
+  recentOutcomes = [],
   onSpin,
   onSpinComplete = () => {},
   onTokensAwarded,
   onStealActivated,
+  hudPhase = "active",
+  connectionQuality = "good",
+  isSynced = true,
 }: GameplayHUDProps) {
-  // Use parent's isSpinning state directly, no local state needed
   const handleSpin = () => {
     if (spinLocked || isSpinning) return;
     onSpin?.();
@@ -69,73 +108,30 @@ export function GameplayHUD({
   };
 
   return (
-    <div data-gameplay="true" className="gameplay-hud-root">
-      {/* ════════════════════════════════════
-          BACKGROUND LAYERS (absolute, z-0)
-      ════════════════════════════════════ */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
-          zIndex: 0,
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "radial-gradient(ellipse 75% 55% at 50% 42%,rgba(88,28,135,0.24),transparent 70%)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: "50%",
-            background:
-              "radial-gradient(ellipse 100% 65% at 50% 100%,rgba(60,0,110,0.32),transparent 70%)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            backgroundImage:
-              "linear-gradient(rgba(168,85,247,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(168,85,247,0.03) 1px,transparent 1px)",
-            backgroundSize: "44px 44px",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            height: "100px",
-            background: "linear-gradient(180deg,rgba(4,2,10,0.85),transparent)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: "220px",
-            background: "linear-gradient(0deg,rgba(4,2,10,0.97),transparent)",
-          }}
-        />
+    <div
+      data-gameplay="true"
+      data-phase={hudPhase}
+      className="gameplay-hud-root"
+    >
+      {/* ---- Background layers ---- */}
+      <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0 }}>
+        {/* Deep radial centre */}
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 75% 55% at 50% 42%,rgba(88,28,135,0.24),transparent 70%)" }} />
+        {/* Bottom glow */}
+        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "50%", background: "radial-gradient(ellipse 100% 65% at 50% 100%,rgba(60,0,110,0.32),transparent 70%)" }} />
+        {/* Grid lines */}
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(168,85,247,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(168,85,247,0.03) 1px,transparent 1px)", backgroundSize: "44px 44px" }} />
+        {/* Top fade */}
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 100, background: "linear-gradient(180deg,rgba(4,2,10,0.85),transparent)" }} />
+        {/* Bottom fade */}
+        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 220, background: "linear-gradient(0deg,rgba(4,2,10,0.97),transparent)" }} />
       </div>
 
-      {/* ════════════════════════════════════
-          ZONE 1: TOP HUD (18%)
-      ════════════════════════════════════ */}
-      <div />
-      <div className="zone-top-hud">
+      {/* ---- Zone 0: safe area top ---- */}
+      <div className="hud-safe-top" />
+
+      {/* ---- Zone 1: Top HUD ---- */}
+      <div className="zone-top-hud" style={{ position: "relative", zIndex: 10 }}>
         <TopHUD
           prizePoolCents={prizePoolCents}
           phase={phase}
@@ -143,65 +139,69 @@ export function GameplayHUD({
           tokens={Math.round(tokens * 10) / 10}
           playerRank={playerRank}
           alivePlayers={alivePlayers}
+          phaseEndsAt={phaseEndsAt}
+          connectionQuality={connectionQuality}
+          isSynced={isSynced}
         />
+      </div>
+
+      {/* ---- Zone 2: Shadow Surge ---- */}
+      <div style={{ paddingInline: 0, position: "relative", zIndex: 10 }}>
         <ShadowSurge percent={surgePercent} playerRank={playerRank} />
       </div>
 
-      {/* ════════════════════════════════════
-          ZONE 2: WHEEL ZONE (46%)
-      ════════════════════════════════════ */}
-      <div className="zone-wheel">
+      {/* ---- Zone 3: World (Wheel + Live Panels) ---- */}
+      <div className="zone-wheel" style={{ position: "relative", zIndex: 5 }}>
         <div className="wheel-container">
-          <WheelHUD
-            isSpinning={isSpinning}
-            outcome={lastOutcome}
-            onSpinComplete={handleSpinComplete}
-            onTokensAwarded={onTokensAwarded}
-            onStealActivated={onStealActivated}
-          />
-
-          {/* Live Feed overlay (left) */}
+          {/* Live Feed — left overlay */}
           <div className="wheel-overlay-left overlay-panel">
             <LiveFeed />
           </div>
 
-          {/* Squad Panel overlay (right) */}
+          {/* Wheel — center focus */}
+          <WheelHUD
+            isSpinning={isSpinning}
+            outcome={lastOutcome}
+            tokenAmount={tokenAmount}
+            onSpinComplete={handleSpinComplete}
+            onTokensAwarded={onTokensAwarded}
+            onStealActivated={onStealActivated}
+            streak={streak}
+            combo={combo}
+            momentum={momentum}
+            recentOutcomes={recentOutcomes}
+          />
+
+          {/* Squad Panel — right overlay */}
           <div className="wheel-overlay-right overlay-panel">
             <SquadPanel />
           </div>
         </div>
       </div>
 
-      {/* ════════════════════════════════════
-          ZONE 3: CONTROLS (14%)
-      ════════════════════════════════════ */}
-      <div className="zone-controls">
-        <div className="spin-button-container">
+      {/* ---- Zone 4: Engage ---- */}
+      <div className="zone-engage" style={{ position: "relative", zIndex: 10 }}>
+        <div className="engage-center">
+          <VoiceWidgetHUD />
           <SpinButton
             disabled={isSpinning || spinLocked}
-            onClick={handleSpin}
             isSpinning={isSpinning}
+            onClick={handleSpin}
           />
-        </div>
-        <div className="controls-row">
-          <VoiceWidgetHUD />
           <RecordingWidgetHUD />
         </div>
       </div>
 
-      {/* ════════════════════════════════════
-          ZONE 4: EFFECTS + SKILLS (auto)
-      ════════════════════════════════════ */}
-      <div className="zone-bottom">
-        <ActiveEffects />
-        <SkillDockHUD />
-      </div>
+      {/* ---- Zone 5: Active Effects ---- */}
+      <ActiveEffects />
 
-      <div />
+      {/* ---- Zone 6: Skill Dock ---- */}
+      <SkillDockHUD />
 
-      {/* ════════════════════════════════════
-          HUD STUDIO TEST WIDGET (Dev Only)
-      ════════════════════════════════════ */}
+      {/* ---- Zone 7: safe area bottom ---- */}
+      <div className="hud-safe-bottom" />
+
+      {/* Dev only: HUD Studio test widget */}
       <TestWidget />
     </div>
   );

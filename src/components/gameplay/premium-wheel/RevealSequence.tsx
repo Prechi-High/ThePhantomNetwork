@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { SpinOutcome } from "@/types/gameplay";
-import { SPIN_TIMINGS, OUTCOME_CONFIG } from "@/config/spinConfig";
+import { REVEAL_TIMINGS, OUTCOME_CONFIG, CAMERA_FX } from "@/config/spinConfig";
 import { spinAudio } from "./SpinAudioController";
+
+type RevealPhase = "idle" | "silence" | "energy" | "burst" | "flash" | "card";
 
 interface RevealSequenceProps {
   outcome: SpinOutcome;
@@ -14,147 +16,182 @@ interface RevealSequenceProps {
 }
 
 /**
- * RevealSequence Component
- * Handles the cinematic multi-phase reveal timeline:
- * - 0.0s: Cut audio, darken screen, pause.
- * - 0.3s: Form energy orb at center (outcome-colored).
- * - 0.8s: Expand orb into a large light burst (plays reveal sound).
- * - 1.1s: Screen flash (white flash + screen shake).
- * - 1.3s: Explode outcome card into view.
- * - 1.5s: Start animations & particle streams.
+ * RevealSequence — Cinematic multi-phase reveal timeline
+ *
+ * 0.0s  Silence — 300ms tension pause, background darkens
+ * 0.3s  Energy — outcome-coloured orb forms at wheel centre
+ * 0.8s  Burst  — orb expands into full-screen light wave
+ * 1.1s  Flash  — white screen flash + camera shake
+ * 1.3s  Card   — outcome card explodes into view → onCardShow()
+ * 1.5s  Anim   — particles + HUD react → onAnimateStart()
  */
 export function RevealSequence({ outcome, active, onCardShow, onAnimateStart }: RevealSequenceProps) {
-  const config = OUTCOME_CONFIG[outcome];
-  const [phase, setPhase] = useState<"idle" | "pause" | "energy" | "burst" | "flash" | "explode">("idle");
+  const cfg = OUTCOME_CONFIG[outcome];
+  const [phase, setPhase] = useState<RevealPhase>("idle");
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const clearTimers = () => {
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+  };
+
+  const schedule = (fn: () => void, ms: number) => {
+    timers.current.push(setTimeout(fn, ms));
+  };
 
   useEffect(() => {
     if (!active) {
       setPhase("idle");
+      clearTimers();
       return;
     }
 
-    // 0.0s: Start pause state
-    setPhase("pause");
-    spinAudio.playRevealBurst(); // Preload/play early reveal sound
+    // t=0 — silence, play pre-reveal stinger
+    setPhase("silence");
+    spinAudio.playRevealBurst();
 
-    // 0.3s: Energy orb begins forming
-    const energyTimer = setTimeout(() => {
-      setPhase("energy");
-    }, SPIN_TIMINGS.REVEAL_ENERGY_START);
-
-    // 0.8s: Orb expands into burst
-    const burstTimer = setTimeout(() => {
-      setPhase("burst");
-    }, SPIN_TIMINGS.REVEAL_BURST_START);
-
-    // 1.1s: Screen flash + screen shake
-    const flashTimer = setTimeout(() => {
+    schedule(() => setPhase("energy"),  REVEAL_TIMINGS.ENERGY_FORMATION_START);
+    schedule(() => setPhase("burst"),   REVEAL_TIMINGS.LIGHT_BURST_START);
+    schedule(() => {
       setPhase("flash");
-      applyCameraShake(outcome);
-    }, SPIN_TIMINGS.REVEAL_FLASH_START);
-
-    // 1.3s: Card explodes
-    const cardTimer = setTimeout(() => {
-      setPhase("explode");
+      applyCameraShake(cfg.cameraShake);
+    }, REVEAL_TIMINGS.SCREEN_FLASH_START);
+    schedule(() => {
+      setPhase("card");
       onCardShow();
-    }, SPIN_TIMINGS.REVEAL_CARD_EXPLODE);
+    }, REVEAL_TIMINGS.CARD_ENTRY_START);
+    schedule(() => onAnimateStart(), REVEAL_TIMINGS.PARTICLES_START);
 
-    // 1.5s: Particles & animations start
-    const animTimer = setTimeout(() => {
-      onAnimateStart();
-    }, SPIN_TIMINGS.REVEAL_ANIM_START);
-
-    return () => {
-      clearTimeout(energyTimer);
-      clearTimeout(burstTimer);
-      clearTimeout(flashTimer);
-      clearTimeout(cardTimer);
-      clearTimeout(animTimer);
-    };
-  }, [active, outcome, onCardShow, onAnimateStart]);
+    return clearTimers;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, outcome]);
 
   if (!active) return null;
 
+  const energyDuration =
+    (REVEAL_TIMINGS.LIGHT_BURST_START - REVEAL_TIMINGS.ENERGY_FORMATION_START) / 1000;
+  const burstDuration =
+    (REVEAL_TIMINGS.SCREEN_FLASH_START - REVEAL_TIMINGS.LIGHT_BURST_START) / 1000;
+
   return (
-    <div className="fixed inset-0 z-50 pointer-events-none overflow-hidden select-none">
-      {/* Full screen ambient dimming overlay */}
+    <div className="fixed inset-0 pointer-events-none overflow-hidden select-none" style={{ zIndex: 50 }}>
+
+      {/* Ambient darkening */}
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: phase !== "idle" ? 0.65 : 0 }}
-        exit={{ opacity: 0 }}
+        animate={{ opacity: phase !== "idle" ? 0.7 : 0 }}
         transition={{ duration: 0.4 }}
         className="absolute inset-0 bg-black"
       />
 
-      {/* Full screen thematic ambient lighting colored by outcome */}
+      {/* Thematic ambient colour wash */}
       <AnimatePresence>
         {phase !== "idle" && (
           <motion.div
+            key="ambient"
             initial={{ opacity: 0 }}
-            animate={{ opacity: ["flash", "explode"].includes(phase) ? 0.35 : 0.15 }}
+            animate={{ opacity: ["flash", "card"].includes(phase) ? 0.4 : 0.18 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.6 }}
-            className="absolute inset-0 transition-colors duration-500"
+            transition={{ duration: 0.5 }}
+            className="absolute inset-0"
             style={{
-              background: `radial-gradient(circle at center, ${config.glow} 0%, transparent 80%)`,
+              background: `radial-gradient(circle at center, ${cfg.glow} 0%, transparent 75%)`,
             }}
           />
         )}
       </AnimatePresence>
 
-      {/* Phase 1: Center Energy Orb */}
-      {phase === "energy" && (
-        <div className="absolute inset-0 flex items-center justify-center">
+      {/* Phase: energy orb */}
+      <AnimatePresence>
+        {phase === "energy" && (
           <motion.div
+            key="orb"
             initial={{ scale: 0, opacity: 0 }}
-            animate={{
-              scale: [0, 1.5, 2.2],
-              opacity: [0, 0.9, 1],
-            }}
-            transition={{
-              duration: (SPIN_TIMINGS.REVEAL_BURST_START - SPIN_TIMINGS.REVEAL_ENERGY_START) / 1000,
-              ease: "easeIn",
-            }}
-            className="w-12 h-12 rounded-full blur-[4px]"
+            animate={{ scale: [0, 1.8, 2.6], opacity: [0, 1, 0.9] }}
+            exit={{ scale: 3, opacity: 0 }}
+            transition={{ duration: energyDuration, ease: "easeIn" }}
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full"
             style={{
-              background: `radial-gradient(circle, #ffffff 0%, ${config.primary} 60%, transparent 100%)`,
-              boxShadow: `0 0 40px ${config.primary}, 0 0 80px ${config.glow}`,
+              background: `radial-gradient(circle, #fff 0%, ${cfg.primary} 55%, transparent 100%)`,
+              boxShadow: `0 0 50px ${cfg.primary}, 0 0 100px ${cfg.glow}`,
+              filter: "blur(3px)",
             }}
           />
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
-      {/* Phase 2: Large expanding light burst */}
-      {phase === "burst" && (
-        <div className="absolute inset-0 flex items-center justify-center">
+      {/* Phase: light burst wave */}
+      <AnimatePresence>
+        {phase === "burst" && (
           <motion.div
-            initial={{ scale: 0.8, opacity: 1 }}
-            animate={{
-              scale: 35,
-              opacity: [1, 0.8, 0],
-            }}
-            transition={{
-              duration: (SPIN_TIMINGS.REVEAL_FLASH_START - SPIN_TIMINGS.REVEAL_BURST_START) / 1000,
-              ease: "easeOut",
-            }}
-            className="w-16 h-16 rounded-full blur-[10px]"
+            key="burst"
+            initial={{ scale: 0.6, opacity: 1 }}
+            animate={{ scale: 40, opacity: [1, 0.7, 0] }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: burstDuration, ease: "easeOut" }}
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full"
             style={{
-              background: `radial-gradient(circle, #ffffff 0%, ${config.primary} 50%, transparent 100%)`,
-              boxShadow: `0 0 60px ${config.primary}, 0 0 120px ${config.glow}`,
+              background: `radial-gradient(circle, #fff 0%, ${cfg.primary} 45%, transparent 100%)`,
+              boxShadow: `0 0 80px ${cfg.primary}`,
+              filter: "blur(8px)",
             }}
           />
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
-      {/* Phase 3: Screen flash overlay */}
+      {/* Outcome-specific burst overlay */}
+      <AnimatePresence>
+        {(phase === "burst" || phase === "flash") && outcome === "ADVANCE" && (
+          <motion.div
+            key="advance-burst"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 0.5, 0] }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+            className="absolute inset-0"
+            style={{
+              background: "radial-gradient(circle at center, rgba(255,215,0,0.35) 0%, transparent 65%)",
+            }}
+          />
+        )}
+        {(phase === "burst" || phase === "flash") && outcome === "STEAL" && (
+          <motion.div
+            key="steal-distort"
+            initial={{ opacity: 0, scale: 1 }}
+            animate={{ opacity: [0, 0.6, 0], scale: [1, 1.02, 0.98, 1] }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.45 }}
+            className="absolute inset-0"
+            style={{
+              background: "radial-gradient(circle at center, rgba(239,68,68,0.4) 0%, transparent 70%)",
+            }}
+          />
+        )}
+        {(phase === "burst" || phase === "flash") && outcome === "VOID" && (
+          <motion.div
+            key="void-implosion"
+            initial={{ opacity: 0.5, scale: 1 }}
+            animate={{ opacity: [0.5, 0, 0], scale: [1, 0.6, 0.4] }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="absolute inset-0"
+            style={{
+              background: "radial-gradient(circle at center, rgba(0,0,0,0.6) 0%, transparent 60%)",
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Screen flash */}
       <AnimatePresence>
         {phase === "flash" && (
           <motion.div
+            key="flash"
             initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 1, 0] }}
+            animate={{ opacity: [0, CAMERA_FX.FLASH_PEAK_OPACITY, 0] }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.35, ease: "easeInOut" }}
-            className="absolute inset-0 bg-white z-50"
+            transition={{ duration: CAMERA_FX.FLASH_FADE_DURATION / 1000, ease: "easeInOut" }}
+            className="absolute inset-0 bg-white"
+            style={{ zIndex: 55 }}
           />
         )}
       </AnimatePresence>
@@ -162,42 +199,27 @@ export function RevealSequence({ outcome, active, onCardShow, onAnimateStart }: 
   );
 }
 
-/**
- * Camera Shake Effect
- * Shakes the DOM root to simulate heavy visual impact.
- */
-function applyCameraShake(outcome: SpinOutcome): void {
-  const config = OUTCOME_CONFIG[outcome];
-  if (config.cameraShake === "none") return;
+// ---- Camera shake ----
 
-  const intensity = {
-    subtle: 3,
-    medium: 7,
-    strong: 15,
-  }[config.cameraShake] || 0;
+function applyCameraShake(level: "none" | "subtle" | "medium" | "strong"): void {
+  if (level === "none" || typeof document === "undefined") return;
+  const intensity = CAMERA_FX.SHAKE_INTENSITY[level as keyof Omit<typeof CAMERA_FX.SHAKE_INTENSITY, "none">];
+  if (!intensity) return;
 
-  if (typeof document !== "undefined") {
-    const root = document.documentElement;
-    
-    // Quick heavy vibration sequence
-    root.style.transition = "none";
-    root.style.transform = `translate(${intensity}px, ${intensity}px) rotate(0.5deg)`;
-    
+  const root = document.documentElement;
+  const frames = [
+    `translate(${intensity}px, ${intensity * 0.6}px) rotate(0.4deg)`,
+    `translate(-${intensity * 0.8}px, -${intensity * 0.5}px) rotate(-0.3deg)`,
+    `translate(${intensity * 0.5}px, -${intensity * 0.3}px) rotate(0.15deg)`,
+    `translate(-${intensity * 0.2}px, ${intensity * 0.2}px) rotate(0deg)`,
+    "translate(0, 0)",
+  ];
+
+  root.style.transition = "none";
+  frames.forEach((frame, i) => {
     setTimeout(() => {
-      root.style.transform = `translate(-${intensity * 0.8}px, -${intensity * 0.8}px) rotate(-0.5deg)`;
-    }, 45);
-
-    setTimeout(() => {
-      root.style.transform = `translate(${intensity * 0.5}px, -${intensity * 0.5}px) rotate(0.2deg)`;
-    }, 90);
-
-    setTimeout(() => {
-      root.style.transform = `translate(-${intensity * 0.2}px, ${intensity * 0.2}px) rotate(0deg)`;
-    }, 135);
-
-    setTimeout(() => {
-      root.style.transform = "translate(0, 0)";
-      root.style.transition = "";
-    }, 180);
-  }
+      root.style.transform = frame;
+      if (i === frames.length - 1) root.style.transition = "";
+    }, i * 45);
+  });
 }

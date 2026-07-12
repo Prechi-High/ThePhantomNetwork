@@ -1,246 +1,174 @@
 "use client";
 
+import { useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSessionStore } from "@/stores/useSessionStore";
 import { useLiveFeedStore, type FeedEvent } from "@/stores/useLiveFeedStore";
 import { useLiveFeedUpdates } from "@/hooks/useLiveFeedUpdates";
 
-type EventType = "steal" | "revive" | "lead" | "phase" | "shield" | "surge" | "jackpot" | "cloak" | "multiplier" | "effect" | "elimination";
-
-const EVENT_COLORS: Record<EventType, { accent: string; dot: string }> = {
-  steal: { accent: "#ef4444", dot: "#ef4444" },
-  revive: { accent: "#22c55e", dot: "#22c55e" },
-  lead: { accent: "#f59e0b", dot: "#f59e0b" },
-  phase: { accent: "#a855f7", dot: "#a855f7" },
-  shield: { accent: "#38bdf8", dot: "#38bdf8" },
-  surge: { accent: "#8b5cf6", dot: "#8b5cf6" },
-  jackpot: { accent: "#fbbf24", dot: "#fbbf24" },
-  cloak: { accent: "#818cf8", dot: "#818cf8" },
-  multiplier: { accent: "#ec4899", dot: "#ec4899" },
-  effect: { accent: "#38bdf8", dot: "#38bdf8" },
-  elimination: { accent: "#ef4444", dot: "#ef4444" },
-};
-
-const VISIBLE = 5;
-
-// Helper to format relative time
-function formatRelativeTime(isoTimestamp: string): string {
-  const now = Date.now();
-  const eventTime = new Date(isoTimestamp).getTime();
-  const diffMs = now - eventTime;
-
-  if (diffMs < 1000) return "now";
-  if (diffMs < 60000) return `${Math.floor(diffMs / 1000)}s`;
-  if (diffMs < 3600000) return `${Math.floor(diffMs / 60000)}m`;
-  return `${Math.floor(diffMs / 3600000)}h`;
+interface EventStyle {
+  accent: string;
+  dot: string;
+  icon: string;
+  priority: "high" | "normal" | "low";
 }
 
-// Helper to format event text from backend data
-function formatEventText(event: FeedEvent): string {
-  const actor = event.actor?.username || "Player";
-  const target = event.target?.username || "Target";
-  const details = event.details || {};
+const EVENT_STYLES: Record<string, EventStyle> = {
+  steal:       { accent: "#ef4444", dot: "#ef4444", icon: "⚡", priority: "high" },
+  revive:      { accent: "#22c55e", dot: "#22c55e", icon: "💚", priority: "high" },
+  lead:        { accent: "#f59e0b", dot: "#f59e0b", icon: "👑", priority: "high" },
+  phase:       { accent: "#a855f7", dot: "#a855f7", icon: "🔮", priority: "high" },
+  effect:      { accent: "#38bdf8", dot: "#38bdf8", icon: "✨", priority: "low" },
+  elimination: { accent: "#ef4444", dot: "#ef4444", icon: "💀", priority: "high" },
+  surge:       { accent: "#8b5cf6", dot: "#8b5cf6", icon: "⚡", priority: "high" },
+};
+const DEFAULT_STYLE: EventStyle = { accent: "#a855f7", dot: "#a855f7", icon: "•", priority: "normal" };
+
+const VISIBLE = 6;
+
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  if (diff < 1000)    return "now";
+  if (diff < 60_000)  return `${Math.floor(diff / 1000)}s`;
+  if (diff < 3600_000) return `${Math.floor(diff / 60_000)}m`;
+  return `${Math.floor(diff / 3600_000)}h`;
+}
+
+function buildStory(event: FeedEvent): string {
+  const a = event.actor?.username   || "Someone";
+  const t = event.target?.username  || "a player";
+  const d = event.details           || {};
 
   switch (event.type) {
     case "steal":
-      return `${actor} stole ${details.amount ?? 0}`;
+      return `${a} stole ${d.amount ?? "tokens"} from ${t}`;
     case "revive":
-      return `${actor} revived ${target}`;
+      return `${a} revived ${t} — back in the fight`;
     case "lead":
-      return `${actor} takes 1st place`;
+      return `${a} takes 1st place`;
     case "phase":
-      return `${details.phaseName ?? "Phase"} entered`;
+      return `${(d.phaseName as string) ?? "New phase"} has started`;
     case "effect":
-      return `${actor} activated ${details.effect ?? "Effect"}`;
+      return `${a} activated ${(d.effect as string) ?? "Effect"}`;
     case "elimination":
-      return `${actor} eliminated`;
+      return `${a} was eliminated`;
     case "surge":
-      return "Shadow Surge Activated";
+      return "Shadow Surge activated — all bets up";
     default:
-      return `${actor} ${event.type}`;
+      return `${a} made a move`;
   }
+}
+
+/** Pinned high-priority banner that appears briefly then dissolves */
+function PriorityBanner({ event, style }: { event: FeedEvent; style: EventStyle }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -8, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -8, scale: 0.97 }}
+      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "clamp(5px, 0.6vw, 7px)",
+        padding: "clamp(4px, 0.5vw, 6px) clamp(7px, 0.9vw, 10px)",
+        borderRadius: "clamp(6px, 0.9vw, 9px)",
+        background: `${style.accent}18`,
+        border: `1px solid ${style.accent}55`,
+        marginBottom: "clamp(3px, 0.4vw, 5px)",
+        boxShadow: `0 0 10px ${style.accent}22`,
+      }}
+    >
+      <span style={{ fontSize: "var(--text-md)", flexShrink: 0 }}>{style.icon}</span>
+      <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: style.accent, flex: 1, lineHeight: 1.3 }}>
+        {buildStory(event)}
+      </span>
+    </motion.div>
+  );
 }
 
 export function LiveFeed() {
   const { subSessionId } = useSessionStore();
   const events = useLiveFeedStore((s) => s.events);
-
-  // Subscribe to live feed updates
   useLiveFeedUpdates(subSessionId);
 
-  const displayedEvents = events.slice(0, VISIBLE);
-
-  if (displayedEvents.length === 0) {
-    return (
-      <div style={{ display: "flex", flexDirection: "column", width: "100%", gap: "clamp(6px, 0.8vw, 9px)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "clamp(5px, 0.6vw, 7px)" }}>
-          <motion.div
-            animate={{ opacity: [1, 0.3, 1] }}
-            transition={{ duration: 1.4, repeat: Infinity }}
-            style={{
-              width: "clamp(5px, 0.6vw, 7px)",
-              height: "clamp(5px, 0.6vw, 7px)",
-              borderRadius: "50%",
-              background: "#22c55e",
-              boxShadow: "0 0 6px rgba(34,197,94,0.8)",
-              flexShrink: 0,
-            }}
-          />
-          <span
-            className="text-xs"
-            style={{
-              fontWeight: 800,
-              letterSpacing: "0.14em",
-              color: "#22c55e",
-              textTransform: "uppercase",
-              textShadow: "0 0 8px rgba(34,197,94,0.45)",
-            }}
-          >
-            LIVE FEED
-          </span>
-        </div>
-        <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "12px" }}>
-          Waiting for events...
-        </div>
-      </div>
-    );
-  }
+  const displayed = events.slice(0, VISIBLE);
+  const pinned    = displayed.filter(e => (EVENT_STYLES[e.type]?.priority ?? "normal") === "high").slice(0, 1);
+  const stream    = displayed.filter(e => !pinned.find(p => p.id === e.id));
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", width: "100%", gap: "clamp(6px, 0.8vw, 9px)" }}>
+    <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", gap: "clamp(4px, 0.5vw, 6px)", overflow: "hidden" }}>
+
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: "clamp(5px, 0.6vw, 7px)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "clamp(4px, 0.5vw, 6px)", flexShrink: 0 }}>
         <motion.div
           animate={{ opacity: [1, 0.3, 1] }}
           transition={{ duration: 1.4, repeat: Infinity }}
-          style={{
-            width: "clamp(5px, 0.6vw, 7px)",
-            height: "clamp(5px, 0.6vw, 7px)",
-            borderRadius: "50%",
-            background: "#22c55e",
-            boxShadow: "0 0 6px rgba(34,197,94,0.8)",
-            flexShrink: 0,
-          }}
+          style={{ width: "clamp(5px, 0.6vw, 7px)", height: "clamp(5px, 0.6vw, 7px)", borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 7px rgba(34,197,94,0.9)", flexShrink: 0 }}
         />
-        <span
-          className="text-xs"
-          style={{
-            fontWeight: 800,
-            letterSpacing: "0.14em",
-            color: "#22c55e",
-            textTransform: "uppercase",
-            textShadow: "0 0 8px rgba(34,197,94,0.45)",
-          }}
-        >
-          LIVE FEED
+        <span style={{ fontSize: "var(--text-xs)", fontWeight: 800, letterSpacing: "0.16em", color: "#22c55e", textTransform: "uppercase", textShadow: "0 0 8px rgba(34,197,94,0.45)" }}>
+          LIVE
+        </span>
+        <span style={{ fontSize: "var(--text-2xs)", fontWeight: 600, color: "rgba(34,197,94,0.5)", marginLeft: "auto" }}>
+          {events.length} events
         </span>
       </div>
 
-      {/* Activity Stream */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "clamp(4px, 0.5vw, 6px)" }}>
+      {/* Priority banner */}
+      <AnimatePresence mode="popLayout">
+        {pinned.map(e => (
+          <PriorityBanner key={e.id} event={e} style={EVENT_STYLES[e.type] ?? DEFAULT_STYLE} />
+        ))}
+      </AnimatePresence>
+
+      {/* Stream */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "clamp(3px, 0.4vw, 5px)", flex: 1, overflow: "hidden" }}>
         <AnimatePresence initial={false} mode="popLayout">
-          {displayedEvents.map((event) => {
-            const eventType = (event.type as EventType) || "steal";
-            const colors = EVENT_COLORS[eventType] || EVENT_COLORS.steal;
-            const text = formatEventText(event);
-            const time = formatRelativeTime(event.timestamp);
+          {stream.length === 0 && events.length === 0 ? (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{ color: "rgba(255,255,255,0.35)", fontSize: "var(--text-xs)", padding: "clamp(3px, 0.4vw, 5px) 0" }}
+            >
+              Watching for activity…
+            </motion.div>
+          ) : (
+            stream.map((event) => {
+              const s = EVENT_STYLES[event.type] ?? DEFAULT_STYLE;
+              const story = buildStory(event);
+              const time = relativeTime(event.timestamp);
 
-            return (
-              <motion.div
-                key={event.id}
-                initial={{ opacity: 0, x: -10, height: 0 }}
-                animate={{ opacity: 1, x: 0, height: "auto" }}
-                exit={{ opacity: 0, x: -10, height: 0 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "clamp(6px, 0.8vw, 9px)",
-                  paddingLeft: "clamp(5px, 0.6vw, 7px)",
-                  borderLeft: `clamp(2px, 0.3vw, 3px) solid ${colors.accent}`,
-                  position: "relative",
-                }}
-              >
-                {/* Dot */}
-                <div
-                  style={{
-                    width: "clamp(4px, 0.5vw, 6px)",
-                    height: "clamp(4px, 0.5vw, 6px)",
-                    borderRadius: "50%",
-                    background: colors.dot,
-                    boxShadow: `0 0 4px ${colors.dot}`,
-                    flexShrink: 0,
-                  }}
-                />
-
-                {/* Text */}
-                <span
-                  className="text-sm"
-                  style={{
-                    fontWeight: 600,
-                    color: "rgba(255,255,255,0.85)",
-                    flex: 1,
-                    lineHeight: 1.3,
-                  }}
+              return (
+                <motion.div
+                  key={event.id}
+                  layout
+                  initial={{ opacity: 0, x: -12, height: 0 }}
+                  animate={{ opacity: 1, x: 0, height: "auto" }}
+                  exit={{ opacity: 0, x: -12, height: 0 }}
+                  transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                  className="feed-event"
+                  style={{ borderLeft: `2px solid ${s.accent}` }}
                 >
-                  {text}
-                </span>
+                  {/* Dot */}
+                  <div style={{ width: "clamp(4px, 0.5vw, 6px)", height: "clamp(4px, 0.5vw, 6px)", borderRadius: "50%", background: s.dot, boxShadow: `0 0 4px ${s.dot}`, flexShrink: 0 }} />
 
-                {/* Time */}
-                <span
-                  className="text-xs"
-                  style={{
-                    fontWeight: 600,
-                    color: "rgba(168,85,247,0.5)",
-                    fontVariantNumeric: "tabular-nums",
-                    flexShrink: 0,
-                  }}
-                >
-                  {time}
-                </span>
-              </motion.div>
-            );
-          })}
+                  {/* Story */}
+                  <span style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "rgba(255,255,255,0.82)", flex: 1, lineHeight: 1.35 }}>
+                    {story}
+                  </span>
+
+                  {/* Time */}
+                  <span style={{ fontSize: "var(--text-2xs)", fontWeight: 600, color: "rgba(168,85,247,0.5)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
+                    {time}
+                  </span>
+                </motion.div>
+              );
+            })
+          )}
         </AnimatePresence>
       </div>
-
-      {/* View All */}
-      <button
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "clamp(3px, 0.4vw, 5px)",
-          padding: "clamp(4px, 0.5vw, 6px) 0",
-          borderRadius: "clamp(6px, 0.8vw, 9px)",
-          background: "rgba(168,85,247,0.08)",
-          border: "1px solid rgba(168,85,247,0.2)",
-          transition: "all 0.2s ease",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = "rgba(168,85,247,0.15)";
-          e.currentTarget.style.borderColor = "rgba(168,85,247,0.35)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = "rgba(168,85,247,0.08)";
-          e.currentTarget.style.borderColor = "rgba(168,85,247,0.2)";
-        }}
-      >
-        <span
-          className="text-xs"
-          style={{
-            fontWeight: 700,
-            color: "rgba(168,85,247,0.75)",
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-          }}
-        >
-          View All
-        </span>
-        <svg width="9" height="9" viewBox="0 0 24 24" fill="none">
-          <path d="M9 18l6-6-6-6" stroke="rgba(168,85,247,0.7)" strokeWidth="2.5" strokeLinecap="round" />
-        </svg>
-      </button>
     </div>
   );
 }

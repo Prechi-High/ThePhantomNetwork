@@ -1,104 +1,118 @@
-'use client';
+"use client";
 
-import { useEffect, useRef } from 'react';
-import { useInventoryStore, type SkillInInventory } from '@/stores/useInventoryStore';
+/**
+ * useInventoryUpdates — Inventory Observer
+ *
+ * Domain: Inventory synchronization only.
+ * Delivers skill/cosmetic/consumable changes → useInventoryStore.
+ * Never updates UI. Never calculates gameplay.
+ * Updates feel invisible — no reload, no flash.
+ *
+ * Architecture:
+ *   Backend → SSE → useInventoryUpdates → useInventoryStore → HUD slot
+ *
+ * Features:
+ *   - Initial bulk fetch on mount
+ *   - SSE for real-time skill:available, skill:charged, skill:cooldown events
+ *   - 8s polling fallback (intentionally slow — inventory rarely changes)
+ *   - Independent failure mode
+ */
+
+import { useEffect, useRef } from "react";
+import { useInventoryStore, type SkillInInventory } from "@/stores/useInventoryStore";
+
+const POLL_INTERVAL_MS = 8_000;
 
 interface InventoryResponse {
   skills: SkillInInventory[];
-  server_time: string;
+  server_time?: string;
 }
 
-/**
- * Tracks player skill inventory and cooldowns
- * - Initial fetch: GET /api/player/inventory
- * - Poll interval: 3 seconds
- * - Real-time: WebSocket skill:available and skill:charged
- */
-export function useInventoryUpdates(userId: string | null, subSessionId: string | null) {
+export function useInventoryUpdates(
+  userId: string | null,
+  subSessionId: string | null,
+) {
   const store = useInventoryStore();
-  const pollIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const sseRef      = useRef<EventSource | null>(null);
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!userId || !subSessionId) return;
 
-    // Fetch player inventory
+    // ── Initial fetch ────────────────────────────────────────────────────
     const fetchInventory = async () => {
       try {
-        const response = await fetch(
+        const res = await fetch(
           `/api/player/inventory?userId=${userId}&subSessionId=${subSessionId}`
         );
-        if (!response.ok) throw new Error(`Status ${response.status}`);
-        const data = (await response.json()) as InventoryResponse;
+        if (!res.ok) return;
+        const data = await res.json() as InventoryResponse;
         if (Array.isArray(data.skills)) {
           store.setSkills(data.skills);
         }
         if (data.server_time) {
           store.setServerTime(data.server_time);
         }
-      } catch (error) {
-        console.error('Failed to fetch inventory:', error);
-      }
+        store.markLoaded();
+      } catch {/* independent failure */}
     };
 
-    // Initial fetch
     fetchInventory();
 
-    // Real-time subscriptions
-    const subscribeToRealtime = () => {
+    // ── SSE subscription ─────────────────────────────────────────────────
+    const es = new EventSource(`/api/realtime/${subSessionId}`);
+    sseRef.current = es;
+
+    const handleMessage = (e: MessageEvent) => {
       try {
-        const es = new EventSource(`/api/realtime/${subSessionId}`);
+        const event = JSON.parse(e.data) as Record<string, unknown>;
 
-        const handleSkillAvailable = (e: MessageEvent) => {
-          try {
-            const event = JSON.parse(e.data);
-            if (event.type === 'skill:available' && event.payload?.skillId) {
-              store.updateSkillCooldown(event.payload.skillId, 0);
-            }
-          } catch (error) {
-            console.error('Failed to parse skill:available event:', error);
+        switch (event.type) {
+          case "skill:available": {
+            const p = event.payload as Record<string, unknown>;
+            if (p?.skillId) store.updateSkillCooldown(p.skillId as string, 0);
+            break;
           }
-        };
-
-        const handleSkillCharged = (e: MessageEvent) => {
-          try {
-            const event = JSON.parse(e.data);
-            if (event.type === 'skill:charged' && event.payload?.skillId) {
-              store.updateSkillCharges(event.payload.skillId, event.payload.charges);
+          case "skill:charged": {
+            const p = event.payload as Record<string, unknown>;
+            if (p?.skillId && p.charges !== undefined) {
+              store.updateSkillCharges(p.skillId as string, Number(p.charges));
             }
-          } catch (error) {
-            console.error('Failed to parse skill:charged event:', error);
+            break;
           }
-        };
-
-        es.addEventListener('skill:available', handleSkillAvailable);
-        es.addEventListener('skill:charged', handleSkillCharged);
-        es.onerror = () => {
-          console.warn('EventSource error in inventory updates');
-          es.close();
-        };
-
-        return () => {
-          es.removeEventListener('skill:available', handleSkillAvailable);
-          es.removeEventListener('skill:charged', handleSkillCharged);
-          es.close();
-        };
-      } catch (error) {
-        console.error('Failed to subscribe to inventory realtime:', error);
-        return () => {};
-      }
+          case "skill:cooldown_started": {
+            const p = event.payload as Record<string, unknown>;
+            if (p?.skillId && p.cooldownMs !== undefined) {
+              store.updateSkillCooldown(p.skillId as string, Number(p.cooldownMs));
+            }
+            break;
+          }
+          case "inventory:updated":
+            // Full refresh trigger — re-fetch
+            fetchInventory();
+            break;
+        }
+      } catch {/* skip */}
     };
 
-    const unsubscribeRealtime = subscribeToRealtime();
+    es.addEventListener("skill:available",         handleMessage);
+    es.addEventListener("skill:charged",           handleMessage);
+    es.addEventListener("skill:cooldown_started",  handleMessage);
+    es.addEventListener("inventory:updated",       handleMessage);
+    es.onmessage = handleMessage;
 
-    // Poll every 3 seconds
-    pollIntervalRef.current = setInterval(fetchInventory, 3000);
-
-    // Cleanup
-    return () => {
-      unsubscribeRealtime();
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
+    es.onerror = () => {
+      // Start slow polling fallback
+      if (!pollTimerRef.current) {
+        pollTimerRef.current = setInterval(fetchInventory, POLL_INTERVAL_MS);
       }
+      es.close();
+    };
+
+    return () => {
+      es.close();
+      sseRef.current = null;
+      if (pollTimerRef.current) { clearInterval(pollTimerRef.current); pollTimerRef.current = null; }
     };
   }, [userId, subSessionId, store]);
 }

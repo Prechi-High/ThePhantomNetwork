@@ -1,208 +1,267 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useSessionStore } from "@/stores/useSessionStore";
-import { useInventoryStore, type SkillInInventory } from "@/stores/useInventoryStore";
+import { useInventoryStore } from "@/stores/useInventoryStore";
 import { useInventoryUpdates } from "@/hooks/useInventoryUpdates";
 import { useServerTime } from "@/hooks/useServerTime";
 
-// Default skill display icons
-const SKILL_ICONS: Record<string, React.ReactNode> = {
-  steal_boost: (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-      <path d="M13 2L4.5 13.5H11L10 22L20.5 10H14L13 2Z" fill="#a855f7" stroke="#c084fc" strokeWidth="0.5" />
-    </svg>
-  ),
-  shield: (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-      <path d="M12 2L3 7v6c0 5 3.7 9.7 9 11 5.3-1.3 9-6 9-11V7L12 2Z" fill="#38bdf8" stroke="#7dd3fc" strokeWidth="0.5" />
-      <path d="M9 12l2 2 4-4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  cloak: (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-      <path d="M12 3C8 3 5 6.5 5 10v9l2.5-2 2.5 2 2.5-2 2.5 2 2.5-2 2.5 2V10C22 6.5 19 3 12 3Z" fill="#818cf8" stroke="#a5b4fc" strokeWidth="0.5" />
-      <circle cx="9.5" cy="10" r="1.2" fill="rgba(0,0,0,0.5)" />
-      <circle cx="14.5" cy="10" r="1.2" fill="rgba(0,0,0,0.5)" />
-    </svg>
-  ),
-  multiplier: (
-    <span style={{ fontSize: "20px", fontWeight: 900, color: "#c084fc", lineHeight: 1, textShadow: "0 0 8px rgba(192,132,252,0.75)" }}>
-      2x
-    </span>
-  ),
-  insurance: (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-      <path d="M12 3C7 3 3 7 3 12H21C21 7 17 3 12 3Z" fill="#fbbf24" />
-      <line x1="12" y1="12" x2="12" y2="19" stroke="#fbbf24" strokeWidth="2.5" strokeLinecap="round" />
-      <path d="M12 19C12 19 10 21 8 21" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  ),
-  revive: (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="9" fill="#22c55e" opacity="0.88" />
-      <path d="M12 8v8M8 12h8" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-    </svg>
-  ),
+interface SkillColors {
+  border: string;
+  glow: string;
+  bgFrom: string;
+  bgTo: string;
+  label: string;
+}
+
+const SKILL_COLORS: Record<string, SkillColors> = {
+  steal_boost: { border: "#7c3aed", glow: "rgba(124,58,237,0.6)",  bgFrom: "#1a0635", bgTo: "#0a011a", label: "#a855f7" },
+  shield:      { border: "#0284c7", glow: "rgba(2,132,199,0.6)",   bgFrom: "#031828", bgTo: "#020d18", label: "#38bdf8" },
+  cloak:       { border: "#4f46e5", glow: "rgba(79,70,229,0.6)",   bgFrom: "#0d0e25", bgTo: "#06061a", label: "#818cf8" },
+  multiplier:  { border: "#7c3aed", glow: "rgba(124,58,237,0.6)",  bgFrom: "#130530", bgTo: "#07021a", label: "#c084fc" },
+  insurance:   { border: "#b45309", glow: "rgba(180,83,9,0.6)",    bgFrom: "#1c0e02", bgTo: "#100801", label: "#fbbf24" },
+  revive:      { border: "#047857", glow: "rgba(4,120,87,0.6)",    bgFrom: "#031a10", bgTo: "#020f08", label: "#22c55e" },
+  default:     { border: "#6b7280", glow: "rgba(107,114,128,0.4)", bgFrom: "#111111", bgTo: "#0a0a0a", label: "#9ca3af" },
 };
 
-const SKILL_COLORS: Record<string, { borderColor: string; glowColor: string; bgFrom: string; bgTo: string; labelColor: string }> = {
-  steal_boost: {
-    borderColor: "#7c3aed",
-    glowColor: "rgba(124,58,237,0.55)",
-    bgFrom: "#1a0635",
-    bgTo: "#0a011a",
-    labelColor: "#a855f7",
-  },
-  shield: {
-    borderColor: "#0284c7",
-    glowColor: "rgba(2,132,199,0.55)",
-    bgFrom: "#031828",
-    bgTo: "#010c18",
-    labelColor: "#38bdf8",
-  },
-  cloak: {
-    borderColor: "#4338ca",
-    glowColor: "rgba(67,56,202,0.55)",
-    bgFrom: "#181540",
-    bgTo: "#0b0a22",
-    labelColor: "#818cf8",
-  },
-  multiplier: {
-    borderColor: "#7c3aed",
-    glowColor: "rgba(124,58,237,0.55)",
-    bgFrom: "#160435",
-    bgTo: "#08011a",
-    labelColor: "#c084fc",
-  },
-  insurance: {
-    borderColor: "#b45309",
-    glowColor: "rgba(180,83,9,0.55)",
-    bgFrom: "#261203",
-    bgTo: "#110801",
-    labelColor: "#fbbf24",
-  },
-  revive: {
-    borderColor: "#15803d",
-    glowColor: "rgba(21,128,61,0.55)",
-    bgFrom: "#041f10",
-    bgTo: "#020f08",
-    labelColor: "#22c55e",
-  },
+const SKILL_ICONS: Record<string, string> = {
+  steal_boost: "⚡",
+  shield:      "🛡",
+  cloak:       "👤",
+  multiplier:  "2×",
+  insurance:   "☂",
+  revive:      "+",
 };
+
+const SKILL_DESCRIPTIONS: Record<string, string> = {
+  steal_boost: "Boosts steal power",
+  shield:      "Blocks next steal",
+  cloak:       "Hides from targets",
+  multiplier:  "Doubles token gains",
+  insurance:   "Protects on steal",
+  revive:      "Revive a teammate",
+};
+
+function formatCooldown(ms: number): string {
+  if (ms <= 0) return "";
+  if (ms < 1000) return "<1s";
+  return `${Math.ceil(ms / 1000)}s`;
+}
+
+function SkillCard({
+  skillId,
+  name,
+  icon,
+  cooldownMs,
+  charges,
+  isReady,
+  isActive,
+  description,
+  onActivate,
+}: {
+  skillId: string;
+  name: string;
+  icon: string;
+  cooldownMs: number;
+  charges?: number;
+  isReady: boolean;
+  isActive: boolean;
+  description: string;
+  onActivate?: () => void;
+}) {
+  const [showTip, setShowTip] = useState(false);
+  const colors = SKILL_COLORS[skillId] ?? SKILL_COLORS.default;
+  const cdStr = formatCooldown(cooldownMs);
+
+  const statusColor = isActive
+    ? colors.label
+    : !isReady && cooldownMs > 0
+    ? "#f59e0b"
+    : !isReady
+    ? "rgba(255,255,255,0.25)"
+    : colors.label;
+
+  const statusText = isActive
+    ? "ACTIVE"
+    : cooldownMs > 0
+    ? cdStr
+    : !isReady
+    ? "EMPTY"
+    : "READY";
+
+  return (
+    <div className="skill-card" style={{ position: "relative" }}>
+      {/* Long-press tooltip */}
+      <AnimatePresence>
+        {showTip && (
+          <motion.div
+            initial={{ opacity: 0, y: 4, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 4, scale: 0.95 }}
+            transition={{ duration: 0.18 }}
+            style={{
+              position: "absolute",
+              bottom: "100%",
+              left: "50%",
+              transform: "translateX(-50%)",
+              marginBottom: 6,
+              background: "rgba(10,4,22,0.95)",
+              border: `1px solid ${colors.border}55`,
+              borderRadius: 8,
+              padding: "5px 8px",
+              width: "max-content",
+              maxWidth: 130,
+              zIndex: 100,
+              pointerEvents: "none",
+            }}
+          >
+            <span style={{ fontSize: "var(--text-xs)", color: "#fff", fontWeight: 600, lineHeight: 1.4 }}>
+              {description}
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Button */}
+      <motion.button
+        className="skill-btn"
+        disabled={!isReady && !isActive}
+        onClick={onActivate}
+        onPointerDown={() => {
+          const t = setTimeout(() => setShowTip(true), 500);
+          const up = () => { clearTimeout(t); setShowTip(false); window.removeEventListener("pointerup", up); };
+          window.addEventListener("pointerup", up);
+        }}
+        whileHover={isReady ? { scale: 1.04 } : undefined}
+        whileTap={isReady ? { scale: 0.94 } : undefined}
+        animate={
+          isActive
+            ? { boxShadow: [`0 0 8px ${colors.glow}`, `0 0 20px ${colors.glow}`, `0 0 8px ${colors.glow}`] }
+            : isReady
+            ? { boxShadow: `0 0 12px ${colors.glow}` }
+            : { boxShadow: "none" }
+        }
+        transition={isActive ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" } : undefined}
+        style={{
+          background: `linear-gradient(160deg, ${colors.bgFrom}, ${colors.bgTo})`,
+          border: `1.5px solid ${isReady || isActive ? colors.border : "rgba(107,114,128,0.3)"}`,
+          opacity: !isReady && !isActive ? 0.5 : 1,
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        {/* Recharge bar overlay */}
+        {cooldownMs > 0 && (
+          <motion.div
+            initial={{ scaleY: 1 }}
+            animate={{ scaleY: 0 }}
+            transition={{ duration: cooldownMs / 1000, ease: "linear" }}
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: "100%",
+              background: "rgba(0,0,0,0.55)",
+              transformOrigin: "bottom",
+              pointerEvents: "none",
+            }}
+          />
+        )}
+
+        {/* Icon */}
+        <span
+          style={{
+            fontSize: "clamp(18px, 2.4vw, 24px)",
+            lineHeight: 1,
+            fontWeight: 900,
+            color: isReady ? colors.label : "rgba(255,255,255,0.35)",
+            textShadow: isReady ? `0 0 10px ${colors.glow}` : "none",
+            zIndex: 2,
+            position: "relative",
+          }}
+        >
+          {icon}
+        </span>
+
+        {/* Charges badge */}
+        {charges !== undefined && charges > 0 && (
+          <div
+            style={{
+              position: "absolute",
+              top: 4,
+              right: 5,
+              minWidth: 14,
+              height: 14,
+              borderRadius: 9999,
+              background: colors.border,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "0 3px",
+              zIndex: 3,
+            }}
+          >
+            <span style={{ fontSize: 7, fontWeight: 900, color: "#000" }}>{charges}</span>
+          </div>
+        )}
+      </motion.button>
+
+      <span className="skill-label" style={{ color: "rgba(255,255,255,0.6)" }}>
+        {name}
+      </span>
+      <span className="skill-status" style={{ color: statusColor }}>
+        {statusText}
+      </span>
+    </div>
+  );
+}
+
+const FALLBACK_SKILLS = [
+  { id: "steal_boost", name: "STEAL",     charges: 2, cooldownMs: 0,     isReady: true,  isActive: false },
+  { id: "shield",      name: "SHIELD",    charges: 1, cooldownMs: 0,     isReady: true,  isActive: false },
+  { id: "cloak",       name: "CLOAK",     charges: 0, cooldownMs: 12000, isReady: false, isActive: false },
+  { id: "multiplier",  name: "2×",        charges: 1, cooldownMs: 0,     isReady: true,  isActive: false },
+  { id: "insurance",   name: "INSURE",    charges: 1, cooldownMs: 0,     isReady: true,  isActive: false },
+  { id: "revive",      name: "REVIVE",    charges: 1, cooldownMs: 0,     isReady: true,  isActive: false },
+  { id: "default",     name: "MORE",      charges: 0, cooldownMs: 0,     isReady: false, isActive: false },
+];
 
 export function SkillDockHUD() {
   const { subSessionId } = useSessionStore();
   const skills = useInventoryStore((s) => s.skills);
   const serverTime = useServerTime();
 
-  // Subscribe to inventory updates
   useInventoryUpdates(null, subSessionId);
 
-  // Filter to show only owned skills
-  const ownedSkills = skills.filter((skill) => skill.owned);
+  const displaySkills = skills.length > 0
+    ? skills.map(s => ({
+        id: s.id ?? "default",
+        name: (s.name ?? "SKILL").slice(0, 6).toUpperCase(),
+        charges: s.charges,
+        cooldownMs: s.cooldown_until ? serverTime.getCountdown(s.cooldown_until) : 0,
+        isReady: s.available && s.charges > 0,
+        isActive: false,
+      }))
+    : FALLBACK_SKILLS;
 
   return (
-    <div className="skills-dock" style={{ paddingBottom: "env(safe-area-inset-bottom,var(--space-1))" }}>
-      {/* Header */}
-      <div className="skills-header">
-        <span className="text-sm" style={{ fontWeight: 800, letterSpacing: "0.14em", color: "rgba(255,255,255,0.55)", textTransform: "uppercase" }}>
-          MY SKILLS
-        </span>
-        <button style={{ display: "flex", alignItems: "center", gap: "2px" }}>
-          <span className="text-xs" style={{ fontWeight: 700, letterSpacing: "0.1em", color: "rgba(168,85,247,0.6)", textTransform: "uppercase" }}>
-            SCROLL
-          </span>
-          <svg width="9" height="9" viewBox="0 0 24 24" fill="none">
-            <path d="M9 18l6-6-6-6" stroke="rgba(168,85,247,0.6)" strokeWidth="2.5" strokeLinecap="round" />
-          </svg>
-        </button>
-      </div>
-
-      {/* Skills row */}
-      <div className="skills-scroll">
-        {ownedSkills.map((skill) => {
-          const colors = SKILL_COLORS[skill.id] || SKILL_COLORS.shield;
-          const icon = SKILL_ICONS[skill.id];
-          const isLocked = !skill.owned;
-          const isOnCooldown = !skill.available && !!skill.cooldown_until;
-          const cooldownRemaining = isOnCooldown && skill.cooldown_until ? serverTime.getCountdown(skill.cooldown_until) : 0;
-          const cooldownSeconds = Math.ceil(cooldownRemaining / 1000);
-
-          let statusText = "READY";
-          let statusColor = colors.labelColor;
-
-          if (isLocked) {
-            statusText = "LOCKED";
-            statusColor = "rgba(255,255,255,0.3)";
-          } else if (isOnCooldown) {
-            statusText = `${cooldownSeconds}s`;
-            statusColor = "#f59e0b";
-          } else if (skill.charges && skill.max_charges && skill.charges < skill.max_charges) {
-            statusText = `${skill.charges}/${skill.max_charges}`;
-            statusColor = colors.labelColor;
-          }
-
-          return (
-            <div key={skill.id} className="skill-item" style={{ opacity: isLocked ? 0.5 : 1 }}>
-              <motion.button
-                whileTap={{ scale: isLocked || isOnCooldown ? 1 : 0.92 }}
-                disabled={isLocked || isOnCooldown}
-                className="skill-card"
-                style={{
-                  background: `linear-gradient(145deg,${colors.bgFrom},${colors.bgTo})`,
-                  borderColor: colors.borderColor,
-                  boxShadow: `0 0 10px ${colors.glowColor}, inset 0 1px 0 rgba(255,255,255,0.07)`,
-                  cursor: isLocked || isOnCooldown ? "not-allowed" : "pointer",
-                }}
-              >
-                {/* Specular sheen */}
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "clamp(2px,0.3vw,4px)",
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    width: "58%",
-                    height: "28%",
-                    background: "linear-gradient(180deg,rgba(255,255,255,0.12) 0%,transparent 100%)",
-                    borderRadius: "50%",
-                    filter: "blur(2px)",
-                    pointerEvents: "none",
-                  }}
-                />
-                {icon}
-                {skill.charges && skill.max_charges > 1 && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: "2px",
-                      right: "2px",
-                      background: colors.labelColor,
-                      borderRadius: "3px",
-                      padding: "1px 3px",
-                      fontSize: "7px",
-                      fontWeight: 900,
-                      color: colors.bgFrom,
-                      lineHeight: 1,
-                      boxShadow: `0 0 5px ${colors.glowColor}`,
-                    }}
-                  >
-                    {skill.charges}
-                  </div>
-                )}
-              </motion.button>
-
-              <span className="skill-label" style={{ color: "rgba(255,255,255,0.65)" }}>
-                {skill.name}
-              </span>
-
-              <span className="skill-status" style={{ color: statusColor, textShadow: `0 0 5px ${colors.glowColor}` }}>
-                {statusText}
-              </span>
-            </div>
-          );
-        })}
+    <div className="zone-skills">
+      <div className="skill-dock">
+        {displaySkills.map(skill => (
+          <SkillCard
+            key={skill.id}
+            skillId={skill.id}
+            name={skill.name}
+            icon={SKILL_ICONS[skill.id] ?? "✦"}
+            cooldownMs={skill.cooldownMs}
+            charges={skill.charges}
+            isReady={skill.isReady}
+            isActive={skill.isActive}
+            description={SKILL_DESCRIPTIONS[skill.id] ?? "Use this skill"}
+          />
+        ))}
       </div>
     </div>
   );

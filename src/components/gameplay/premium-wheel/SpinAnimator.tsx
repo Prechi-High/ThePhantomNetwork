@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { motion, useAnimation } from "framer-motion";
 import type { SpinOutcome } from "@/types/gameplay";
 import { WHEEL_CONFIG, OUTCOME_CONFIG, SPIN_TIMINGS, EASING } from "@/config/spinConfig";
+import { getTargetRotation, getTickInterval, Z, WHEEL_VISUAL } from "./config";
 import { spinAudio } from "./SpinAudioController";
 
 interface SpinAnimatorProps {
@@ -13,125 +14,147 @@ interface SpinAnimatorProps {
 }
 
 /**
- * SpinAnimator Component
- * Renders the 5-segment premium visual wheel and coordinates the rotation timeline.
- * Handles:
- * - 0.0s - 0.3s powerful spin impulse
- * - 0.3s - 4.8s high-speed spin
- * - 4.8s - 5.6s progressive slowdown
- * - 5.6s - 6.0s precise stop & bounce lock
+ * SpinAnimator
+ *
+ * Owns spin physics and timing only — no gameplay logic.
+ *
+ * Visual layers (bottom → top):
+ *   1. Ambient shadow well
+ *   2. Outer illuminated ring with conic gradient
+ *   3. Rotating wheel body (5 metallic segments)
+ *   4. Glass protective layer (fake glare)
+ *   5. Animated energy ring
+ *   6. Center hub with breathing pulse
+ *   7. Dynamic reflection shimmer
+ *   8. Premium needle/pointer
  */
 export function SpinAnimator({ isSpinning, outcome, onSpinComplete }: SpinAnimatorProps) {
   const wheelControls = useAnimation();
   const pointerControls = useAnimation();
+  const energyControls = useAnimation();
   const currentRotationRef = useRef(0);
+  const tickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ---- Idle breathing ----
+  useEffect(() => {
+    if (isSpinning) return;
+    energyControls.start({
+      rotate: 360,
+      transition: { duration: WHEEL_VISUAL.ENERGY_RING_PERIOD / 1000, repeat: Infinity, ease: "linear" },
+    });
+  }, [isSpinning, energyControls]);
+
+  // ---- Spin sequence ----
   useEffect(() => {
     if (!isSpinning || !outcome) return;
 
-    const targetIndex = WHEEL_CONFIG.SEGMENT_ORDER.indexOf(outcome);
-    if (targetIndex === -1) return;
+    const finalRotation = getTargetRotation(outcome);
+    const spinDuration = SPIN_TIMINGS.SPIN_DURATION;
+    const startTime = Date.now();
 
-    // Calculate rotation angle to align target sector center with pointer at top (0°)
-    const targetAngle = targetIndex * WHEEL_CONFIG.SEGMENT_ANGLE;
-    const spins = WHEEL_CONFIG.BASE_ROTATIONS * 360;
-    
-    // finalRotation = full spins + rotation to match the target segment at 0° (top)
-    const finalRotation = spins + (360 - targetAngle);
-
-    // Audio: Play launch & loop
+    // Audio
     spinAudio.playSpinStart();
 
-    // Trigger tick sounds at intervals matching rotation speed (simulated clicking)
-    let tickInterval: NodeJS.Timeout;
-    const startTime = Date.now();
-    
-    const triggerTicks = () => {
+    // Pointer wiggle during spin
+    pointerControls.start({
+      rotate: [0, -10, 10, -10, 10, -8, 8, -5, 5, 0],
+      transition: { duration: spinDuration / 1000, ease: "easeInOut" },
+    });
+
+    // Pointer tick loop
+    const scheduleTick = () => {
       const elapsed = Date.now() - startTime;
-      if (elapsed >= SPIN_TIMINGS.SPIN_DURATION) return;
-
-      // Click frequency starts fast, slows down during deceleration
-      let delay = 80; // Fast rotation ticks
-      if (elapsed > SPIN_TIMINGS.SLOWDOWN_START) {
-        const slowElapsed = elapsed - SPIN_TIMINGS.SLOWDOWN_START;
-        delay = 80 + (slowElapsed / 800) * 450; // Slowly decaying click rate
-      }
-
-      spinAudio.playTokenTick();
-      tickInterval = setTimeout(triggerTicks, delay);
+      if (elapsed >= spinDuration) return;
+      spinAudio.playPointerTick();
+      const delay = getTickInterval(elapsed, spinDuration);
+      tickTimerRef.current = setTimeout(scheduleTick, delay);
     };
-    
-    // Start ticking shortly after start
-    setTimeout(triggerTicks, 100);
+    tickTimerRef.current = setTimeout(scheduleTick, 100);
 
-    // Timeline-based animation using Framer Motion
-    wheelControls.start({
-      rotate: finalRotation,
-      transition: {
-        duration: SPIN_TIMINGS.SPIN_DURATION / 1000,
-        ease: EASING.SPIN_EASE,
-      },
-    }).then(() => {
-      // Clear ticks
-      clearTimeout(tickInterval);
-      
-      // Stop loop audio and play lock sound
-      spinAudio.playSpinStop();
+    // Brake audio cue
+    const brakeTimer = setTimeout(
+      () => spinAudio.playSpinSlowdown(),
+      SPIN_TIMINGS.SLOWDOWN_START,
+    );
 
-      // Pointer lock-click bounce
-      pointerControls.start({
-        rotate: [0, -15, 8, -3, 0],
-        transition: { duration: 0.45, ease: "easeOut" },
+    // Main rotation
+    wheelControls
+      .start({
+        rotate: currentRotationRef.current + finalRotation,
+        transition: {
+          duration: spinDuration / 1000,
+          ease: EASING.SPIN_EASE,
+        },
+      })
+      .then(() => {
+        if (tickTimerRef.current) clearTimeout(tickTimerRef.current);
+        spinAudio.playSpinStop();
+
+        // Pointer lock-click bounce
+        pointerControls.start({
+          rotate: [0, -18, 9, -4, 1, 0],
+          transition: { duration: 0.5, ease: "easeOut" },
+        });
+
+        currentRotationRef.current = (currentRotationRef.current + finalRotation) % 360;
+        onSpinComplete();
       });
 
-      currentRotationRef.current = finalRotation % 360;
-      onSpinComplete();
-    });
-
-    // Pointer tick-wiggle during spin
-    pointerControls.start({
-      rotate: [0, -8, 8, -8, 8, -8, 8, -4, 4, 0],
-      transition: {
-        duration: SPIN_TIMINGS.SPIN_DURATION / 1000,
-        ease: "easeInOut",
-      },
-    });
-
-    // Slowdown sound cue
-    setTimeout(() => {
-      spinAudio.playSpinSlowdown();
-    }, SPIN_TIMINGS.SLOWDOWN_START);
-
     return () => {
-      clearTimeout(tickInterval);
+      if (tickTimerRef.current) clearTimeout(tickTimerRef.current);
+      clearTimeout(brakeTimer);
     };
-  }, [isSpinning, outcome, wheelControls, pointerControls, onSpinComplete]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSpinning, outcome]);
 
   return (
-    <div className="relative w-full h-full">
-      {/* Cinematic Outer Frame & Shadow */}
-      <div 
-        className="absolute inset-0 rounded-full border-4 border-purple-500/20"
+    <div className="relative w-full h-full select-none">
+
+      {/* ---- Layer 1: Ambient shadow well ---- */}
+      <div
+        className="absolute inset-0 rounded-full pointer-events-none"
         style={{
-          boxShadow: "0 0 50px rgba(0,0,0,0.8), 0 0 30px rgba(139, 92, 246, 0.15)",
+          boxShadow: "0 0 80px rgba(0,0,0,0.9), 0 0 40px rgba(139,92,246,0.08)",
+          zIndex: Z.AMBIENT_GLOW,
         }}
       />
 
-      {/* Rotating Wheel canvas */}
+      {/* ---- Layer 2: Outer illuminated ring ---- */}
+      <div
+        className="absolute rounded-full pointer-events-none"
+        style={{
+          inset: "-6px",
+          background:
+            "conic-gradient(from 0deg, rgba(139,92,246,0.6), rgba(212,168,83,0.4), rgba(139,92,246,0.2), rgba(212,168,83,0.5), rgba(139,92,246,0.6))",
+          zIndex: Z.OUTER_RING,
+          borderRadius: "50%",
+        }}
+      />
+      <div
+        className="absolute inset-0 rounded-full pointer-events-none"
+        style={{
+          background: "#09051a",
+          zIndex: Z.OUTER_RING,
+          margin: "2px",
+          borderRadius: "50%",
+        }}
+      />
+
+      {/* ---- Layer 3: Rotating wheel body ---- */}
       <motion.div
         animate={wheelControls}
         initial={{ rotate: currentRotationRef.current }}
-        className="relative w-full h-full rounded-full overflow-hidden border-[6px] border-purple-900/60"
+        className="absolute inset-0 rounded-full overflow-hidden"
         style={{
           background: "#080415",
-          boxShadow: "inset 0 0 40px rgba(0, 0, 0, 0.9)",
+          boxShadow: "inset 0 0 60px rgba(0,0,0,0.95)",
           willChange: "transform",
+          zIndex: Z.WHEEL_BODY,
         }}
       >
-        {/* Render 5 Clean Segments */}
+        {/* Segments */}
         {WHEEL_CONFIG.SEGMENT_ORDER.map((segment, index) => {
-          const config = OUTCOME_CONFIG[segment];
-          // Offset start and end by -36 degrees so ADVANCE is centered at 0° (top)
+          const cfg = OUTCOME_CONFIG[segment];
           const startAngle = index * WHEEL_CONFIG.SEGMENT_ANGLE - 36;
           const endAngle = (index + 1) * WHEEL_CONFIG.SEGMENT_ANGLE - 36;
           const centerAngle = index * WHEEL_CONFIG.SEGMENT_ANGLE;
@@ -140,119 +163,222 @@ export function SpinAnimator({ isSpinning, outcome, onSpinComplete }: SpinAnimat
             <div
               key={segment}
               className="absolute inset-0"
-              style={{
-                clipPath: `polygon(50% 50%, ${getArcPath(startAngle, endAngle)})`,
-              }}
+              style={{ clipPath: `polygon(50% 50%, ${buildArcPath(startAngle, endAngle)})` }}
             >
-              {/* Slice Background: Deep metallic gradient themed by outcome */}
-              <div 
-                className="absolute inset-0 transition-opacity duration-300"
+              {/* Metallic segment base */}
+              <div
+                className="absolute inset-0"
                 style={{
-                  background: `radial-gradient(circle at 50% 15%, ${config.primary}1A 0%, rgba(8, 4, 21, 0.95) 75%)`,
-                  border: `1px solid ${config.primary}12`,
+                  background: `radial-gradient(circle at 50% 15%, ${cfg.primary}22 0%, rgba(6,3,15,0.97) 70%)`,
+                }}
+              />
+              {/* Subtle inner highlight edge */}
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: `linear-gradient(${centerAngle}deg, ${cfg.primary}08 0%, transparent 50%)`,
                 }}
               />
 
-              {/* Segment Content */}
+              {/* Segment label + icon */}
               <div
                 className="absolute w-full h-full flex items-center justify-center pointer-events-none"
-                style={{
-                  transform: `rotate(${centerAngle}deg)`,
-                }}
+                style={{ transform: `rotate(${centerAngle}deg)` }}
               >
                 <div
-                  className="flex flex-col items-center gap-2"
-                  style={{
-                    transform: `translateY(-33%) rotate(-${centerAngle}deg)`,
-                  }}
+                  className="flex flex-col items-center gap-[5px]"
+                  style={{ transform: `translateY(-34%) rotate(-${centerAngle}deg)` }}
                 >
-                  {/* Large Icon */}
-                  <span className="text-[2.6rem] drop-shadow-[0_0_12px_rgba(0,0,0,0.5)] select-none">
-                    {config.icon}
+                  <span
+                    className="text-[2.4rem] drop-shadow-[0_0_14px_rgba(0,0,0,0.7)] select-none"
+                    style={{ filter: `drop-shadow(0 0 8px ${cfg.primary}88)` }}
+                  >
+                    {cfg.icon}
                   </span>
-                  
-                  {/* Large Label */}
-                  <span 
-                    className="font-display text-[0.8rem] font-black uppercase tracking-[0.15em] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
-                    style={{ color: config.primary }}
+                  <span
+                    className="font-display text-[0.72rem] font-black uppercase tracking-[0.18em]"
+                    style={{
+                      color: cfg.primary,
+                      textShadow: `0 0 10px ${cfg.primary}99`,
+                    }}
                   >
                     {segment}
                   </span>
                 </div>
               </div>
 
-              {/* Sector Border/Divider Lines */}
+              {/* Divider line */}
               <div
                 className="absolute inset-0 origin-center pointer-events-none"
-                style={{
-                  transform: `rotate(${endAngle}deg)`,
-                }}
+                style={{ transform: `rotate(${endAngle}deg)` }}
               >
-                <div className="absolute top-0 left-1/2 w-[2px] h-1/2 bg-gradient-to-b from-purple-500/20 via-purple-900/10 to-transparent" />
+                <div className="absolute top-0 left-1/2 w-[1.5px] h-1/2 bg-gradient-to-b from-purple-500/25 via-purple-900/10 to-transparent" />
               </div>
             </div>
           );
         })}
 
-        {/* Outer Ring Overlay inside wheel */}
-        <div className="absolute inset-0 rounded-full border border-purple-500/10 pointer-events-none" />
-
-        {/* Center Hub: visually dominant */}
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
-          <div 
-            className="w-24 h-24 rounded-full flex items-center justify-center border-4 border-purple-800 bg-gradient-to-br from-purple-950 to-black"
-            style={{
-              boxShadow: "0 0 25px rgba(0,0,0,0.8), inset 0 0 15px rgba(139, 92, 246, 0.4)",
-            }}
-          >
-            <span className="font-display text-4xl font-black text-purple-400 drop-shadow-[0_0_10px_rgba(168,85,247,0.5)]">
-              P
-            </span>
-          </div>
-        </div>
+        {/* Inner ring detail */}
+        <div
+          className="absolute rounded-full pointer-events-none"
+          style={{
+            inset: "12%",
+            border: "1px solid rgba(139,92,246,0.12)",
+            background: "transparent",
+          }}
+        />
       </motion.div>
 
-      {/* Needle / Pointer at top */}
-      <div className="absolute left-1/2 top-0 -translate-x-1/2 z-30 -translate-y-2 pointer-events-none">
+      {/* ---- Layer 4: Glass protective layer (fake glare) ---- */}
+      <div
+        className="absolute inset-0 rounded-full pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 40%, rgba(255,255,255,0.02) 70%, transparent 100%)",
+          zIndex: Z.SEGMENT_CONTENT,
+        }}
+      />
+
+      {/* ---- Layer 5: Animated energy ring ---- */}
+      <motion.div
+        animate={energyControls}
+        className="absolute rounded-full pointer-events-none"
+        style={{
+          inset: "6%",
+          border: "1.5px solid transparent",
+          borderTopColor: "rgba(212,168,83,0.5)",
+          borderRightColor: "rgba(212,168,83,0.15)",
+          zIndex: Z.ENERGY_RING,
+        }}
+      />
+      <motion.div
+        animate={{ rotate: -360 }}
+        transition={{ duration: WHEEL_VISUAL.ENERGY_RING_PERIOD * 0.7 / 1000, repeat: Infinity, ease: "linear" }}
+        className="absolute rounded-full pointer-events-none"
+        style={{
+          inset: "10%",
+          border: "1px solid transparent",
+          borderBottomColor: "rgba(139,92,246,0.35)",
+          borderLeftColor: "rgba(139,92,246,0.1)",
+          zIndex: Z.ENERGY_RING,
+        }}
+      />
+
+      {/* ---- Layer 6: Center hub ---- */}
+      <div
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+        style={{ zIndex: Z.CENTER_HUB }}
+      >
+        <motion.div
+          animate={{
+            boxShadow: [
+              "0 0 20px rgba(0,0,0,0.9), inset 0 0 12px rgba(139,92,246,0.35)",
+              "0 0 30px rgba(0,0,0,0.9), inset 0 0 20px rgba(139,92,246,0.55)",
+              "0 0 20px rgba(0,0,0,0.9), inset 0 0 12px rgba(139,92,246,0.35)",
+            ],
+          }}
+          transition={{
+            duration: WHEEL_VISUAL.HUB_PULSE_PERIOD / 1000,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          className="w-[88px] h-[88px] rounded-full flex items-center justify-center border-[3px] border-purple-800/70"
+          style={{
+            background: "radial-gradient(circle at 40% 30%, #2a0f4a 0%, #150828 50%, #080415 100%)",
+          }}
+        >
+          {/* Inner detail ring */}
+          <div className="absolute inset-[6px] rounded-full border border-purple-600/20" />
+          <span
+            className="font-display text-[2.2rem] font-black select-none"
+            style={{
+              color: "#c084fc",
+              textShadow: "0 0 18px rgba(168,85,247,0.7)",
+            }}
+          >
+            P
+          </span>
+        </motion.div>
+      </div>
+
+      {/* ---- Layer 7: Dynamic reflection shimmer ---- */}
+      <motion.div
+        animate={{ backgroundPosition: ["0% 0%", "100% 100%", "0% 0%"] }}
+        transition={{
+          duration: WHEEL_VISUAL.REFLECTION_PERIOD / 1000,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+        className="absolute inset-0 rounded-full pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 30%, rgba(255,255,255,0.03) 60%, transparent 100%)",
+          backgroundSize: "200% 200%",
+          zIndex: Z.CENTER_HUB + 1,
+        }}
+      />
+
+      {/* ---- Layer 8: Premium needle ---- */}
+      <div
+        className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+        style={{ top: "-4px", zIndex: Z.NEEDLE }}
+      >
         <motion.div
           animate={pointerControls}
           initial={{ rotate: 0 }}
-          style={{ transformOrigin: "50% 20%" }}
-          className="relative filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.5)]"
+          style={{ transformOrigin: "50% 85%" }}
         >
-          {/* Needle Arrowhead pointing down */}
+          {/* Needle shadow */}
+          <div
+            className="absolute inset-0 blur-[3px] opacity-60"
+            style={{
+              width: 0,
+              height: 0,
+              borderLeft: "12px solid transparent",
+              borderRight: "12px solid transparent",
+              borderTop: "36px solid rgba(0,0,0,0.6)",
+            }}
+          />
+          {/* Needle body — gold with gem tip */}
           <div
             style={{
               width: 0,
               height: 0,
-              borderLeft: "15px solid transparent",
-              borderRight: "15px solid transparent",
-              borderTop: "32px solid #FFD700",
+              borderLeft: "11px solid transparent",
+              borderRight: "11px solid transparent",
+              borderTop: "34px solid #FFD700",
+              filter: "drop-shadow(0 0 6px rgba(255,215,0,0.8))",
             }}
           />
-          {/* Small metallic pin holding needle */}
-          <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-purple-950 border border-purple-600 shadow-inner" />
+          {/* Pin base */}
+          <div
+            className="absolute rounded-full border border-purple-500/60"
+            style={{
+              width: 14,
+              height: 14,
+              top: 22,
+              left: "50%",
+              transform: "translateX(-50%)",
+              background: "radial-gradient(circle at 40% 30%, #3b1f6e 0%, #1a0d38 100%)",
+              boxShadow: "0 0 8px rgba(139,92,246,0.5)",
+            }}
+          />
         </motion.div>
       </div>
     </div>
   );
 }
 
-/**
- * Generate arc path coordinates for segment clip-path polygon
- */
-function getArcPath(startAngle: number, endAngle: number): string {
-  const radius = 50; // percentage
-  const points: string[] = [];
-  const steps = 15;
+// ---- Arc path generator (used by segment clip-path) ----
 
+function buildArcPath(startAngle: number, endAngle: number): string {
+  const r = 50;
+  const pts: string[] = [];
+  const steps = 16;
   for (let i = 0; i <= steps; i++) {
-    const angle = startAngle + (endAngle - startAngle) * (i / steps);
-    const rad = (angle - 90) * (Math.PI / 180);
-    const x = 50 + radius * Math.cos(rad);
-    const y = 50 + radius * Math.sin(rad);
-    points.push(`${x}% ${y}%`);
+    const a = startAngle + (endAngle - startAngle) * (i / steps);
+    const rad = (a - 90) * (Math.PI / 180);
+    pts.push(`${50 + r * Math.cos(rad)}% ${50 + r * Math.sin(rad)}%`);
   }
-
-  return points.join(", ");
+  return pts.join(", ");
 }

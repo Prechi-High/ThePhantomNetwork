@@ -1,107 +1,128 @@
-'use client';
-
-import { useEffect, useRef } from 'react';
-import { useLeaderboardStore, type LeaderboardEntry, type SquadLeaderboardEntry } from '@/stores/useLeaderboardStore';
-
-interface LeaderboardResponse {
-  leaderboard: LeaderboardEntry[];
-}
-
-interface SquadLeaderboardResponse {
-  squad_leaderboard: SquadLeaderboardEntry[];
-}
+"use client";
 
 /**
- * Polls leaderboard data with WebSocket real-time updates
- * - Initial fetch: GET /api/gameplay/leaderboard
- * - Poll interval: 2 seconds
- * - Real-time: WebSocket leaderboard:updated events
+ * useLeaderboardUpdates — Streaming Rankings Observer
+ *
+ * Domain: Leaderboard synchronization only.
+ * Delivers rank/score changes → useLeaderboardStore.
+ * Uses incremental updates — only changed rows animate.
+ * Never updates UI directly. Never calculates gameplay.
+ *
+ * Strategy:
+ *   - Initial bulk fetch on mount
+ *   - SSE for incremental rank/token changes
+ *   - 5s polling fallback if SSE fails
+ *   - Marks stale on connection loss, fresh on restore
  */
+
+import { useEffect, useRef } from "react";
+import {
+  useLeaderboardStore,
+  type LeaderboardEntry,
+  type SquadLeaderboardEntry,
+} from "@/stores/useLeaderboardStore";
+
+const POLL_INTERVAL_MS = 5_000;
+
 export function useLeaderboardUpdates(subSessionId: string | null) {
   const store = useLeaderboardStore();
-  const pollIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const sseRef       = useRef<EventSource | null>(null);
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // ── Bulk fetch (initial + polling fallback) ────────────────────────────
+
+  const fetchBulk = async () => {
+    if (!subSessionId) return;
+    try {
+      const [iRes, sRes] = await Promise.allSettled([
+        fetch(`/api/gameplay/leaderboard?subSessionId=${subSessionId}&type=individual`),
+        fetch(`/api/gameplay/leaderboard?subSessionId=${subSessionId}&type=squad`),
+      ]);
+
+      if (iRes.status === "fulfilled" && iRes.value.ok) {
+        const data = await iRes.value.json() as { leaderboard?: LeaderboardEntry[] };
+        if (Array.isArray(data.leaderboard)) {
+          store.updateIndividual(data.leaderboard);
+        }
+      }
+
+      if (sRes.status === "fulfilled" && sRes.value.ok) {
+        const data = await sRes.value.json() as { squad_leaderboard?: SquadLeaderboardEntry[] };
+        if (Array.isArray(data.squad_leaderboard)) {
+          store.updateSquad(data.squad_leaderboard);
+        }
+      }
+
+      store.markFresh();
+    } catch {
+      store.markStale();
+    }
+  };
+
+  // ── SSE incremental handler ────────────────────────────────────────────
+
+  const handleMessage = (e: MessageEvent) => {
+    try {
+      const event = JSON.parse(e.data) as Record<string, unknown>;
+
+      switch (event.type) {
+        case "leaderboard:updated": {
+          const p = event.payload as Record<string, unknown>;
+          if (p?.event === "rank_changed" && p.user_id) {
+            store.updateRank(p.user_id as string, Number(p.new_rank));
+          } else if (p?.event === "tokens_changed" && p.user_id) {
+            store.updateTokens(p.user_id as string, Number(p.tokens));
+          } else if (p?.event === "eliminated" && p.user_id) {
+            store.markEliminated(p.user_id as string);
+          }
+          break;
+        }
+        case "squad_leaderboard:rank_changed": {
+          const p = event.payload as Record<string, unknown>;
+          if (p?.squad_id) store.updateSquadRank(p.squad_id as string, Number(p.new_rank));
+          break;
+        }
+        case "squad_leaderboard:tokens_changed": {
+          const p = event.payload as Record<string, unknown>;
+          if (p?.squad_id) store.updateSquadTokens(p.squad_id as string, Number(p.tokens));
+          break;
+        }
+      }
+    } catch {/* parse error — skip */}
+  };
+
+  // ── SSE subscription ───────────────────────────────────────────────────
 
   useEffect(() => {
     if (!subSessionId) return;
 
-    // Fetch both individual and squad leaderboards
-    const fetchLeaderboards = async () => {
-      try {
-        const [indResponse, squadResponse] = await Promise.all([
-          fetch(`/api/gameplay/leaderboard?subSessionId=${subSessionId}&type=individual`),
-          fetch(`/api/gameplay/leaderboard?subSessionId=${subSessionId}&type=squad`),
-        ]);
+    fetchBulk();
 
-        if (!indResponse.ok) throw new Error(`Individual leaderboard: ${indResponse.status}`);
-        if (!squadResponse.ok) throw new Error(`Squad leaderboard: ${squadResponse.status}`);
+    const es = new EventSource(`/api/realtime/${subSessionId}`);
+    sseRef.current = es;
 
-        const indData = (await indResponse.json()) as LeaderboardResponse;
-        const squadData = (await squadResponse.json()) as SquadLeaderboardResponse;
+    es.onopen = () => {
+      store.markFresh();
+      if (pollTimerRef.current) { clearInterval(pollTimerRef.current); pollTimerRef.current = null; }
+    };
 
-        if (Array.isArray(indData.leaderboard)) {
-          store.updateIndividual(indData.leaderboard);
-        }
-        if (Array.isArray(squadData.squad_leaderboard)) {
-          store.updateSquad(squadData.squad_leaderboard);
-        }
-      } catch (error) {
-        console.error('Failed to fetch leaderboards:', error);
+    es.addEventListener("leaderboard:updated", handleMessage);
+    es.addEventListener("squad_leaderboard:rank_changed", handleMessage);
+    es.addEventListener("squad_leaderboard:tokens_changed", handleMessage);
+    es.onmessage = handleMessage;
+
+    es.onerror = () => {
+      store.markStale();
+      if (!pollTimerRef.current) {
+        pollTimerRef.current = setInterval(fetchBulk, POLL_INTERVAL_MS);
       }
     };
 
-    // Initial fetch
-    fetchLeaderboards();
-
-    // Real-time subscription
-    const subscribeToRealtime = () => {
-      try {
-        const es = new EventSource(`/api/realtime/${subSessionId}`);
-
-        const handleLeaderboardUpdate = (e: MessageEvent) => {
-          try {
-            const event = JSON.parse(e.data);
-            if (event.type === 'leaderboard:updated') {
-              const { payload } = event;
-              if (payload.event === 'rank_changed' && payload.user_id) {
-                store.updateRank(payload.user_id, payload.new_rank);
-              }
-            } else if (event.type === 'squad_leaderboard:rank_changed' && event.payload?.squad_id) {
-              store.updateSquadRank(event.payload.squad_id, event.payload.new_rank);
-            }
-          } catch (error) {
-            console.error('Failed to parse leaderboard event:', error);
-          }
-        };
-
-        es.addEventListener('leaderboard:updated', handleLeaderboardUpdate);
-        es.addEventListener('squad_leaderboard:rank_changed', handleLeaderboardUpdate);
-        es.onerror = () => {
-          console.warn('EventSource error in leaderboard updates');
-          es.close();
-        };
-
-        return () => {
-          es.removeEventListener('leaderboard:updated', handleLeaderboardUpdate);
-          es.removeEventListener('squad_leaderboard:rank_changed', handleLeaderboardUpdate);
-          es.close();
-        };
-      } catch (error) {
-        console.error('Failed to subscribe to leaderboard realtime:', error);
-        return () => {};
-      }
-    };
-
-    const unsubscribeRealtime = subscribeToRealtime();
-
-    // Poll every 2 seconds
-    pollIntervalRef.current = setInterval(fetchLeaderboards, 2000);
-
-    // Cleanup
     return () => {
-      unsubscribeRealtime();
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-      }
+      es.close();
+      sseRef.current = null;
+      if (pollTimerRef.current) { clearInterval(pollTimerRef.current); pollTimerRef.current = null; }
     };
-  }, [subSessionId, store]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subSessionId]);
 }

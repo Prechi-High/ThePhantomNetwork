@@ -1,51 +1,82 @@
-/* ════════════════════════════════════════════════════════════════
-   GAMEPLAY HUD — RESPONSIVE DESIGN SYSTEM
-   Built on 12-column grid, clamp() scaling, no fixed pixels
-   ════════════════════════════════════════════════════════════════ */
+/*
+  ============================================================================
+  GAMEPLAY HUD — ADAPTIVE DESIGN SYSTEM
+  ============================================================================
+
+  Philosophy: The HUD is a living tactical environment, not an overlay.
+  Every value animates. Every widget breathes. Layout adapts to gameplay phase.
+
+  Breakpoints (mobile-first):
+    xs:  < 360px   — compact phones
+    sm:  ≥ 360px   — standard phones
+    md:  ≥ 480px   — large phones
+    lg:  ≥ 768px   — tablets
+    xl:  ≥ 1024px  — landscape / desktop
+
+  Grid zones (vertical, top → bottom):
+    ZONE-TOP     18vh  — session intelligence
+    ZONE-SURGE    5vh  — energy core
+    ZONE-WORLD   44vh  — wheel + live panels
+    ZONE-ENGINE   6vh  — engage button
+    ZONE-EFFECTS  auto — active effects
+    ZONE-SKILLS  22vh  — skill dock
+  ============================================================================
+*/
+
+/* ---- CSS Custom Properties ---- */
 
 :root {
-  /* Spacing scale */
-  --space-1: clamp(4px, 0.5vw, 6px);
-  --space-2: clamp(8px, 0.8vw, 10px);
-  --space-3: clamp(12px, 1vw, 14px);
-  --space-4: clamp(16px, 1.5vw, 20px);
-  --space-5: clamp(24px, 2vw, 28px);
+  /* Spacing */
+  --hud-space-1: clamp(3px, 0.4vw, 5px);
+  --hud-space-2: clamp(6px, 0.7vw, 9px);
+  --hud-space-3: clamp(10px, 1vw, 13px);
+  --hud-space-4: clamp(14px, 1.4vw, 18px);
+  --hud-space-5: clamp(20px, 2vw, 26px);
 
-  /* Typography scale */
-  --text-xs: clamp(7px, 0.75vw, 9px);
-  --text-sm: clamp(8px, 0.85vw, 10px);
-  --text-base: clamp(9px, 0.9vw, 11px);
-  --text-md: clamp(10px, 1vw, 12px);
-  --text-lg: clamp(13px, 1.3vw, 16px);
-  --text-xl: clamp(16px, 1.8vw, 20px);
-  --text-2xl: clamp(20px, 2.5vw, 26px);
-  --text-3xl: clamp(26px, 3.2vw, 34px);
+  /* Typography */
+  --text-2xs:  clamp(6px,  0.65vw, 8px);
+  --text-xs:   clamp(7px,  0.75vw, 9px);
+  --text-sm:   clamp(8px,  0.85vw, 10px);
+  --text-base: clamp(9px,  0.9vw,  11px);
+  --text-md:   clamp(10px, 1vw,    12px);
+  --text-lg:   clamp(12px, 1.2vw,  15px);
+  --text-xl:   clamp(15px, 1.6vw,  19px);
+  --text-2xl:  clamp(19px, 2.2vw,  25px);
+  --text-3xl:  clamp(24px, 3vw,    32px);
 
-  /* Component sizing */
-  --wheel-size: min(68vw, 420px);
-  --spin-button-size: clamp(130px, 34vw, 175px);
-  --effect-pill-height: clamp(26px, 3vw, 34px);
-  --skill-card-width: clamp(58px, 16vw, 74px);
-  --skill-card-height: clamp(90px, 16vw, 118px);
-  --bar-height: clamp(8px, 1vw, 12px);
+  /* Component sizes */
+  --wheel-size:         min(66vw, 400px);
+  --engage-button-size: clamp(120px, 30vw, 160px);
+  --skill-card-w:       clamp(52px, 13.5vw, 68px);
+  --skill-card-h:       clamp(80px, 14vw,  104px);
+  --effect-pill-h:      clamp(24px, 2.8vw,  32px);
+  --surge-bar-h:        clamp(7px,  0.9vw,  11px);
 
   /* Glass system */
-  --glass-bg: rgba(10, 10, 18, 0.3);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-border-hover: rgba(170, 90, 255, 0.35);
-  --glass-blur: 24px;
-  --glass-shadow: 0 0 24px rgba(128, 0, 255, 0.1);
+  --glass-bg:       rgba(10, 6, 22, 0.52);
+  --glass-border:   rgba(168, 85, 247, 0.18);
+  --glass-hover:    rgba(168, 85, 247, 0.32);
+  --glass-blur:     20px;
+  --glass-shadow:   0 4px 20px rgba(0,0,0,0.5), 0 0 10px rgba(88,28,135,0.12);
 
-  /* Overlay glass (more transparent) */
-  --overlay-bg: rgba(12, 12, 20, 0.32);
-  --overlay-blur: 22px;
-  --overlay-border: rgba(180, 90, 255, 0.22);
-  --overlay-shadow: 0 4px 24px rgba(0, 0, 0, 0.45), 0 0 12px rgba(168, 85, 247, 0.08);
+  /* Overlay panels (Live Feed / Squad) */
+  --overlay-bg:     rgba(8, 5, 18, 0.72);
+  --overlay-border: rgba(168, 85, 247, 0.18);
+  --overlay-blur:   18px;
+  --overlay-shadow: 0 4px 24px rgba(0,0,0,0.55), 0 0 12px rgba(88,28,135,0.1);
+
+  /* Brand colours */
+  --c-purple:   #a855f7;
+  --c-purple-b: #c084fc;
+  --c-gold:     #f59e0b;
+  --c-gold-b:   #fcd34d;
+  --c-green:    #22c55e;
+  --c-red:      #ef4444;
+  --c-blue:     #38bdf8;
+  --c-bg:       #06030f;
 }
 
-/* ════════════════════════════════════════════════════════════════
-   ROOT CONTAINER
-   ════════════════════════════════════════════════════════════════ */
+/* ---- Root container ---- */
 
 .gameplay-hud-root {
   position: fixed;
@@ -54,73 +85,65 @@
   height: 100dvh;
   overflow: hidden;
   display: grid;
-  grid-template-rows: 
+  grid-template-rows:
     env(safe-area-inset-top, 0px)
-    18%  /* Top HUD */
-    46%  /* Wheel Zone */
-    14%  /* Controls */
-    auto /* Effects + Skills */
+    18%          /* Zone: Top HUD    */
+    5%           /* Zone: Surge      */
+    44%          /* Zone: World      */
+    6%           /* Zone: Engage     */
+    auto         /* Zone: Effects    */
+    1fr          /* Zone: Skills     */
     env(safe-area-inset-bottom, 0px);
   padding-inline: clamp(8px, 2vw, 12px);
-  background: #06030f;
+  background: var(--c-bg);
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
   z-index: 50;
+
+  /* Phase transition */
+  transition: grid-template-rows 0.5s ease;
 }
 
-/* ════════════════════════════════════════════════════════════════
-   12-COLUMN GRID UTILITY
-   ════════════════════════════════════════════════════════════════ */
+/* Phase-adaptive layout overrides */
 
-.grid-12 {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: clamp(6px, 1vw, 10px);
-  width: 100%;
+.gameplay-hud-root[data-phase="revive"] {
+  grid-template-rows:
+    env(safe-area-inset-top, 0px)
+    14%   /* Top HUD (compact) */
+    4%    /* Surge */
+    32%   /* World (shrunk) */
+    6%    /* Engage */
+    auto  /* Effects */
+    1fr   /* Skills */
+    env(safe-area-inset-bottom, 0px);
 }
 
-.col-span-2 { grid-column: span 2; }
-.col-span-3 { grid-column: span 3; }
-.col-span-4 { grid-column: span 4; }
-.col-span-6 { grid-column: span 6; }
-.col-span-12 { grid-column: span 12; }
-
-/* ════════════════════════════════════════════════════════════════
-   GLASS COMPONENTS
-   ════════════════════════════════════════════════════════════════ */
-
-.glass-panel {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
-  border-radius: clamp(10px, 1.2vw, 14px);
+.gameplay-hud-root[data-phase="results"] {
+  grid-template-rows:
+    env(safe-area-inset-top, 0px)
+    22%   /* Top HUD (expanded) */
+    3%    /* Surge */
+    38%   /* World */
+    6%    /* Engage */
+    auto  /* Effects */
+    1fr   /* Skills */
+    env(safe-area-inset-bottom, 0px);
 }
 
-.glass-panel-hover:hover {
-  border-color: var(--glass-border-hover);
+/* ---- Safe-area spacers ---- */
+
+.hud-safe-top,
+.hud-safe-bottom {
+  pointer-events: none;
 }
 
-.overlay-panel {
-  background: var(--overlay-bg);
-  backdrop-filter: blur(var(--overlay-blur));
-  -webkit-backdrop-filter: blur(var(--overlay-blur));
-  border: 1px solid var(--overlay-border);
-  box-shadow: var(--overlay-shadow);
-  border-radius: clamp(12px, 1.4vw, 16px);
-}
-
-/* ════════════════════════════════════════════════════════════════
-   ZONE 1: TOP HUD (18%)
-   ════════════════════════════════════════════════════════════════ */
+/* ---- Zone: Top HUD ---- */
 
 .zone-top-hud {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  padding-block: var(--space-2);
+  gap: var(--hud-space-1);
+  padding-top: var(--hud-space-1);
 }
 
 .top-hud-grid {
@@ -130,266 +153,378 @@
   width: 100%;
 }
 
-.top-card {
+.col-span-3  { grid-column: span 3; }
+.col-span-4  { grid-column: span 4; }
+.col-span-6  { grid-column: span 6; }
+.col-span-12 { grid-column: span 12; }
+
+/* ---- Zone: Surge ---- */
+
+.zone-surge {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: clamp(6px, 0.8vw, 9px) clamp(7px, 0.9vw, 10px);
-  min-height: 0;
-}
-
-.top-card-label {
-  font-size: var(--text-xs);
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  line-height: 1;
-  margin-bottom: 2px;
-}
-
-.top-card-value {
-  font-size: var(--text-xl);
-  font-weight: 900;
-  letter-spacing: -0.01em;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-
-/* ════════════════════════════════════════════════════════════════
-   SHADOW SURGE SECTION
-   ════════════════════════════════════════════════════════════════ */
-
-.surge-section {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: var(--space-3);
   align-items: center;
-  margin-bottom: var(--space-1);
+  padding-inline: 0;
 }
 
-.surge-bar {
-  height: var(--bar-height);
-  background: rgba(49, 7, 70, 0.45);
-  border: 1px solid rgba(168, 85, 247, 0.22);
-  border-radius: 9999px;
-  overflow: hidden;
-  position: relative;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
-}
-
-/* ════════════════════════════════════════════════════════════════
-   ZONE 2: WHEEL ZONE (46%)
-   ════════════════════════════════════════════════════════════════ */
+/* ---- Zone: World ---- */
 
 .zone-wheel {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 100%;
 }
 
 .wheel-container {
-  width: var(--wheel-size);
-  height: var(--wheel-size);
-  aspect-ratio: 1;
   position: relative;
-  flex-shrink: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* Floating overlays */
+/* Wheel itself */
+.wheel-core {
+  width: var(--wheel-size);
+  height: var(--wheel-size);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 5;
+}
+
+/* Live panels flanking wheel */
 .wheel-overlay-left,
 .wheel-overlay-right {
   position: absolute;
-  top: clamp(8px, 1vw, 12px);
-  width: clamp(110px, 19vw, 140px);
-  max-height: calc(100% - clamp(16px, 2vw, 24px));
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: clamp(8px, 1vw, 12px) clamp(7px, 0.9vw, 10px);
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  z-index: 20;
-}
-
-.wheel-overlay-left::-webkit-scrollbar,
-.wheel-overlay-right::-webkit-scrollbar {
-  display: none;
-}
-
-.wheel-overlay-left {
-  left: calc(-1 * clamp(110px, 19vw, 140px) * 0.35);
-}
-
-.wheel-overlay-right {
-  right: calc(-1 * clamp(110px, 19vw, 140px) * 0.35);
-}
-
-/* ════════════════════════════════════════════════════════════════
-   ZONE 3: CONTROLS (14%)
-   ════════════════════════════════════════════════════════════════ */
-
-.zone-controls {
+  top: 0;
+  bottom: 0;
+  width: clamp(110px, 26vw, 160px);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: clamp(8px, 1vw, 12px);
-  padding-block: clamp(4px, 0.5vw, 6px);
+  z-index: 4;
 }
 
-.spin-button-container {
-  width: var(--spin-button-size);
-  height: var(--spin-button-size);
-  aspect-ratio: 1;
-  flex-shrink: 0;
-}
+.wheel-overlay-left  { left: 0; }
+.wheel-overlay-right { right: 0; }
 
-.controls-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: clamp(8px, 1vw, 12px);
-  width: 100%;
-  max-width: min(88vw, 400px);
-}
+/* ---- Zone: Engage ---- */
 
-.control-widget {
+.zone-engage {
   display: flex;
   align-items: center;
-  gap: clamp(6px, 0.8vw, 9px);
-  padding: clamp(6px, 0.8vw, 9px) clamp(8px, 1vw, 11px);
-  flex: 1;
-  min-height: clamp(42px, 5.5vw, 54px);
+  justify-content: center;
+  gap: var(--hud-space-3);
 }
 
-/* ════════════════════════════════════════════════════════════════
-   ZONE 4: EFFECTS + SKILLS (auto, ~22%)
-   ════════════════════════════════════════════════════════════════ */
-
-.zone-bottom {
+.engage-center {
   display: flex;
-  flex-direction: column;
-  gap: clamp(10px, 1.2vw, 14px);
-  padding-block-start: clamp(6px, 0.8vw, 9px);
+  align-items: center;
+  justify-content: center;
+  gap: var(--hud-space-2);
 }
 
-/* Active Effects */
+/* ---- Zone: Effects ---- */
+
+.zone-effects {
+  display: flex;
+  align-items: center;
+  padding-inline: 0;
+  min-height: 0;
+}
+
 .effects-container {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: clamp(3px, 0.4vw, 5px);
+  gap: var(--hud-space-2);
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+
+.effects-container::-webkit-scrollbar { display: none; }
 
 .effects-row {
   display: flex;
-  gap: clamp(5px, 0.7vw, 8px);
-  flex-wrap: wrap;
-  justify-content: center;
+  gap: var(--hud-space-1);
+  flex-wrap: nowrap;
 }
 
 .effect-pill {
   display: flex;
   align-items: center;
-  gap: clamp(4px, 0.5vw, 6px);
-  height: var(--effect-pill-height);
-  padding-inline: clamp(8px, 1vw, 12px);
+  gap: var(--hud-space-1);
+  height: var(--effect-pill-h);
+  padding: 0 var(--hud-space-2);
   border-radius: 9999px;
-}
-
-/* Skills Dock */
-.skills-dock {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(4px, 0.5vw, 6px);
-}
-
-.skills-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-inline: var(--space-2);
-}
-
-.skills-scroll {
-  display: flex;
-  gap: clamp(3px, 0.4vw, 5px);
-  padding-inline: clamp(5px, 0.6vw, 8px);
-  padding-block-end: clamp(6px, 0.8vw, 10px);
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.skills-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.skill-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: clamp(3px, 0.4vw, 5px);
+  white-space: nowrap;
   flex-shrink: 0;
+  cursor: default;
 }
+
+/* ---- Zone: Skills ---- */
+
+.zone-skills {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hud-space-1);
+  padding-bottom: var(--hud-space-2);
+}
+
+.skill-dock {
+  display: flex;
+  gap: clamp(4px, 1vw, 8px);
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+  justify-content: space-between;
+}
+
+.skill-dock::-webkit-scrollbar { display: none; }
 
 .skill-card {
-  position: relative;
-  width: var(--skill-card-width);
-  height: clamp(52px, 14vw, 68px);
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--hud-space-1);
+  flex: 1;
+  max-width: var(--skill-card-w);
+}
+
+.skill-btn {
+  width: var(--skill-card-w);
+  height: var(--skill-card-h);
+  border-radius: clamp(10px, 1.4vw, 14px);
+  position: relative;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-radius: clamp(11px, 1.3vw, 14px);
-  border: 1.5px solid;
-  flex-shrink: 0;
+  gap: 2px;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .skill-label {
-  font-size: var(--text-xs);
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   text-align: center;
-  line-height: 1.15;
-  max-width: var(--skill-card-width);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: var(--skill-card-w);
 }
 
 .skill-status {
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+
+/* ---- Glass panel utility ---- */
+
+.glass-panel {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--glass-shadow);
+  border-radius: clamp(10px, 1.4vw, 14px);
+}
+
+/* ---- Overlay panel utility ---- */
+
+.overlay-panel {
+  background: var(--overlay-bg);
+  border: 1px solid var(--overlay-border);
+  backdrop-filter: blur(var(--overlay-blur));
+  -webkit-backdrop-filter: blur(var(--overlay-blur));
+  box-shadow: var(--overlay-shadow);
+  border-radius: clamp(10px, 1.4vw, 14px);
+  padding: var(--hud-space-2);
+  overflow: hidden;
+}
+
+/* ---- Top card ---- */
+
+.top-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(5px, 0.7vw, 8px) clamp(6px, 0.9vw, 10px);
+  min-height: clamp(52px, 8vw, 68px);
+}
+
+.top-card-label {
   font-size: var(--text-xs);
   font-weight: 800;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
+  line-height: 1;
+  margin-bottom: clamp(2px, 0.3vw, 3px);
 }
 
-/* ════════════════════════════════════════════════════════════════
-   UTILITY CLASSES
-   ════════════════════════════════════════════════════════════════ */
+.top-card-value {
+  font-size: var(--text-2xl);
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
 
-.text-xs { font-size: var(--text-xs); }
-.text-sm { font-size: var(--text-sm); }
-.text-base { font-size: var(--text-base); }
-.text-md { font-size: var(--text-md); }
-.text-lg { font-size: var(--text-lg); }
-.text-xl { font-size: var(--text-xl); }
-.text-2xl { font-size: var(--text-2xl); }
-.text-3xl { font-size: var(--text-3xl); }
+/* ---- Surge bar ---- */
 
-.truncate {
+.surge-bar {
+  position: relative;
+  height: var(--surge-bar-h);
+  border-radius: 9999px;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  background: rgba(88, 28, 135, 0.18);
+  border: 1px solid rgba(168, 85, 247, 0.2);
 }
 
-.flex-center {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.flex-between {
+.surge-section {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: clamp(2px, 0.3vw, 4px);
+}
+
+/* ---- Control widgets (Voice / Recording) ---- */
+
+.control-widget {
+  display: flex;
+  align-items: center;
+  gap: var(--hud-space-2);
+  padding: var(--hud-space-1) var(--hud-space-2);
+  border-radius: clamp(8px, 1.2vw, 12px);
+}
+
+/* ---- Squad panel members ---- */
+
+.squad-member-row {
+  display: flex;
+  align-items: center;
+  gap: var(--hud-space-1);
+  padding: clamp(3px, 0.4vw, 5px) 0;
+  border-radius: clamp(6px, 0.9vw, 9px);
+  transition: background 0.2s;
+}
+
+.squad-member-row:hover {
+  background: rgba(168, 85, 247, 0.06);
+}
+
+/* ---- Live feed events ---- */
+
+.feed-event {
+  display: flex;
+  align-items: center;
+  gap: var(--hud-space-1);
+  padding-left: clamp(4px, 0.5vw, 6px);
+  border-radius: 0 clamp(4px, 0.6vw, 6px) clamp(4px, 0.6vw, 6px) 0;
+  overflow: hidden;
+}
+
+/* ---- Responsive overrides ---- */
+
+/* xs: very small phones */
+@media (max-width: 359px) {
+  :root {
+    --wheel-size: min(62vw, 260px);
+    --engage-button-size: clamp(108px, 28vw, 130px);
+    --skill-card-w: clamp(46px, 12vw, 58px);
+    --skill-card-h: clamp(72px, 13vw, 88px);
+  }
+
+  .wheel-overlay-left,
+  .wheel-overlay-right {
+    width: clamp(90px, 22vw, 120px);
+  }
+
+  .top-hud-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .col-span-3 { grid-column: span 3; }
+}
+
+/* sm-md: standard phones */
+@media (min-width: 360px) and (max-width: 479px) {
+  :root {
+    --wheel-size: min(64vw, 300px);
+  }
+}
+
+/* md: large phones */
+@media (min-width: 480px) and (max-width: 767px) {
+  :root {
+    --wheel-size: min(60vw, 340px);
+    --engage-button-size: clamp(140px, 32vw, 170px);
+  }
+
+  .wheel-overlay-left,
+  .wheel-overlay-right {
+    width: clamp(130px, 28vw, 170px);
+  }
+}
+
+/* lg: tablets */
+@media (min-width: 768px) {
+  :root {
+    --wheel-size: min(50vw, 420px);
+    --engage-button-size: clamp(150px, 20vw, 180px);
+    --skill-card-w: clamp(60px, 8vw, 80px);
+    --skill-card-h: clamp(92px, 10vw, 120px);
+  }
+
+  .gameplay-hud-root {
+    padding-inline: clamp(16px, 3vw, 24px);
+  }
+
+  .wheel-overlay-left,
+  .wheel-overlay-right {
+    width: clamp(160px, 22vw, 220px);
+  }
+
+  /* Floating HUD variant for tablets */
+  .gameplay-hud-root[data-layout="floating"] {
+    padding-inline: clamp(24px, 4vw, 40px);
+  }
+}
+
+/* xl: landscape / desktop */
+@media (min-width: 1024px) {
+  :root {
+    --wheel-size: min(44vw, 480px);
+  }
+
+  .gameplay-hud-root {
+    max-width: 700px;
+    margin-inline: auto;
+  }
+
+  .wheel-overlay-left,
+  .wheel-overlay-right {
+    width: clamp(180px, 20vw, 240px);
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

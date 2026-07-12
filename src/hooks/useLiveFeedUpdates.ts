@@ -1,99 +1,188 @@
-'use client';
-
-import { useEffect, useRef } from 'react';
-import { useLiveFeedStore, type FeedEvent } from '@/stores/useLiveFeedStore';
+"use client";
 
 /**
- * Subscribes to real-time live feed events with polling fallback
- * - Initial fetch: GET /api/gameplay/livefeed?subSessionId={id}&limit=20
- * - Real-time: WebSocket subscription to livefeed:event
- * - Polling fallback: Every 2 seconds
+ * useLiveFeedUpdates — World Activity Subscriber
+ *
+ * Domain: Live feed subscription and spam filtering only.
+ * Delivers world events → Runtime → useLiveFeedStore.
+ * Never updates UI. Never calculates gameplay.
+ *
+ * Features:
+ *   - SSE primary subscription
+ *   - 5s polling fallback (only if SSE fails)
+ *   - Event batching (flush every 120ms)
+ *   - Spam reduction (merges repeated same-type events within 3s window)
+ *   - Priority auto-assignment based on event type
  */
+
+import { useCallback, useEffect, useRef } from "react";
+import { useLiveFeedStore, type FeedEvent, type FeedEventPriority } from "@/stores/useLiveFeedStore";
+
+// ── Priority map ───────────────────────────────────────────────────────────
+
+const EVENT_PRIORITY: Record<string, FeedEventPriority> = {
+  steal:           "high",
+  revive:          "high",
+  elimination:     "high",
+  phase:           "critical",
+  surge:           "high",
+  lead:            "high",
+  new_champion:    "critical",
+  huge_win:        "critical",
+  session_finished:"critical",
+  camp_overtaken:  "high",
+  effect:          "normal",
+  player_joined:   "low",
+  squad_created:   "low",
+  rank_milestone:  "normal",
+  announcement:    "high",
+};
+
+function getPriority(type: string): FeedEventPriority {
+  return EVENT_PRIORITY[type] ?? "normal";
+}
+
+// ── Spam deduplication window ───────────────────────────────────────────────
+
+const DEDUP_WINDOW_MS = 3_000;
+const BATCH_FLUSH_MS  = 120;
+
+// ── Hook ───────────────────────────────────────────────────────────────────
+
 export function useLiveFeedUpdates(subSessionId: string | null) {
   const { addEvent, setEvents } = useLiveFeedStore();
-  const pollIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
+
+  const batchRef      = useRef<FeedEvent[]>([]);
+  const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const recentTypes   = useRef<Map<string, number>>(new Map());
+  const sseRef        = useRef<EventSource | null>(null);
+  const pollTimerRef  = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sseActiveRef  = useRef(false);
+
+  // ── Spam filter ────────────────────────────────────────────────────────
+
+  const isDuplicate = useCallback((event: FeedEvent): boolean => {
+    const key = `${event.type}:${event.actor?.user_id ?? ""}`;
+    const last = recentTypes.current.get(key) ?? 0;
+    if (Date.now() - last < DEDUP_WINDOW_MS) return true;
+    recentTypes.current.set(key, Date.now());
+    return false;
+  }, []);
+
+  // ── Batch flush ────────────────────────────────────────────────────────
+
+  const flushBatch = useCallback(() => {
+    const batch = batchRef.current.splice(0);
+    for (const event of batch) {
+      addEvent(event);
+    }
+  }, [addEvent]);
+
+  const scheduleFlush = useCallback(() => {
+    if (flushTimerRef.current) return;
+    flushTimerRef.current = setTimeout(() => {
+      flushTimerRef.current = null;
+      flushBatch();
+    }, BATCH_FLUSH_MS);
+  }, [flushBatch]);
+
+  // ── Enrich event with priority ─────────────────────────────────────────
+
+  const enrich = useCallback((raw: FeedEvent): FeedEvent => ({
+    ...raw,
+    priority: raw.priority ?? getPriority(raw.type),
+  }), []);
+
+  // ── Ingest an incoming event ───────────────────────────────────────────
+
+  const ingest = useCallback((raw: FeedEvent) => {
+    const event = enrich(raw);
+    if (isDuplicate(event)) return;
+    batchRef.current.push(event);
+    scheduleFlush();
+  }, [enrich, isDuplicate, scheduleFlush]);
+
+  // ── Initial fetch ──────────────────────────────────────────────────────
+
+  const fetchInitial = useCallback(async () => {
+    if (!subSessionId) return;
+    try {
+      const res = await fetch(`/api/gameplay/livefeed?subSessionId=${subSessionId}&limit=20`);
+      if (!res.ok) return;
+      const data = await res.json() as { events?: FeedEvent[] };
+      if (Array.isArray(data.events)) {
+        setEvents(data.events.map(enrich));
+      }
+    } catch {/* non-critical — feed degrades gracefully */}
+  }, [subSessionId, setEvents, enrich]);
+
+  // ── Polling fallback ───────────────────────────────────────────────────
+
+  const startPolling = useCallback(() => {
+    if (pollTimerRef.current) return;
+    pollTimerRef.current = setInterval(async () => {
+      if (!subSessionId) return;
+      try {
+        const res = await fetch(`/api/gameplay/livefeed?subSessionId=${subSessionId}&limit=30`);
+        if (!res.ok) return;
+        const data = await res.json() as { events?: FeedEvent[] };
+        if (Array.isArray(data.events)) {
+          setEvents(data.events.map(enrich));
+        }
+      } catch {/* silent */}
+    }, 5_000);
+  }, [subSessionId, setEvents, enrich]);
+
+  // ── SSE subscription ───────────────────────────────────────────────────
 
   useEffect(() => {
     if (!subSessionId) return;
 
-    // Initial fetch
-    const fetchInitialEvents = async () => {
+    fetchInitial();
+
+    const es = new EventSource(`/api/realtime/${subSessionId}`);
+    sseRef.current = es;
+
+    es.onopen = () => {
+      sseActiveRef.current = true;
+      // Cancel polling if SSE is healthy
+      if (pollTimerRef.current) {
+        clearInterval(pollTimerRef.current);
+        pollTimerRef.current = null;
+      }
+    };
+
+    es.addEventListener("livefeed:event", (e: MessageEvent) => {
       try {
-        const response = await fetch(
-          `/api/gameplay/livefeed?subSessionId=${subSessionId}&limit=20`
-        );
-        if (!response.ok) throw new Error(`Status ${response.status}`);
-        const data = await response.json();
-        if (data.events && Array.isArray(data.events)) {
-          setEvents(data.events);
+        const payload = JSON.parse(e.data);
+        if (payload?.type === "livefeed:event" && payload.payload) {
+          ingest(payload.payload as FeedEvent);
+        } else if (payload?.id && payload?.type) {
+          ingest(payload as FeedEvent);
         }
-      } catch (error) {
-        console.error('Failed to fetch initial live feed events:', error);
-      }
-    };
+      } catch {/* parse error — skip */}
+    });
 
-    fetchInitialEvents();
-
-    // WebSocket real-time subscription
-    const subscribeToRealtime = () => {
+    // Also listen to the generic message channel (some backends use this)
+    es.onmessage = (e) => {
       try {
-        const es = new EventSource(
-          `/api/realtime/${subSessionId}`
-        );
-
-        const handleMessage = (e: MessageEvent) => {
-          try {
-            const event = JSON.parse(e.data);
-            if (event.type === 'livefeed:event' && event.payload) {
-              addEvent(event.payload as FeedEvent);
-            }
-          } catch (error) {
-            console.error('Failed to parse livefeed event:', error);
-          }
-        };
-
-        es.addEventListener('livefeed:event', handleMessage);
-        es.onerror = () => {
-          console.warn('EventSource error, falling back to polling');
-          es.close();
-        };
-
-        return () => {
-          es.removeEventListener('livefeed:event', handleMessage);
-          es.close();
-        };
-      } catch (error) {
-        console.error('Failed to subscribe to realtime events:', error);
-        return () => {};
-      }
-    };
-
-    const unsubscribeRealtime = subscribeToRealtime();
-
-    // Polling fallback (every 2 seconds)
-    const pollEvents = async () => {
-      try {
-        const response = await fetch(
-          `/api/gameplay/livefeed?subSessionId=${subSessionId}&limit=50`
-        );
-        if (!response.ok) throw new Error(`Status ${response.status}`);
-        const data = await response.json();
-        if (data.events && Array.isArray(data.events)) {
-          setEvents(data.events);
+        const payload = JSON.parse(e.data);
+        if (payload?.type === "livefeed:event" && payload.payload) {
+          ingest(payload.payload as FeedEvent);
         }
-      } catch (error) {
-        console.error('Live feed polling error:', error);
-      }
+      } catch {/* skip */}
     };
 
-    pollIntervalRef.current = setInterval(pollEvents, 2000);
+    es.onerror = () => {
+      sseActiveRef.current = false;
+      startPolling();
+    };
 
-    // Cleanup
     return () => {
-      unsubscribeRealtime();
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-      }
+      es.close();
+      sseRef.current = null;
+      if (flushTimerRef.current) clearTimeout(flushTimerRef.current);
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
     };
-  }, [subSessionId, addEvent, setEvents]);
+  }, [subSessionId, fetchInitial, ingest, startPolling]);
 }
