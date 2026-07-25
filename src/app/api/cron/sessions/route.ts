@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 import { checkAndAdvanceDuePhases, forceCompleteStaleSessions } from "@/lib/gameplay/session-orchestrator";
 import { publishSessionStatus } from "@/lib/gameplay/realtime-events";
+import { runBotSpinTick } from "@/lib/gameplay/ai-players";
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
