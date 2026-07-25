@@ -104,7 +104,7 @@ export default function SessionLobbyPage() {
           </div>
         </Card>
 
-        <Card style={{ minHeight: 120 } as React.CSSProperties}>
+        <Card className="min-h-[120px]">
           <h2 className="text-sm font-semibold uppercase text-phantom-muted mb-2">Live Activity</h2>
           <LiveFeed />
         </Card>
