@@ -18,6 +18,10 @@ export interface AiBot {
   isEliminated: boolean;
 }
 
+export function isAiBotId(userId: string): boolean {
+  return userId.startsWith("bot-");
+}
+
 function botsKey(subSessionId: string) {
   return `sub:${subSessionId}:ai_bots`;
 }
@@ -40,7 +44,7 @@ export async function initBotsInSubSession(
     bots.push({
       id: `bot-${subSessionId}-${i}`,
       username: BOT_NAMES[i % BOT_NAMES.length] + (i >= BOT_NAMES.length ? String(i) : ""),
-      tokens: 0,
+      tokens: 5 + Math.floor(Math.random() * 6),
       isEliminated: false,
     });
   }
@@ -50,6 +54,23 @@ export async function initBotsInSubSession(
 
 export async function getBots(subSessionId: string): Promise<AiBot[]> {
   return (await redisGet<AiBot[]>(botsKey(subSessionId))) ?? [];
+}
+
+export async function saveBots(subSessionId: string, bots: AiBot[]): Promise<void> {
+  await redisSet(botsKey(subSessionId), bots, 3600);
+}
+
+export async function adjustBotTokens(
+  subSessionId: string,
+  botId: string,
+  delta: number
+): Promise<number | null> {
+  const bots = await getBots(subSessionId);
+  const idx = bots.findIndex((b) => b.id === botId);
+  if (idx === -1) return null;
+  bots[idx].tokens = Math.max(0, Math.round((bots[idx].tokens + delta) * 10) / 10);
+  await saveBots(subSessionId, bots);
+  return bots[idx].tokens;
 }
 
 export async function runBotSpinTick(subSessionId: string): Promise<number> {

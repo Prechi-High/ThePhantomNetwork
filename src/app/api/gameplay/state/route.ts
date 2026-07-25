@@ -60,9 +60,11 @@ export async function GET(request: Request) {
     status?: string;
     total_pool_cents?: number;
     session_type?: string;
+    phase_config?: PhaseConfig;
   } | null;
 
   const sessionType = sessionMeta?.session_type;
+  const totalPhases = sessionMeta?.phase_config?.length ?? 6;
   let botEntries: { userId: string; username: string; tokens: number; isEliminated: boolean }[] = [];
   if (sessionType === "ai_practice") {
     const bots = await getBots(subSessionId);
@@ -146,5 +148,6 @@ export async function GET(request: Request) {
     networkPlayers,
     topPlayers,
     totalPoolCents: session?.total_pool_cents,
+    totalPhases,
   });
 }

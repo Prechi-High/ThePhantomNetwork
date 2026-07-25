@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/api/auth-helpers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { computeStealAmount } from "@/lib/gameplay/steal";
+import { adjustBotTokens, isAiBotId } from "@/lib/gameplay/ai-players";
 import { redisGet, redisSet, redisPublish } from "@/lib/redis/client";
 import { redisKeys } from "@/lib/redis/keys";
 import { BASE_STEAL_AMOUNT } from "@/types/gameplay";
@@ -55,92 +56,111 @@ export async function POST(request: Request) {
     .eq("user_id", user!.id)
     .single();
 
-  const { data: victim } = await admin
-    .from("sub_session_players")
-    .select("*")
-    .eq("sub_session_id", subSessionId)
-    .eq("user_id", progress.victimId)
-    .single();
-
-  if (!attacker || !victim) {
-    return NextResponse.json({ error: "Players not found" }, { status: 404 });
+  if (!attacker) {
+    return NextResponse.json({ error: "Attacker not found" }, { status: 404 });
   }
 
   let blocked = false;
   let counterstruck = false;
+  const victimIsBot = isAiBotId(progress.victimId);
 
-  const victimArmed = await redisGet<{ assetSlug: string; expiresAt: number }>(
-    redisKeys.tacticalArmed(subSessionId, progress.victimId)
-  );
-
-  if (victim.shield_count > 0) {
-    blocked = true;
-    const newShieldCount = victim.shield_boost_active
-      ? Math.max(0, victim.shield_count - 1)
-      : 0;
-    await admin
-      .from("sub_session_players")
-      .update({ shield_count: newShieldCount })
-      .eq("id", victim.id);
-  } else if (
-    victimArmed?.assetSlug === "counterstrike" &&
-    victimArmed.expiresAt > Date.now()
-  ) {
-    counterstruck = true;
+  if (victimIsBot) {
     const totalSteal = computeStealAmount(
       BASE_STEAL_AMOUNT,
       progress.fireBoostTaps,
       attacker.steal_boost_active
     );
-    const attackerTokens = Math.max(0, Number(attacker.session_tokens) - totalSteal);
-    const victimTokens = Number(victim.session_tokens) + totalSteal;
-    await admin
-      .from("sub_session_players")
-      .update({ session_tokens: attackerTokens })
-      .eq("id", attacker.id);
-    await admin
-      .from("sub_session_players")
-      .update({ session_tokens: victimTokens })
-      .eq("id", victim.id);
-  } else if (!victim.cloak_active) {
-    const totalSteal = computeStealAmount(
-      BASE_STEAL_AMOUNT,
-      progress.fireBoostTaps,
-      attacker.steal_boost_active
-    );
-
-    const victimTokens = Math.max(0, Number(victim.session_tokens) - totalSteal);
+    await adjustBotTokens(subSessionId, progress.victimId, -totalSteal);
     const attackerTokens = Number(attacker.session_tokens) + totalSteal;
-
-    await admin
-      .from("sub_session_players")
-      .update({ session_tokens: victimTokens })
-      .eq("id", victim.id);
     await admin
       .from("sub_session_players")
       .update({ session_tokens: attackerTokens })
       .eq("id", attacker.id);
+  } else {
+    const { data: victim } = await admin
+      .from("sub_session_players")
+      .select("*")
+      .eq("sub_session_id", subSessionId)
+      .eq("user_id", progress.victimId)
+      .single();
 
-    await admin.from("steals").insert({
-      sub_session_id: subSessionId,
-      attacker_id: user!.id,
-      victim_id: progress.victimId,
-      base_amount: BASE_STEAL_AMOUNT,
-      boost_amount: totalSteal - BASE_STEAL_AMOUNT,
-      total_amount: totalSteal,
-      blocked_by_shield: false,
-    });
+    if (!victim) {
+      return NextResponse.json({ error: "Players not found" }, { status: 404 });
+    }
 
-    const orderedPair = [user!.id, progress.victimId].sort();
-    await admin.from("rivalries").upsert(
-      {
-        user_a: orderedPair[0],
-        user_b: orderedPair[1],
-        intensity: 1,
-        last_interaction_at: new Date().toISOString(),
-      },
-      { onConflict: "user_a,user_b" }
+    const victimArmed = await redisGet<{ assetSlug: string; expiresAt: number }>(
+      redisKeys.tacticalArmed(subSessionId, progress.victimId)
     );
+
+    if (victim.shield_count > 0) {
+      blocked = true;
+      const newShieldCount = victim.shield_boost_active
+        ? Math.max(0, victim.shield_count - 1)
+        : 0;
+      await admin
+        .from("sub_session_players")
+        .update({ shield_count: newShieldCount })
+        .eq("id", victim.id);
+    } else if (
+      victimArmed?.assetSlug === "counterstrike" &&
+      victimArmed.expiresAt > Date.now()
+    ) {
+      counterstruck = true;
+      const totalSteal = computeStealAmount(
+        BASE_STEAL_AMOUNT,
+        progress.fireBoostTaps,
+        attacker.steal_boost_active
+      );
+      const attackerTokens = Math.max(0, Number(attacker.session_tokens) - totalSteal);
+      const victimTokens = Number(victim.session_tokens) + totalSteal;
+      await admin
+        .from("sub_session_players")
+        .update({ session_tokens: attackerTokens })
+        .eq("id", attacker.id);
+      await admin
+        .from("sub_session_players")
+        .update({ session_tokens: victimTokens })
+        .eq("id", victim.id);
+    } else if (!victim.cloak_active) {
+      const totalSteal = computeStealAmount(
+        BASE_STEAL_AMOUNT,
+        progress.fireBoostTaps,
+        attacker.steal_boost_active
+      );
+
+      const victimTokens = Math.max(0, Number(victim.session_tokens) - totalSteal);
+      const attackerTokens = Number(attacker.session_tokens) + totalSteal;
+
+      await admin
+        .from("sub_session_players")
+        .update({ session_tokens: victimTokens })
+        .eq("id", victim.id);
+      await admin
+        .from("sub_session_players")
+        .update({ session_tokens: attackerTokens })
+        .eq("id", attacker.id);
+
+      await admin.from("steals").insert({
+        sub_session_id: subSessionId,
+        attacker_id: user!.id,
+        victim_id: progress.victimId,
+        base_amount: BASE_STEAL_AMOUNT,
+        boost_amount: totalSteal - BASE_STEAL_AMOUNT,
+        total_amount: totalSteal,
+        blocked_by_shield: false,
+      });
+
+      const orderedPair = [user!.id, progress.victimId].sort();
+      await admin.from("rivalries").upsert(
+        {
+          user_a: orderedPair[0],
+          user_b: orderedPair[1],
+          intensity: 1,
+          last_interaction_at: new Date().toISOString(),
+        },
+        { onConflict: "user_a,user_b" }
+      );
+    }
   }
 
   await redisPublish(redisKeys.realtimeChannel(subSessionId), {
@@ -151,10 +171,11 @@ export async function POST(request: Request) {
     counterstruck,
   });
 
-  // Publish a global event to refresh state for all clients (for leaderboard/squad tokens)
   await redisPublish(redisKeys.realtimeChannel(subSessionId), {
     type: "tokens_updated",
   });
+
+  await redisSet(stealKey, { ...progress, resolved: true }, 5);
 
   return NextResponse.json({ success: true, blocked, counterstruck });
 }

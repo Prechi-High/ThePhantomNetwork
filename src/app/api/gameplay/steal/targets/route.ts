@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/api/auth-helpers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildStealTargets, isEligibleStealTarget } from "@/lib/gameplay/steal";
+import { getBots } from "@/lib/gameplay/ai-players";
 import { redisSet, redisPublish } from "@/lib/redis/client";
 import { redisKeys } from "@/lib/redis/keys";
 
@@ -24,6 +25,14 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({ warningSent: true });
   }
+
+  const { data: subSession } = await admin
+    .from("sub_sessions")
+    .select("sessions(session_type)")
+    .eq("id", subSessionId)
+    .single();
+
+  const sessionType = (subSession?.sessions as { session_type?: string } | null)?.session_type;
 
   const { data: players } = await admin
     .from("sub_session_players")
@@ -59,7 +68,7 @@ export async function POST(request: Request) {
 
   const ranked = (players ?? []).map((p, i) => ({ ...p, rank: i + 1 }));
 
-  const candidates = ranked
+  const humanCandidates = ranked
     .filter((p) =>
       isEligibleStealTarget(
         {
@@ -84,7 +93,41 @@ export async function POST(request: Request) {
       attackedYouScore: attackedYouIds.has(p.user_id) ? 100 : 0,
     }));
 
-  const targets = buildStealTargets(candidates, rivalIds, recentActiveIds, attackedYouIds);
+  let botCandidates: typeof humanCandidates = [];
+  if (sessionType === "ai_practice") {
+    const bots = await getBots(subSessionId);
+    botCandidates = bots
+      .filter((bot) =>
+        isEligibleStealTarget(
+          {
+            userId: bot.id,
+            tokens: bot.tokens,
+            isEliminated: bot.isEliminated,
+            shieldCount: 0,
+            cloakActive: false,
+          },
+          user!.id
+        )
+      )
+      .map((bot, i) => ({
+        userId: bot.id,
+        username: bot.username,
+        tokens: bot.tokens,
+        rank: ranked.length + i + 1,
+        tokenScore: bot.tokens,
+        rivalryScore: 0,
+        recentStealScore: 0,
+        recentActivityScore: 40,
+        attackedYouScore: 0,
+      }));
+  }
+
+  const targets = buildStealTargets(
+    [...humanCandidates, ...botCandidates],
+    rivalIds,
+    recentActiveIds,
+    attackedYouIds
+  );
 
   return NextResponse.json({ targets });
 }

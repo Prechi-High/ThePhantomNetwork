@@ -87,9 +87,8 @@
   display: grid;
   grid-template-rows:
     env(safe-area-inset-top, 0px)
-    18%          /* Zone: Top HUD    */
-    5%           /* Zone: Surge      */
-    44%          /* Zone: World      */
+    22%          /* Zone: Top HUD    */
+    46%          /* Zone: World      */
     6%           /* Zone: Engage     */
     auto         /* Zone: Effects    */
     1fr          /* Zone: Skills     */

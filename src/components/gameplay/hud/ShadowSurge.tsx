@@ -59,7 +59,7 @@ export function ShadowSurge({ percent, playerRank = 7 }: ShadowSurgeProps) {
                 textShadow: "0 0 8px rgba(192,132,252,0.55)",
               }}
             >
-              SHADOW SURGE
+              NEXT: SHADOW SURGE
             </span>
           </div>
 
