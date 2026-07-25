@@ -49,6 +49,7 @@ import { useLiveFeedUpdates }    from "@/hooks/useLiveFeedUpdates";
 import { useLeaderboardUpdates } from "@/hooks/useLeaderboardUpdates";
 import { useEffectsUpdates }     from "@/hooks/useEffectsUpdates";
 import { useInventoryUpdates }   from "@/hooks/useInventoryUpdates";
+import { reportClientError }     from "@/lib/monitoring/client-report";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
