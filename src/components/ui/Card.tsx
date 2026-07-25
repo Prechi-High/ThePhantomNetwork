@@ -3,14 +3,20 @@
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
-interface CardProps {
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
   glow?: boolean;
   hoverable?: boolean;
 }
 
-export function Card({ children, className, glow, hoverable = false }: CardProps) {
+export function Card({
+  children,
+  className,
+  glow,
+  hoverable = false,
+  ...rest
+}: CardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -23,6 +29,7 @@ export function Card({ children, className, glow, hoverable = false }: CardProps
         hoverable && "hover:shadow-[var(--shadow-glow-purple)]",
         className
       )}
+      {...rest}
     >
       {children}
     </motion.div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import BottomNav from "@/components/ui/BottomNav";
@@ -46,7 +47,11 @@ export default function SessionResultsPage() {
     <div className="min-h-screen bg-phantom-bg pb-24">
       <div className="container-responsive pt-8 space-y-6">
         <div className="text-center">
-          <motionReveal>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
             <h1 className="font-display text-3xl font-bold text-phantom-gold">
               {isWinner ? MESSAGES.victory : MESSAGES.defeat}
             </h1>
@@ -55,7 +60,7 @@ export default function SessionResultsPage() {
                 ? MESSAGES.legacyRecord
                 : "Your legacy continues. Prepare and return stronger."}
             </p>
-          </motionReveal>
+          </motion.div>
         </div>
 
         {result && (
@@ -116,8 +121,4 @@ export default function SessionResultsPage() {
       <BottomNav />
     </div>
   );
-}
-
-function motionReveal({ children }: { children: React.ReactNode }) {
-  return <div>{children}</div>;
 }
