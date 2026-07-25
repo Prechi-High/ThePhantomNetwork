@@ -3,7 +3,13 @@
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
-interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+/** Omit drag/animation handlers that conflict with framer-motion's motion.div typings */
+type CardDivProps = Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  "onDrag" | "onDragStart" | "onDragEnd" | "onAnimationStart"
+>;
+
+interface CardProps extends CardDivProps {
   children: React.ReactNode;
   className?: string;
   glow?: boolean;
