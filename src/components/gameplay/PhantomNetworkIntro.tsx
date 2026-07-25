@@ -180,7 +180,7 @@ export function PhantomNetworkIntro({
     };
   }, [visible, durationMs, phase, players.length, safeComplete]);
 
-  const headerLabel = phase && phase > 0 ? `PHASE ${phase}` : "THE PHANTOM";
+  const headerLabel = phase && phase > 0 ? `PHASE ${phase}` : "LEGACIES";
   const isLastStep  = stepIndex >= BOOT_STEPS.length - 1;
 
   return (

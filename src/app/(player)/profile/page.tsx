@@ -136,7 +136,7 @@ export default function ProfilePage() {
         <Card className="p-5 relative">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-phantom-purple text-2xl">💎</span>
-            <span className="text-sm text-phantom-muted uppercase">Phantom Tokens</span>
+            <span className="text-sm text-phantom-muted uppercase">Legacy Credits</span>
           </div>
           <p className="text-3xl sm:text-4xl font-mono font-bold text-white">250</p>
           <button className="absolute top-5 right-5 p-3 bg-phantom-purple/20 rounded-lg hover:bg-phantom-purple/30 transition-colors">
@@ -571,7 +571,7 @@ export default function ProfilePage() {
                 <span className="text-3xl">💜</span>
                 <div className="flex-1">
                   <p className="text-sm sm:text-base font-semibold text-white">
-                    100 Phantom Tokens
+                    100 Legacy Credits
                   </p>
                   <div className="flex items-center gap-2 mt-2">
                     <div className="flex-1 h-2 sm:h-3 bg-phantom-border rounded-full overflow-hidden">

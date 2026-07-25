@@ -1,11 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSessionStore } from "@/stores/useSessionStore";
 import { useInventoryStore } from "@/stores/useInventoryStore";
-import { useInventoryUpdates } from "@/hooks/useInventoryUpdates";
 import { useServerTime } from "@/hooks/useServerTime";
+import { getAssetDisplayName, getAssetDescription } from "@/lib/brand/terminology";
+import { TACTICAL_ASSET_DEFS } from "@/lib/armory/tactical-assets";
+import { TargetSelectionModal } from "@/components/gameplay/TargetSelectionModal";
+import type { StealTarget, TacticalAssetSlug } from "@/types/gameplay";
 
 interface SkillColors {
   border: string;
@@ -16,31 +20,40 @@ interface SkillColors {
 }
 
 const SKILL_COLORS: Record<string, SkillColors> = {
-  steal_boost: { border: "#7c3aed", glow: "rgba(124,58,237,0.6)",  bgFrom: "#1a0635", bgTo: "#0a011a", label: "#a855f7" },
-  shield:      { border: "#0284c7", glow: "rgba(2,132,199,0.6)",   bgFrom: "#031828", bgTo: "#020d18", label: "#38bdf8" },
-  cloak:       { border: "#4f46e5", glow: "rgba(79,70,229,0.6)",   bgFrom: "#0d0e25", bgTo: "#06061a", label: "#818cf8" },
-  multiplier:  { border: "#7c3aed", glow: "rgba(124,58,237,0.6)",  bgFrom: "#130530", bgTo: "#07021a", label: "#c084fc" },
-  insurance:   { border: "#b45309", glow: "rgba(180,83,9,0.6)",    bgFrom: "#1c0e02", bgTo: "#100801", label: "#fbbf24" },
-  revive:      { border: "#047857", glow: "rgba(4,120,87,0.6)",    bgFrom: "#031a10", bgTo: "#020f08", label: "#22c55e" },
-  default:     { border: "#6b7280", glow: "rgba(107,114,128,0.4)", bgFrom: "#111111", bgTo: "#0a0a0a", label: "#9ca3af" },
+  steal:         { border: "#ef4444", glow: "rgba(239,68,68,0.6)",   bgFrom: "#1a0505", bgTo: "#0a0202", label: "#f87171" },
+  guardian:      { border: "#0284c7", glow: "rgba(2,132,199,0.6)",  bgFrom: "#031828", bgTo: "#020d18", label: "#38bdf8" },
+  shield:        { border: "#0284c7", glow: "rgba(2,132,199,0.6)",  bgFrom: "#031828", bgTo: "#020d18", label: "#38bdf8" },
+  veil:          { border: "#4f46e5", glow: "rgba(79,70,229,0.6)", bgFrom: "#0d0e25", bgTo: "#06061a", label: "#818cf8" },
+  cloak:         { border: "#4f46e5", glow: "rgba(79,70,229,0.6)", bgFrom: "#0d0e25", bgTo: "#06061a", label: "#818cf8" },
+  counterstrike: { border: "#7c3aed", glow: "rgba(124,58,237,0.6)", bgFrom: "#130530", bgTo: "#07021a", label: "#c084fc" },
+  intercept:     { border: "#0891b2", glow: "rgba(8,145,178,0.6)",  bgFrom: "#021a20", bgTo: "#010f12", label: "#22d3ee" },
+  disrupt:       { border: "#ea580c", glow: "rgba(234,88,12,0.6)",  bgFrom: "#1a0a02", bgTo: "#0f0601", label: "#fb923c" },
+  mark:          { border: "#dc2626", glow: "rgba(220,38,38,0.6)",  bgFrom: "#1a0505", bgTo: "#0f0202", label: "#f87171" },
+  default:       { border: "#6b7280", glow: "rgba(107,114,128,0.4)", bgFrom: "#111111", bgTo: "#0a0a0a", label: "#9ca3af" },
 };
 
 const SKILL_ICONS: Record<string, string> = {
-  steal_boost: "⚡",
-  shield:      "🛡",
-  cloak:       "👤",
-  multiplier:  "2×",
-  insurance:   "☂",
-  revive:      "+",
+  steal: "⚔",
+  guardian: "🛡",
+  shield: "🛡",
+  veil: "👤",
+  cloak: "👤",
+  counterstrike: "⚡",
+  intercept: "📡",
+  disrupt: "⚡",
+  mark: "🎯",
 };
 
 const SKILL_DESCRIPTIONS: Record<string, string> = {
-  steal_boost: "Boosts steal power",
-  shield:      "Blocks next steal",
-  cloak:       "Hides from targets",
-  multiplier:  "Doubles token gains",
-  insurance:   "Protects on steal",
-  revive:      "Revive a teammate",
+  steal: "Steal session tokens from a target",
+  shield: getAssetDescription("guardian"),
+  guardian: getAssetDescription("guardian"),
+  cloak: getAssetDescription("veil"),
+  veil: getAssetDescription("veil"),
+  counterstrike: getAssetDescription("counterstrike"),
+  intercept: getAssetDescription("intercept"),
+  disrupt: getAssetDescription("disrupt"),
+  mark: getAssetDescription("mark"),
 };
 
 function formatCooldown(ms: number): string {
@@ -92,7 +105,6 @@ function SkillCard({
 
   return (
     <div className="skill-card" style={{ position: "relative" }}>
-      {/* Long-press tooltip */}
       <AnimatePresence>
         {showTip && (
           <motion.div
@@ -123,7 +135,6 @@ function SkillCard({
         )}
       </AnimatePresence>
 
-      {/* Button */}
       <motion.button
         className="skill-btn"
         disabled={!isReady && !isActive}
@@ -135,14 +146,6 @@ function SkillCard({
         }}
         whileHover={isReady ? { scale: 1.04 } : undefined}
         whileTap={isReady ? { scale: 0.94 } : undefined}
-        animate={
-          isActive
-            ? { boxShadow: [`0 0 8px ${colors.glow}`, `0 0 20px ${colors.glow}`, `0 0 8px ${colors.glow}`] }
-            : isReady
-            ? { boxShadow: `0 0 12px ${colors.glow}` }
-            : { boxShadow: "none" }
-        }
-        transition={isActive ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" } : undefined}
         style={{
           background: `linear-gradient(160deg, ${colors.bgFrom}, ${colors.bgTo})`,
           border: `1.5px solid ${isReady || isActive ? colors.border : "rgba(107,114,128,0.3)"}`,
@@ -151,7 +154,6 @@ function SkillCard({
           overflow: "hidden",
         }}
       >
-        {/* Recharge bar overlay */}
         {cooldownMs > 0 && (
           <motion.div
             initial={{ scaleY: 1 }}
@@ -169,100 +171,122 @@ function SkillCard({
             }}
           />
         )}
-
-        {/* Icon */}
-        <span
-          style={{
-            fontSize: "clamp(18px, 2.4vw, 24px)",
-            lineHeight: 1,
-            fontWeight: 900,
-            color: isReady ? colors.label : "rgba(255,255,255,0.35)",
-            textShadow: isReady ? `0 0 10px ${colors.glow}` : "none",
-            zIndex: 2,
-            position: "relative",
-          }}
-        >
+        <span style={{ fontSize: "clamp(18px, 2.4vw, 24px)", lineHeight: 1, fontWeight: 900, color: isReady ? colors.label : "rgba(255,255,255,0.35)", zIndex: 2, position: "relative" }}>
           {icon}
         </span>
-
-        {/* Charges badge */}
         {charges !== undefined && charges > 0 && (
-          <div
-            style={{
-              position: "absolute",
-              top: 4,
-              right: 5,
-              minWidth: 14,
-              height: 14,
-              borderRadius: 9999,
-              background: colors.border,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "0 3px",
-              zIndex: 3,
-            }}
-          >
+          <div style={{ position: "absolute", top: 4, right: 5, minWidth: 14, height: 14, borderRadius: 9999, background: colors.border, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px", zIndex: 3 }}>
             <span style={{ fontSize: 7, fontWeight: 900, color: "#000" }}>{charges}</span>
           </div>
         )}
       </motion.button>
-
-      <span className="skill-label" style={{ color: "rgba(255,255,255,0.6)" }}>
-        {name}
-      </span>
-      <span className="skill-status" style={{ color: statusColor }}>
-        {statusText}
-      </span>
+      <span className="skill-label" style={{ color: "rgba(255,255,255,0.6)" }}>{name}</span>
+      <span className="skill-status" style={{ color: statusColor }}>{statusText}</span>
     </div>
   );
 }
 
-const FALLBACK_SKILLS = [
-  { id: "steal_boost", name: "STEAL",     charges: 2, cooldownMs: 0,     isReady: true,  isActive: false },
-  { id: "shield",      name: "SHIELD",    charges: 1, cooldownMs: 0,     isReady: true,  isActive: false },
-  { id: "cloak",       name: "CLOAK",     charges: 0, cooldownMs: 12000, isReady: false, isActive: false },
-  { id: "multiplier",  name: "2×",        charges: 1, cooldownMs: 0,     isReady: true,  isActive: false },
-  { id: "insurance",   name: "INSURE",    charges: 1, cooldownMs: 0,     isReady: true,  isActive: false },
-  { id: "revive",      name: "REVIVE",    charges: 1, cooldownMs: 0,     isReady: true,  isActive: false },
-  { id: "default",     name: "MORE",      charges: 0, cooldownMs: 0,     isReady: false, isActive: false },
-];
-
 export function SkillDockHUD() {
+  const { sessionId } = useParams<{ sessionId: string }>();
   const { subSessionId } = useSessionStore();
   const skills = useInventoryStore((s) => s.skills);
   const serverTime = useServerTime();
 
-  useInventoryUpdates(null, subSessionId);
+  const [targetModalOpen, setTargetModalOpen] = useState(false);
+  const [pendingAsset, setPendingAsset] = useState<TacticalAssetSlug | null>(null);
+  const [targets, setTargets] = useState<StealTarget[]>([]);
+
+  const activateAsset = useCallback(
+    async (assetSlug: TacticalAssetSlug, targetId?: string) => {
+      if (!subSessionId || !sessionId) return;
+      await fetch("/api/gameplay/tactical/activate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subSessionId, sessionId, assetSlug, targetId }),
+      });
+    },
+    [subSessionId, sessionId]
+  );
+
+  const handleSkillActivate = useCallback(
+    async (skillId: string) => {
+      const slug = skillId as TacticalAssetSlug;
+      const def = TACTICAL_ASSET_DEFS[slug];
+      if (!def) return;
+
+      if (def.requiresTarget) {
+        const res = await fetch("/api/gameplay/steal/targets", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ subSessionId }),
+        });
+        const data = await res.json();
+        setTargets(data.targets ?? []);
+        setPendingAsset(slug);
+        setTargetModalOpen(true);
+        return;
+      }
+
+      await activateAsset(slug);
+    },
+    [subSessionId, activateAsset]
+  );
+
+  const handleTargetSelect = useCallback(
+    async (targetId: string) => {
+      if (!pendingAsset) return;
+      if (pendingAsset === "intercept" || pendingAsset === "mark" || pendingAsset === "disrupt") {
+        await fetch("/api/gameplay/steal/targets", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ subSessionId, victimId: targetId, preview: true }),
+        });
+      }
+      await activateAsset(pendingAsset, targetId);
+      setTargetModalOpen(false);
+      setPendingAsset(null);
+    },
+    [pendingAsset, activateAsset, subSessionId]
+  );
 
   const displaySkills = skills.length > 0
-    ? skills.map(s => ({
+    ? skills.map((s) => ({
         id: s.id ?? "default",
-        name: (s.name ?? "SKILL").slice(0, 6).toUpperCase(),
+        name: getAssetDisplayName(s.id ?? "default").slice(0, 6).toUpperCase(),
         charges: s.charges,
         cooldownMs: s.cooldown_until ? serverTime.getCountdown(s.cooldown_until) : 0,
         isReady: s.available && s.charges > 0,
         isActive: false,
       }))
-    : FALLBACK_SKILLS;
+    : [];
 
   return (
-    <div className="zone-skills">
-      <div className="skill-dock">
-        {displaySkills.map(skill => (
-          <SkillCard
-            key={skill.id}
-            skillId={skill.id}
-            name={skill.name}
-            icon={SKILL_ICONS[skill.id] ?? "✦"}
-            cooldownMs={skill.cooldownMs}
-            charges={skill.charges}
-            isReady={skill.isReady}
-            isActive={skill.isActive}
-            description={SKILL_DESCRIPTIONS[skill.id] ?? "Use this skill"}
-          />
-        ))}
+    <>
+      <div className="zone-skills">
+        <div className="skill-dock">
+          {displaySkills.map((skill) => (
+            <SkillCard
+              key={skill.id}
+              skillId={skill.id}
+              name={skill.name}
+              icon={SKILL_ICONS[skill.id] ?? "✦"}
+              cooldownMs={skill.cooldownMs}
+              charges={skill.charges}
+              isReady={skill.isReady}
+              isActive={skill.isActive}
+              description={SKILL_DESCRIPTIONS[skill.id] ?? "Use this tactical asset"}
+              onActivate={() => handleSkillActivate(skill.id)}
+            />
+          ))}
+        </div>
       </div>
-    </div>
+      <TargetSelectionModal
+        open={targetModalOpen}
+        assetSlug={pendingAsset}
+        targets={targets}
+        onSelect={handleTargetSelect}
+        onClose={() => { setTargetModalOpen(false); setPendingAsset(null); }}
+      />
+    </>
   );
 }

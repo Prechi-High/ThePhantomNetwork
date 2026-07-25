@@ -9,6 +9,8 @@ import { REGISTRATION_LOCK_MINUTES } from "@/types/gameplay";
 import type { PhaseConfig } from "@/types/gameplay";
 import { requireAdmin, verifyAdminOrCron } from "@/lib/api/role-helpers";
 import { publishSessionStatus } from "@/lib/gameplay/realtime-events";
+import { initBotsInSubSession } from "@/lib/gameplay/ai-players";
+import { runBotSpinTick } from "@/lib/gameplay/ai-players";
 
 export async function GET() {
   const { error } = await requireAdmin();
@@ -50,6 +52,8 @@ export async function POST(request: Request) {
     await admin.from("sessions").update({ status: "locked" }).eq("id", sessionId);
     await publishSessionStatus(sessionId, "locked");
 
+    const sessionMode = (session.session_mode as "squad" | "solo") ?? "squad";
+
     const { data: registrations } = await admin
       .from("session_registrations")
       .select("user_id, squad_id")
@@ -71,7 +75,7 @@ export async function POST(request: Request) {
       isPermanentSquad: !!r.squad_id,
     }));
 
-    const assignments = createSubSessions(players);
+    const assignments = createSubSessions(players, sessionMode);
 
     for (const assignment of assignments) {
       const poolCents = assignment.players.length * session.entry_fee_cents;
@@ -93,8 +97,14 @@ export async function POST(request: Request) {
             sub_session_id: subSession.id,
             user_id: player.userId,
             squad_id: player.squadId ?? null,
-            is_temporary_squad: !player.isPermanentSquad,
+            is_temporary_squad: !player.isPermanentSquad && sessionMode === "squad",
           });
+        }
+
+        if (session.session_type === "ai_practice") {
+          const botCount =
+            (session.economy_config as { ai_bot_count?: number })?.ai_bot_count ?? 10;
+          await initBotsInSubSession(subSession.id, botCount);
         }
       }
     }

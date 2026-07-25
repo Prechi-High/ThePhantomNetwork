@@ -29,9 +29,14 @@ export async function POST(request: Request) {
       resolved: false,
     } satisfies StealProgress, 30);
 
+    await redisSet(
+      redisKeys.stealPrepWarning(subSessionId, victimId),
+      { at: Date.now(), anonymous: true },
+      30
+    );
+
     await redisPublish(redisKeys.realtimeChannel(subSessionId), {
-      type: "steal_in_progress",
-      attackerId: user!.id,
+      type: "steal_prep_warning",
       victimId,
     });
 
@@ -62,6 +67,12 @@ export async function POST(request: Request) {
   }
 
   let blocked = false;
+  let counterstruck = false;
+
+  const victimArmed = await redisGet<{ assetSlug: string; expiresAt: number }>(
+    redisKeys.tacticalArmed(subSessionId, progress.victimId)
+  );
+
   if (victim.shield_count > 0) {
     blocked = true;
     const newShieldCount = victim.shield_boost_active
@@ -70,6 +81,26 @@ export async function POST(request: Request) {
     await admin
       .from("sub_session_players")
       .update({ shield_count: newShieldCount })
+      .eq("id", victim.id);
+  } else if (
+    victimArmed?.assetSlug === "counterstrike" &&
+    victimArmed.expiresAt > Date.now()
+  ) {
+    counterstruck = true;
+    const totalSteal = computeStealAmount(
+      BASE_STEAL_AMOUNT,
+      progress.fireBoostTaps,
+      attacker.steal_boost_active
+    );
+    const attackerTokens = Math.max(0, Number(attacker.session_tokens) - totalSteal);
+    const victimTokens = Number(victim.session_tokens) + totalSteal;
+    await admin
+      .from("sub_session_players")
+      .update({ session_tokens: attackerTokens })
+      .eq("id", attacker.id);
+    await admin
+      .from("sub_session_players")
+      .update({ session_tokens: victimTokens })
       .eq("id", victim.id);
   } else if (!victim.cloak_active) {
     const totalSteal = computeStealAmount(
@@ -117,6 +148,7 @@ export async function POST(request: Request) {
     attackerId: user!.id,
     victimId: progress.victimId,
     blocked,
+    counterstruck,
   });
 
   // Publish a global event to refresh state for all clients (for leaderboard/squad tokens)
@@ -124,5 +156,5 @@ export async function POST(request: Request) {
     type: "tokens_updated",
   });
 
-  return NextResponse.json({ success: true, blocked });
+  return NextResponse.json({ success: true, blocked, counterstruck });
 }

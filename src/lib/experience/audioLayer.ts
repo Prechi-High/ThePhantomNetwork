@@ -66,6 +66,21 @@ export const AUDIO_CUES: Record<string, AudioCue> = {
   revive_start:   { id: "revive_start", path: "/audio/combat/revive-start.mp3",  layer: "combat",     volume: 0.7 },
   revive_complete:{ id: "revive_complete",path:"/audio/combat/revive-complete.mp3",layer:"combat",    volume: 0.9 },
 
+  // LEGACIES tactical assets
+  steal_ready:        { id: "steal_ready",        path: "/audio/combat/steal-ready.mp3",        layer: "combat",  volume: 0.9 },
+  guardian_arm:       { id: "guardian_arm",       path: "/audio/combat/guardian-arm.mp3",       layer: "combat",  volume: 0.7 },
+  guardian_block:     { id: "guardian_block",     path: "/audio/combat/guardian-block.mp3",     layer: "combat",  volume: 0.85 },
+  counterstrike_arm:  { id: "counterstrike_arm",  path: "/audio/combat/counterstrike-arm.mp3",  layer: "combat",  volume: 0.75 },
+  counterstrike_hit:  { id: "counterstrike_hit",  path: "/audio/combat/counterstrike-hit.mp3",  layer: "combat",  volume: 0.9 },
+  intercept_success:  { id: "intercept_success",  path: "/audio/combat/intercept-success.mp3",  layer: "combat",  volume: 0.8 },
+  disrupt_active:     { id: "disrupt_active",     path: "/audio/combat/disrupt-active.mp3",     layer: "combat",  volume: 0.75 },
+  mark_placed:        { id: "mark_placed",        path: "/audio/combat/mark-placed.mp3",        layer: "combat",  volume: 0.8 },
+  rank_up:            { id: "rank_up",            path: "/audio/reward/rank-up.mp3",            layer: "reward",  volume: 0.85 },
+  rank_down:          { id: "rank_down",          path: "/audio/reward/rank-down.mp3",          layer: "reward",  volume: 0.7 },
+  phase_end:          { id: "phase_end",          path: "/audio/ambient/phase-end.mp3",         layer: "environment", volume: 0.95 },
+  legacy_forged:      { id: "legacy_forged",      path: "/audio/reward/legacy-forged.mp3",      layer: "reward",  volume: 1.0 },
+  elimination_fade:   { id: "elimination_fade",   path: "/audio/ambient/elimination-fade.mp3",  layer: "ambient", volume: 0.6, fadeOut: 3000 },
+
   // UI
   button_tap:     { id: "button_tap",   path: "/audio/ui/button-tap.mp3",        layer: "ui",         volume: 0.5 },
   hud_tick:       { id: "hud_tick",     path: "/audio/ui/hud-tick.mp3",          layer: "ui",         volume: 0.3 },

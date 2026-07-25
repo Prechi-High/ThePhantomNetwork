@@ -11,4 +11,13 @@ export const redisKeys = {
   liveFeed: "live:feed",
   rateLimit: (key: string) => `ratelimit:${key}`,
   realtimeChannel: (subSessionId: string) => `realtime:${subSessionId}`,
+  tacticalArmed: (subSessionId: string, userId: string) =>
+    `sub:${subSessionId}:tactical:${userId}:armed`,
+  tacticalDebuff: (subSessionId: string, userId: string) =>
+    `sub:${subSessionId}:tactical:${userId}:debuff`,
+  tacticalMark: (subSessionId: string) => `sub:${subSessionId}:tactical:mark`,
+  stealSaved: (subSessionId: string, userId: string) =>
+    `sub:${subSessionId}:steal:${userId}:saved`,
+  stealPrepWarning: (subSessionId: string, userId: string) =>
+    `sub:${subSessionId}:steal:warning:${userId}`,
 };

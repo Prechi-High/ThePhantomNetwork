@@ -13,9 +13,15 @@ export interface SubSessionAssignment {
 }
 
 export function createSubSessions(
-  players: MatchmakingPlayer[]
+  players: MatchmakingPlayer[],
+  sessionMode: "squad" | "solo" = "squad"
 ): SubSessionAssignment[] {
   const subSessions: SubSessionAssignment[] = [];
+
+  if (sessionMode === "solo") {
+    return packSoloPlayers(players);
+  }
+
   const squadGroups = new Map<string, MatchmakingPlayer[]>();
   const solos: MatchmakingPlayer[] = [];
 
@@ -53,6 +59,33 @@ export function createSubSessions(
       }
     }
     currentSub.push(...unit);
+  }
+
+  if (currentSub.length > 0) {
+    subSessions.push({
+      label: String.fromCharCode(65 + labelIndex),
+      players: currentSub,
+    });
+  }
+
+  return subSessions;
+}
+
+function packSoloPlayers(players: MatchmakingPlayer[]): SubSessionAssignment[] {
+  const subSessions: SubSessionAssignment[] = [];
+  let currentSub: MatchmakingPlayer[] = [];
+  let labelIndex = 0;
+
+  for (const player of players) {
+    if (currentSub.length >= SUB_SESSION_MAX_PLAYERS) {
+      subSessions.push({
+        label: String.fromCharCode(65 + labelIndex),
+        players: currentSub,
+      });
+      labelIndex++;
+      currentSub = [];
+    }
+    currentSub.push(player);
   }
 
   if (currentSub.length > 0) {

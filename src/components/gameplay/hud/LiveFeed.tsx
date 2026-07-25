@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSessionStore } from "@/stores/useSessionStore";
 import { useLiveFeedStore, type FeedEvent } from "@/stores/useLiveFeedStore";
-import { useLiveFeedUpdates } from "@/hooks/useLiveFeedUpdates";
+import { getAssetDisplayName } from "@/lib/brand/terminology";
 
 interface EventStyle {
   accent: string;
@@ -48,8 +48,10 @@ function buildStory(event: FeedEvent): string {
       return `${a} takes 1st place`;
     case "phase":
       return `${(d.phaseName as string) ?? "New phase"} has started`;
-    case "effect":
-      return `${a} activated ${(d.effect as string) ?? "Effect"}`;
+    case "effect": {
+      const effectSlug = (d.effect as string) ?? "effect";
+      return `${a} activated ${getAssetDisplayName(effectSlug)}`;
+    }
     case "elimination":
       return `${a} was eliminated`;
     case "surge":

@@ -5,48 +5,73 @@ export interface StealCandidate {
   userId: string;
   username: string;
   tokens: number;
+  rank?: number;
   tokenScore: number;
   rivalryScore: number;
   recentStealScore: number;
+  recentActivityScore: number;
+  attackedYouScore: number;
 }
 
 export function computeTargetScore(candidate: StealCandidate): number {
   return (
-    candidate.tokenScore * 0.5 +
-    candidate.rivalryScore * 0.3 +
-    candidate.recentStealScore * 0.2
+    candidate.tokenScore * 0.35 +
+    candidate.rivalryScore * 0.25 +
+    candidate.recentStealScore * 0.15 +
+    candidate.recentActivityScore * 0.15 +
+    candidate.attackedYouScore * 0.10
   );
+}
+
+function reasonForCandidate(
+  c: StealCandidate,
+  rivalIds: Set<string>,
+  topTokenIds: Set<string>,
+  recentActiveIds: Set<string>,
+  attackedYouIds: Set<string>
+): string {
+  if (attackedYouIds.has(c.userId)) return "Recently Attacked You";
+  if (rivalIds.has(c.userId)) return "Rival";
+  if (recentActiveIds.has(c.userId)) return "Recently Active";
+  if (topTokenIds.has(c.userId)) return "Highest Tokens";
+  return "High Tokens";
 }
 
 export function buildStealTargets(
   candidates: StealCandidate[],
-  rivalIds: Set<string>
+  rivalIds: Set<string>,
+  recentActiveIds: Set<string> = new Set(),
+  attackedYouIds: Set<string> = new Set()
 ): StealTarget[] {
   const top3 = [...candidates]
     .sort((a, b) => b.tokens - a.tokens)
     .slice(0, 3);
+  const topTokenIds = new Set(top3.map((t) => t.userId));
 
-  const rivals = candidates.filter((c) => rivalIds.has(c.userId));
+  const scored = candidates.map((c) => ({
+    candidate: c,
+    score: computeTargetScore(c),
+  }));
+
+  scored.sort((a, b) => b.score - a.score);
+
   const seen = new Set<string>();
   const combined: StealTarget[] = [];
 
-  for (const c of [...top3, ...rivals]) {
+  for (const { candidate: c } of scored) {
     if (seen.has(c.userId)) continue;
     seen.add(c.userId);
-    const reason = rivalIds.has(c.userId)
-      ? "Rival"
-      : top3.some((t) => t.userId === c.userId)
-        ? "Highest Tokens"
-        : "High Tokens";
     combined.push({
       userId: c.userId,
       username: c.username,
       tokens: c.tokens,
-      reason,
+      rank: c.rank,
+      reason: reasonForCandidate(c, rivalIds, topTokenIds, recentActiveIds, attackedYouIds),
     });
+    if (combined.length >= 5) break;
   }
 
-  return combined.slice(0, 8);
+  return combined;
 }
 
 export function computeStealAmount(

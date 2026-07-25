@@ -31,6 +31,7 @@ interface InventoryResponse {
 export function useInventoryUpdates(
   userId: string | null,
   subSessionId: string | null,
+  sessionId?: string | null,
 ) {
   const store = useInventoryStore();
   const sseRef      = useRef<EventSource | null>(null);
@@ -42,9 +43,12 @@ export function useInventoryUpdates(
     // ── Initial fetch ────────────────────────────────────────────────────
     const fetchInventory = async () => {
       try {
-        const res = await fetch(
-          `/api/player/inventory?userId=${userId}&subSessionId=${subSessionId}`
-        );
+        const params = new URLSearchParams({
+          userId,
+          subSessionId,
+        });
+        if (sessionId) params.set("sessionId", sessionId);
+        const res = await fetch(`/api/player/inventory?${params}`);
         if (!res.ok) return;
         const data = await res.json() as InventoryResponse;
         if (Array.isArray(data.skills)) {
@@ -114,5 +118,5 @@ export function useInventoryUpdates(
       sseRef.current = null;
       if (pollTimerRef.current) { clearInterval(pollTimerRef.current); pollTimerRef.current = null; }
     };
-  }, [userId, subSessionId, store]);
+  }, [userId, subSessionId, sessionId, store]);
 }

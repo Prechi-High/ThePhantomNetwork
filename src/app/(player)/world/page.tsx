@@ -209,7 +209,7 @@ export default function WorldPage() {
           <div className="flex items-center gap-2 mb-3">
             <span className="text-phantom-purple text-2xl">💎</span>
             <span className="text-sm text-phantom-muted uppercase">
-              Phantom Tokens
+              Legacy Credits
             </span>
           </div>
           <p className="text-3xl sm:text-4xl font-mono font-bold text-white">250</p>

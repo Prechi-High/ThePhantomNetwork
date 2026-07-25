@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { publishLiveFeed } from "@/lib/api/rate-limit";
 import { creditCampRevenueShare } from "@/lib/camps/revenue";
 import { captureException } from "@/lib/monitoring/capture";
+import { applyLoadoutToSession } from "@/lib/armory/service";
 
 export async function POST(
   request: Request,
@@ -26,13 +27,20 @@ export async function POST(
       return NextResponse.json({ error: "Session not open for registration" }, { status: 400 });
     }
 
+    const entryFee = session.entry_fee_cents ?? 0;
+    const isFreeEntry = entryFee === 0;
+
     const { data: profile } = await admin
       .from("profiles")
       .select("wallet_balance_cents")
       .eq("id", user!.id)
       .single();
 
-    if (!profile || profile.wallet_balance_cents < session.entry_fee_cents) {
+    if (!profile) {
+      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    }
+
+    if (!isFreeEntry && profile.wallet_balance_cents < entryFee) {
       return NextResponse.json({ error: "Insufficient wallet balance" }, { status: 400 });
     }
 
@@ -47,37 +55,47 @@ export async function POST(
       return NextResponse.json({ error: "Already registered" }, { status: 400 });
     }
 
+    try {
+      await applyLoadoutToSession(user!.id, sessionId);
+    } catch (loadoutErr) {
+      const msg = loadoutErr instanceof Error ? loadoutErr.message : "Loadout required";
+      return NextResponse.json({ error: msg }, { status: 400 });
+    }
+
     const { data: squadMember } = await admin
       .from("squad_members")
       .select("squad_id")
       .eq("user_id", user!.id)
       .single();
 
-    const newBalance = profile.wallet_balance_cents - session.entry_fee_cents;
+    let newBalance = profile.wallet_balance_cents;
 
-    await admin
-      .from("profiles")
-      .update({ wallet_balance_cents: newBalance })
-      .eq("id", user!.id);
+    if (!isFreeEntry) {
+      newBalance = profile.wallet_balance_cents - entryFee;
+      await admin
+        .from("profiles")
+        .update({ wallet_balance_cents: newBalance })
+        .eq("id", user!.id);
 
-    await admin.from("wallet_transactions").insert({
-      user_id: user!.id,
-      type: "entry_fee",
-      amount_cents: -session.entry_fee_cents,
-      balance_after_cents: newBalance,
-      reference_type: "session",
-      reference_id: sessionId,
-    });
+      await admin.from("wallet_transactions").insert({
+        user_id: user!.id,
+        type: "entry_fee",
+        amount_cents: -entryFee,
+        balance_after_cents: newBalance,
+        reference_type: "session",
+        reference_id: sessionId,
+      });
+    }
 
     await admin.from("session_registrations").insert({
       session_id: sessionId,
       user_id: user!.id,
       squad_id: squadMember?.squad_id ?? null,
-      entry_paid_cents: session.entry_fee_cents,
+      entry_paid_cents: entryFee,
     });
 
     const newCount = session.registered_count + 1;
-    const newPool = newCount * session.entry_fee_cents;
+    const newPool = newCount * entryFee;
 
     await admin
       .from("sessions")
@@ -96,7 +114,7 @@ export async function POST(
       { sessionId, userId: user!.id }
     );
 
-    await creditCampRevenueShare(user!.id, sessionId, session.entry_fee_cents);
+    await creditCampRevenueShare(user!.id, sessionId, entryFee);
 
     return NextResponse.json({ success: true, poolCents: newPool });
   } catch (err) {

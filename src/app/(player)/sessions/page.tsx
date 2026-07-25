@@ -7,7 +7,8 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import Image from "next/image";
-import { ChevronLeft, Bell, Calendar, Clock, Users, Coins, Trophy, Filter, ChevronRight } from "lucide-react";
+import { ChevronLeft, Bell, Calendar, Clock, Users, Coins, Trophy, Filter, ChevronRight, Bot } from "lucide-react";
+import { CreatePracticeModal } from "@/components/session/CreatePracticeModal";
 
 
 interface Session {
@@ -25,6 +26,47 @@ interface Session {
   is_featured?: boolean;
   image_url?: string;
   is_user_registered?: boolean;
+  session_type?: string;
+  economy_config?: { ai_bot_count?: number };
+  phase_config?: unknown[];
+}
+
+function PracticeSessionItem({
+  session,
+  onContinue,
+}: {
+  session: Session;
+  onContinue: (sessionId: string) => void;
+}) {
+  const botCount = session.economy_config?.ai_bot_count ?? 0;
+  const phaseCount = Array.isArray(session.phase_config) ? session.phase_config.length : 0;
+
+  return (
+    <Card className="p-4 border border-phantom-gold/20">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <Bot className="w-4 h-4 text-phantom-gold" />
+            <span className="text-xs text-phantom-gold uppercase tracking-widest">AI Practice</span>
+          </div>
+          <h3 className="font-display font-bold text-lg text-white">{session.title}</h3>
+          <div className="flex flex-wrap gap-4 mt-2 text-sm text-phantom-muted">
+            <span>{botCount} bots</span>
+            <span>{phaseCount} phases</span>
+            <Badge variant="purple">{session.status.toUpperCase()}</Badge>
+          </div>
+        </div>
+        {(session.status === "active" || session.status === "open" || session.status === "locked") && (
+          <Button
+            className="shrink-0"
+            onClick={() => onContinue(session.id)}
+          >
+            {session.status === "active" ? "Continue" : "Enter"}
+          </Button>
+        )}
+      </div>
+    </Card>
+  );
 }
 
 function Countdown({ targetDate }: { targetDate: Date }) {
@@ -304,12 +346,31 @@ function HowItWorksStep({
 }
 
 export default function SessionsPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"upcoming" | "live" | "completed">(
     "upcoming"
   );
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [practiceSessions, setPracticeSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [creatingSolo, setCreatingSolo] = useState<string | null>(null);
+  const [showPracticeModal, setShowPracticeModal] = useState(false);
+
+  const createSoloSession = async () => {
+    setCreatingSolo("public");
+    try {
+      const res = await fetch("/api/sessions/solo/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionType: "public", sessionMode: "solo" }),
+      });
+      const data = await res.json();
+      if (data.prepareUrl) router.push(data.prepareUrl);
+    } finally {
+      setCreatingSolo(null);
+    }
+  };
 
   const loadSessions = useCallback(async () => {
     try {
@@ -317,6 +378,7 @@ export default function SessionsPage() {
       const res = await fetch("/api/sessions");
       const d = await res.json();
       setSessions(d.sessions ?? []);
+      setPracticeSessions(d.practiceSessions ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load sessions");
     } finally {
@@ -336,6 +398,15 @@ export default function SessionsPage() {
     } else {
       return session.status === "completed";
     }
+  });
+
+  const filteredPracticeSessions = practiceSessions.filter((session) => {
+    if (activeTab === "upcoming") {
+      return session.status === "open" || session.status === "locked";
+    } else if (activeTab === "live") {
+      return session.status === "active";
+    }
+    return session.status === "completed";
   });
 
   const featuredSession = filteredSessions.find((s) => s.is_featured) || filteredSessions[0];
@@ -410,6 +481,51 @@ export default function SessionsPage() {
           Filter
         </Button>
       </div>
+
+      {/* SOLO SESSION ENTRY */}
+      <Card className="p-6 border border-phantom-gold/30">
+        <h2 className="font-display text-xl font-bold mb-1">Solo Session</h2>
+        <p className="text-sm text-phantom-muted mb-4">
+          Compete individually. Configure AI Practice with full phase rules, or join public solo matchmaking.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <Button onClick={() => setShowPracticeModal(true)}>
+            Create AI Practice
+          </Button>
+          <Button
+            variant="secondary"
+            disabled={!!creatingSolo}
+            onClick={createSoloSession}
+          >
+            {creatingSolo === "public" ? "Creating..." : "Public Solo"}
+          </Button>
+          <Link href="/armory">
+            <Button variant="ghost">Open Armory</Button>
+          </Link>
+        </div>
+      </Card>
+
+      <CreatePracticeModal
+        open={showPracticeModal}
+        onClose={() => setShowPracticeModal(false)}
+        onCreated={(playUrl) => router.push(playUrl)}
+      />
+
+      {/* MY PRACTICE */}
+      {filteredPracticeSessions.length > 0 && (
+        <div className="space-y-4">
+          <p className="text-sm md:text-base font-bold uppercase tracking-widest text-phantom-muted">
+            My Practice
+          </p>
+          {filteredPracticeSessions.map((session) => (
+            <PracticeSessionItem
+              key={session.id}
+              session={session}
+              onContinue={(id) => router.push(`/play/${id}`)}
+            />
+          ))}
+        </div>
+      )}
 
       {/* NEXT UP FEATURED SESSION */}
       {activeTab === "upcoming" && featuredSession && (

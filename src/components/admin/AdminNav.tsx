@@ -31,7 +31,7 @@ export function AdminNav() {
           <Link href="/admin" className="font-display text-lg font-bold text-phantom-gold">
             Admin
           </Link>
-          <p className="text-xs text-phantom-muted">THE PHANTOM Control</p>
+          <p className="text-xs text-phantom-muted">LEGACIES Control</p>
         </div>
         <nav className="flex flex-wrap gap-1">
           {navItems.map((item) => {

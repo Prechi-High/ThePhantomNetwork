@@ -23,6 +23,12 @@ export class EffectsEngine implements EngineInterface {
   private effects: Map<string, ActiveEffect> = new Map();
   private cleanupInterval: NodeJS.Timeout | null = null;
 
+  /** Extended tactical asset types (LEGACIES) */
+  static TACTICAL_TYPES = [
+    "shield", "cloak", "insurance", "boost",
+    "guardian", "veil", "counterstrike", "intercept", "disrupt", "mark",
+  ] as const;
+
   constructor() {
     this.setupListeners();
     this.startCleanupLoop();
@@ -109,7 +115,7 @@ export class EffectsEngine implements EngineInterface {
       payload: {
         effectId: effect.id,
         type: 'shield',
-        message: 'Shield blocked a steal attempt!',
+        message: 'Guardian blocked a steal attempt!',
       },
     });
   }

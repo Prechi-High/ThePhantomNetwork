@@ -9,8 +9,8 @@ const syne = Syne({ subsets: ["latin"], variable: "--font-syne" });
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "THE PHANTOM",
-  description: "A living competitive ecosystem",
+  title: "LEGACIES",
+  description: "Build your Legacy through strategy, rivalry, and triumph",
 };
 
 export default function RootLayout({

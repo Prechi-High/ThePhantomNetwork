@@ -53,6 +53,10 @@ interface StealStoreState {
   fireBoostMax: number;
   isFireBoostActive: boolean;
 
+  // Steal ready (from wheel outcome)
+  stealReady: boolean;
+  stealSaved: boolean;
+
   // Cooldown
   cooldownEndsAt: number | null;
 
@@ -93,6 +97,11 @@ interface StealStoreActions {
   // Rivalry
   addRival: (userId: string, username: string) => void;
 
+  // Steal ready
+  setStealReady: (ready: boolean) => void;
+  saveStealForLater: () => void;
+  useStealNow: () => void;
+
   // Reset
   resetSteal: () => void;
 }
@@ -112,6 +121,8 @@ const INITIAL: StealStoreState = {
   fireBoostMax: 5,
   isFireBoostActive: false,
   cooldownEndsAt: null,
+  stealReady: false,
+  stealSaved: false,
   stealHistory: [],
   recentRivals: [],
 };
@@ -192,6 +203,10 @@ export const useStealStore = create<StealStore>((set, get) => ({
         ...s.recentRivals.filter((r) => r.userId !== userId),
       ].slice(0, 5),
     })),
+
+  setStealReady: (ready) => set({ stealReady: ready }),
+  saveStealForLater: () => set({ stealSaved: true, stealReady: false }),
+  useStealNow: () => set({ stealSaved: false, isPickerOpen: true }),
 
   // ---- Reset ----
 

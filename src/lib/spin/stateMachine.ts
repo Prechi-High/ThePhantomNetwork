@@ -225,7 +225,7 @@ const STATE_RULES: Record<GameplayLifecycleState, TransitionRule> = {
 
   // ---- WHEEL ANIMATION ----
   SPIN_START: {
-    allowedFrom: ['SERVER_VALIDATION'],
+    allowedFrom: ['SERVER_VALIDATION', 'PLAYER_READY', 'NEXT_SPIN_READY', 'SESSION_LOADING', 'ROUND_READY'],
     allowedTo: ['SPIN_ACCELERATION'],
     timeoutMs: SPIN_TIMINGS.IMPULSE_DURATION + 200,
     canInterrupt: false,
@@ -347,7 +347,7 @@ const STATE_RULES: Record<GameplayLifecycleState, TransitionRule> = {
 
   // ---- LOOP ----
   NEXT_SPIN_READY: {
-    allowedFrom: ['POST_EFFECTS', 'ERROR_REVEAL_FAIL'],
+    allowedFrom: ['POST_EFFECTS', 'ERROR_REVEAL_FAIL', 'TOKEN_COLLECTION', 'HUD_UPDATE', 'WORLD_UPDATE', 'OUTCOME_RESOLUTION', 'REVEAL'],
     allowedTo: ['PLAYER_READY', 'ROUND_READY', 'SESSION_ENDED'],
     timeoutMs: null,
     canInterrupt: true,
@@ -731,7 +731,16 @@ export class SpinStateMachine {
   isSpinning(): boolean { return this.machine.isSpinning(); }
   isRevealing(): boolean { return this.machine.isRevealing(); }
   isLocked(): boolean { return this.machine.isLocked(); }
-  canSpin(): boolean { return this.machine.canSpin() || this.legacyState === 'IDLE' || this.legacyState === 'READY'; }
+  canSpin(): boolean {
+    return (
+      this.machine.canSpin() ||
+      this.legacyState === 'IDLE' ||
+      this.legacyState === 'READY' ||
+      this.machine.state === 'SESSION_LOADING' ||
+      this.machine.state === 'NEXT_SPIN_READY' ||
+      this.machine.state === 'ROUND_READY'
+    );
+  }
 
   reset(): void {
     this.legacyState = 'IDLE';

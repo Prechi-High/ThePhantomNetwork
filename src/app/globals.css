@@ -1,6 +1,25 @@
 @import "tailwindcss";
 
 @theme {
+  /* LEGACIES design tokens (legacy-* aliases phantom-* for incremental migration) */
+  --color-legacy-bg: #05050a;
+  --color-legacy-bg-elevated: #0a0a14;
+  --color-legacy-surface: rgba(18, 18, 30, 0.7);
+  --color-legacy-surface-hover: rgba(25, 25, 40, 0.85);
+  --color-legacy-border: rgba(139, 92, 246, 0.3);
+  --color-legacy-border-subtle: rgba(139, 92, 246, 0.2);
+  --color-legacy-gold: #d4a853;
+  --color-legacy-gold-dim: #a67c2a;
+  --color-legacy-gold-glow: rgba(212,168,83,0.4);
+  --color-legacy-purple: #8b5cf6;
+  --color-legacy-purple-bright: #a78bfa;
+  --color-legacy-purple-glow: rgba(139, 92, 246, 0.5);
+  --color-legacy-danger: #ef4444;
+  --color-legacy-danger-glow: rgba(239,68,68,0.4);
+  --color-legacy-success: #10b981;
+  --color-legacy-muted: #64748b;
+  --color-legacy-text: #f1f5f9;
+
   --color-phantom-bg: #05050a;
   --color-phantom-bg-elevated: #0a0a14;
   --color-phantom-surface: rgba(18, 18, 30, 0.7);

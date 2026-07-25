@@ -46,6 +46,27 @@ export type CombatActionType = 'steal' | 'revive';
 
 export type EffectType = 'shield' | 'cloak' | 'insurance' | 'boost';
 
+export type TacticalAssetSlug =
+  | 'guardian'
+  | 'veil'
+  | 'counterstrike'
+  | 'intercept'
+  | 'disrupt'
+  | 'mark';
+
+export type SessionMode = 'squad' | 'solo';
+
+export type SessionType = 'public' | 'friend_duel' | 'private' | 'ai_practice';
+
+export interface TacticalAssetDef {
+  slug: TacticalAssetSlug;
+  displayName: string;
+  description: string;
+  durationMs: number;
+  requiresTarget: boolean;
+  consumable: true;
+}
+
 export type OutcomeCategory = 'positive' | 'neutral' | 'combat' | 'empty';
 
 // ============================================================================
@@ -95,6 +116,8 @@ export interface SessionMeta {
   phaseConfig: PhaseConfig;
   maxPlayers: number;
   entryFeeCents: number;
+  sessionMode?: SessionMode;
+  sessionType?: SessionType;
 }
 
 // ============================================================================
@@ -188,6 +211,7 @@ export interface StealTarget {
   username: string;
   tokens: number;
   reason: string;
+  rank?: number;
 }
 
 export interface ReviveTarget {

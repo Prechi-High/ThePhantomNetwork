@@ -13,8 +13,14 @@ import {
   LEGACY_PHASE_DURATIONS_MS,
 } from "@/lib/gameplay/phase-timing";
 import { publishLiveFeed } from "@/lib/api/rate-limit";
+import {
+  applySessionLoadoutsAtStart,
+  settleSessionLoadouts,
+} from "@/lib/armory/service";
 
 export async function applyInventoryAtSessionStart(sessionId: string) {
+  await applySessionLoadoutsAtStart(sessionId);
+
   const admin = createAdminClient();
 
   const { data: registrations } = await admin
@@ -331,6 +337,15 @@ async function finalizeSubSession(subSessionId: string) {
       teammates,
       rivals: [],
     });
+  }
+
+  const { data: subMeta } = await admin
+    .from("sub_sessions")
+    .select("session_id")
+    .eq("id", subSessionId)
+    .single();
+  if (subMeta?.session_id) {
+    await settleSessionLoadouts(subMeta.session_id);
   }
 }
 

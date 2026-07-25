@@ -101,7 +101,7 @@ export default function OnboardingContent() {
         {error && <p className="text-sm text-phantom-danger">{error}</p>}
 
         <Button onClick={handleComplete} disabled={loading} className="w-full">
-          {loading ? "Entering..." : "Enter THE PHANTOM"}
+          {loading ? "Entering..." : "Enter LEGACIES"}
         </Button>
       </Card>
     </div>

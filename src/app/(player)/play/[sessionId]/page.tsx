@@ -26,11 +26,12 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 // ── Gameplay systems ───────────────────────────────────────────────────────
 
 import { GameplayHUD }           from "@/components/gameplay/hud";
+import { CinematicCountdown }    from "@/components/gameplay/CinematicCountdown";
 import { PhantomNetworkIntro, type NetworkPlayer } from "@/components/gameplay/PhantomNetworkIntro";
 import { HUDStudioProvider }     from "@/components/gameplay/hud-studio";
 
@@ -52,7 +53,7 @@ import { useInventoryUpdates }   from "@/hooks/useInventoryUpdates";
 // ── Types ──────────────────────────────────────────────────────────────────
 
 import type { StealTarget, SpinOutcome } from "@/types/gameplay";
-import { reportClientError } from "@/lib/monitoring/client-report";
+import { StealReadyOverlay } from "@/components/gameplay/StealReadyOverlay";
 
 // ── Gameplay lifecycle ─────────────────────────────────────────────────────
 
@@ -99,6 +100,7 @@ interface GameplayStateResponse {
   networkPlayers?: NetworkPlayer[];
   sessionStatus?: string;
   totalPoolCents?: number;
+  topPlayers?: Array<{ rank: number; username: string; tokens: number; userId?: string }>;
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -107,6 +109,7 @@ interface GameplayStateResponse {
 
 export default function PlayPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
+  const router = useRouter();
 
   // ── Lifecycle state ──────────────────────────────────────────────────────
   const [lifecycle, setLifecycle] = useState<GameplayLifecycle>("created");
@@ -118,9 +121,12 @@ export default function PlayPage() {
   const [totalPoolCents, setTotalPoolCents] = useState<number | null>(null);
   const [playerRank, setPlayerRank]         = useState(0);
   const [totalPlayers, setTotalPlayers]     = useState(0);
+  const [topPlayers, setTopPlayers]         = useState<Array<{ rank: number; username: string; tokens: number; userId?: string }>>([]);
 
   // ── Intro ────────────────────────────────────────────────────────────────
   const [showNetworkIntro, setShowNetworkIntro] = useState(false);
+  const [showCinematicCountdown, setShowCinematicCountdown] = useState(false);
+  const [sessionMode, setSessionMode] = useState<"squad" | "solo">("squad");
   const [introPhase, setIntroPhase]             = useState(0);
   const lastIntroPhaseRef = useRef<number | null>(null);
 
@@ -128,8 +134,12 @@ export default function PlayPage() {
   const pendingSpinRef = useRef<{
     outcome: SpinOutcome;
     tokens: number;
+    tokenDelta: number;
     requiresTargetSelection: boolean;
   } | null>(null);
+
+  // ── Token delta from last spin (for animation) ───────────────────────────
+  const [spinTokenAmount, setSpinTokenAmount] = useState(0);
 
   // ── Store slices (minimal) ───────────────────────────────────────────────
   const {
@@ -146,6 +156,7 @@ export default function PlayPage() {
   const {
     targets, stealInProgress, attackerId, fireBoostTaps,
     setTargets, setStealInProgress, incrementFireBoost, resetFireBoost,
+    setStealReady,
   } = useStealStore();
 
   const [showStealPicker, setShowStealPicker] = useState(false);
@@ -162,7 +173,7 @@ export default function PlayPage() {
   useLiveFeedUpdates(subSessionId);
   useLeaderboardUpdates(subSessionId);
   useEffectsUpdates(currentUserId ?? null, subSessionId);
-  useInventoryUpdates(currentUserId ?? null, subSessionId);
+  useInventoryUpdates(currentUserId ?? null, subSessionId, sessionId);
 
   // ── ③ APPLY SERVER STATE → STORES ───────────────────────────────────────
   const applyState = useCallback((data: GameplayStateResponse) => {
@@ -180,6 +191,7 @@ export default function PlayPage() {
     if (data.networkPlayers)      setNetworkPlayers(data.networkPlayers);
     if (data.sessionStatus)       setSessionStatus(data.sessionStatus);
     if (data.totalPoolCents != null) setTotalPoolCents(data.totalPoolCents);
+    if (data.topPlayers) setTopPlayers(data.topPlayers);
   }, [setPhase, setRound, setPhaseEndsAt, setTokens, setEliminated, setRevivable]);
 
   // ── ④ REFRESH STATE FROM SERVER ─────────────────────────────────────────
@@ -225,6 +237,12 @@ export default function PlayPage() {
   // Step A: fetch sub-session ID from session
   useEffect(() => {
     setLifecycle("connecting");
+    fetch(`/api/sessions/${sessionId}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.session?.session_mode) setSessionMode(d.session.session_mode);
+      })
+      .catch(() => {});
     fetch(`/api/sessions/${sessionId}/my-sub-session`)
       .then((r) => r.json())
       .then((d) => {
@@ -263,7 +281,7 @@ export default function PlayPage() {
       const phase = data?.phase ?? 1;
       if (lastIntroPhaseRef.current === null) {
         setIntroPhase(phase);
-        setShowNetworkIntro(true);
+        setShowCinematicCountdown(true);
         lastIntroPhaseRef.current = phase;
       }
 
@@ -315,7 +333,13 @@ export default function PlayPage() {
       });
       const data = await res.json();
       if (data.outcome) {
-        pendingSpinRef.current = data;
+        // Compute tokenDelta from outcome so animation knows how many tokens to show
+        const tokenDelta = data.tokenDelta ??
+          (data.outcome === "ADVANCE" ? 3 :
+           data.outcome === "ACQUIRE" ? 1 :
+           data.outcome === "DISCOVER" ? 0.5 : 0);
+        pendingSpinRef.current = { ...data, tokenDelta };
+        setSpinTokenAmount(tokenDelta);
         setLastOutcome(data.outcome);
       } else {
         // Server rejected — unlock
@@ -338,12 +362,16 @@ export default function PlayPage() {
   const handleSpinComplete = useCallback(() => {
     setSpinning(false);
     setTimeout(() => setSpinLocked(false), 500);
+    if (pendingSpinRef.current?.outcome === "STEAL") {
+      setStealReady(true);
+    }
     // Hard-sync tokens from server after animation resolves
     if (pendingSpinRef.current?.tokens !== undefined) {
       setTokens(pendingSpinRef.current.tokens);
     }
     pendingSpinRef.current = null;
-  }, [setSpinning, setSpinLocked, setTokens]);
+    setSpinTokenAmount(0);
+  }, [setSpinning, setSpinLocked, setTokens, setStealReady]);
 
   const handleTokensAwarded = useCallback((amount: number) => {
     const current = useGameplayStore.getState().tokens ?? 0;
@@ -422,10 +450,11 @@ export default function PlayPage() {
 
   // ── ⑩ SESSION COMPLETE SCREEN ────────────────────────────────────────────
   if (sessionStatus === "completed") {
+    router.replace(`/sessions/${sessionId}/results`);
     return (
       <div className="fixed inset-0 flex flex-col items-center justify-center gap-4 bg-phantom-bg p-6 text-center">
-        <h2 className="font-display text-2xl font-bold text-phantom-gold">Session Complete</h2>
-        <p className="text-phantom-muted">This session has concluded. Check your profile for results.</p>
+        <h2 className="font-display text-2xl font-bold text-phantom-gold">Legacy Forged</h2>
+        <p className="text-phantom-muted">Loading your legacy record…</p>
       </div>
     );
   }
@@ -439,7 +468,7 @@ export default function PlayPage() {
           style={{ animation: "spin 1s linear infinite" }}
         />
         <p className="text-[11px] font-bold tracking-widest uppercase text-purple-400/60">
-          {lifecycle === "connecting" ? "Connecting..." : "Entering The Phantom Network..."}
+          {lifecycle === "connecting" ? "Connecting..." : "Entering LEGACIES..."}
         </p>
       </div>
     );
@@ -460,7 +489,17 @@ export default function PlayPage() {
   // ── ⑬ MAIN RENDER ────────────────────────────────────────────────────────
   return (
     <>
-      {/* ── Network intro (phase transitions, initial entry) ── */}
+      {/* ── Cinematic countdown (session start) ── */}
+      {showCinematicCountdown && (
+        <CinematicCountdown
+          onComplete={() => {
+            setShowCinematicCountdown(false);
+            setLifecycle("active");
+          }}
+        />
+      )}
+
+      {/* ── Network intro (phase transitions) ── */}
       <PhantomNetworkIntro
         visible={showNetworkIntro}
         players={networkPlayers}
@@ -468,10 +507,12 @@ export default function PlayPage() {
         onComplete={handleIntroComplete}
       />
 
-      {/* ── Gameplay HUD (only shown when intro is complete) ── */}
-      {!showNetworkIntro && (
+      {/* ── Gameplay HUD ── */}
+      {!showNetworkIntro && !showCinematicCountdown && (
         <HUDStudioProvider>
           <GameplayHUD
+            soloMode={sessionMode === "solo"}
+            topPlayers={topPlayers}
             // Session intelligence
             phase={phase || 1}
             totalPhases={6}
@@ -485,6 +526,7 @@ export default function PlayPage() {
             isSpinning={isSpinning}
             spinLocked={spinLocked}
             lastOutcome={lastOutcome}
+            tokenAmount={spinTokenAmount}
             // Derived
             surgePercent={72}
             connectionQuality={
@@ -499,6 +541,7 @@ export default function PlayPage() {
             onTokensAwarded={handleTokensAwarded}
             onStealActivated={handleStealActivated}
           />
+          <StealReadyOverlay />
         </HUDStudioProvider>
       )}
     </>

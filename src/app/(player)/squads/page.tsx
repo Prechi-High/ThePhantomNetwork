@@ -212,7 +212,7 @@ function SquadPage({ squad }: { squad: Record<string, unknown> }) {
         <Card className="p-6 relative">
           <div className="flex items-center gap-3 mb-3">
             <span className="text-phantom-purple text-2xl">💎</span>
-            <span className="text-sm md:text-base text-phantom-muted uppercase">Phantom Tokens</span>
+            <span className="text-sm md:text-base text-phantom-muted uppercase">Legacy Credits</span>
           </div>
           <p className="text-4xl font-mono font-bold text-white">250</p>
           <button className="absolute top-6 right-6 p-3 bg-phantom-purple/20 rounded-xl">

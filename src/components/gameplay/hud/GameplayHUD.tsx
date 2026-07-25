@@ -21,6 +21,7 @@ import { TopHUD } from "./TopHUD";
 import { ShadowSurge } from "./ShadowSurge";
 import { LiveFeed } from "./LiveFeed";
 import { SquadPanel } from "./SquadPanel";
+import { TopPlayersPanel } from "./TopPlayersPanel";
 import { WheelHUD } from "./WheelHUD";
 import { SpinButton } from "./SpinButton";
 import { VoiceWidgetHUD } from "./VoiceWidget";
@@ -71,6 +72,10 @@ interface GameplayHUDProps {
   // Connection
   connectionQuality?: "good" | "degraded" | "poor";
   isSynced?: boolean;
+
+  /** Solo mode — hides squad panel, shows top players */
+  soloMode?: boolean;
+  topPlayers?: { rank: number; username: string; tokens: number; userId?: string }[];
 }
 
 export function GameplayHUD({
@@ -97,6 +102,8 @@ export function GameplayHUD({
   hudPhase = "active",
   connectionQuality = "good",
   isSynced = true,
+  soloMode = false,
+  topPlayers = [],
 }: GameplayHUDProps) {
   const handleSpin = () => {
     if (spinLocked || isSpinning) return;
@@ -172,9 +179,9 @@ export function GameplayHUD({
             recentOutcomes={recentOutcomes}
           />
 
-          {/* Squad Panel — right overlay */}
+          {/* Right overlay — squad or top players */}
           <div className="wheel-overlay-right overlay-panel">
-            <SquadPanel />
+            {soloMode ? <TopPlayersPanel players={topPlayers} /> : <SquadPanel />}
           </div>
         </div>
       </div>

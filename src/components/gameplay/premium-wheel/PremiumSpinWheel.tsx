@@ -33,21 +33,6 @@ interface PremiumSpinWheelProps {
   disabled?: boolean;
 }
 
-/**
- * PremiumSpinWheel — Composition root for the wheel subsystem
- *
- * Connects runtime events → presentation only.
- * No gameplay logic lives here — it all comes from the runtime via props.
- *
- * Animation sequence:
- *   Engage press
- *   → wheel spins (6 s)
- *   → silence pause (0.3 s)
- *   → cinematic reveal (3 s)
- *   → token collection (1 s)
- *   → celebration flourish
- *   → ready
- */
 export function PremiumSpinWheel({
   isSpinning,
   outcome,
@@ -59,34 +44,56 @@ export function PremiumSpinWheel({
   disabled = false,
 }: PremiumSpinWheelProps) {
   const [stateMachine] = useState(() => new SpinStateMachine());
-  const [showReveal, setShowReveal] = useState(false);
-  const [showCard, setShowCard] = useState(false);
-  const [showParticles, setShowParticles] = useState(false);
-  const [showTokens, setShowTokens] = useState(false);
+  const [showReveal, setShowReveal]           = useState(false);
+  const [showCard, setShowCard]               = useState(false);
+  const [showParticles, setShowParticles]     = useState(false);
+  const [showTokens, setShowTokens]           = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
-  const [screenDarken, setScreenDarken] = useState(0);
-  const [processing, setProcessing] = useState(false);
+  const [screenDarken, setScreenDarken]       = useState(0);
+  const [processing, setProcessing]           = useState(false);
 
-  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  // ── Timer management ────────────────────────────────────────────────────
+  // timersRef holds all mid-sequence timers (reveal, particles, tokens…).
+  // completionTimerRef holds ONLY the final "unlock" timer so the reset
+  // useEffect cannot accidentally cancel it (Fix 3).
+  const timersRef        = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const completionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const clearTimers = () => {
+  // Stable ref to latest onSpinComplete so closures never go stale (Fix 4).
+  const onSpinCompleteRef = useRef(onSpinComplete);
+  useEffect(() => { onSpinCompleteRef.current = onSpinComplete; }, [onSpinComplete]);
+
+  // Stable ref to latest tokenAmount for use inside handleAnimateStart closure.
+  const tokenAmountRef = useRef(tokenAmount);
+  useEffect(() => { tokenAmountRef.current = tokenAmount; }, [tokenAmount]);
+
+  // Stable ref to latest outcome for handleCardShow.
+  const outcomeRef = useRef(outcome);
+  useEffect(() => { outcomeRef.current = outcome; }, [outcome]);
+
+  const clearTimers = useCallback(() => {
     timersRef.current.forEach(clearTimeout);
     timersRef.current = [];
-  };
+  }, []);
 
-  const schedule = (fn: () => void, ms: number) => {
-    timersRef.current.push(setTimeout(fn, ms));
-  };
+  const schedule = useCallback((fn: () => void, ms: number) => {
+    const t = setTimeout(fn, ms);
+    timersRef.current.push(t);
+    return t;
+  }, []);
 
-  // Cleanup on unmount
+  // ── Cleanup on unmount ────────────────────────────────────────────────────
   useEffect(() => {
     return () => {
       clearTimers();
+      if (completionTimerRef.current) clearTimeout(completionTimerRef.current);
       spinAudio.stopAll();
     };
-  }, []);
+  }, [clearTimers]);
 
-  // Reset when idle
+  // ── Reset when idle ───────────────────────────────────────────────────────
+  // Only runs when BOTH isSpinning and processing are false.
+  // Does NOT cancel completionTimerRef — that fires independently (Fix 3).
   useEffect(() => {
     if (!isSpinning && !processing) {
       clearTimers();
@@ -101,74 +108,30 @@ export function PremiumSpinWheel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSpinning, processing]);
 
-  // Launch sequence when spin + outcome both arrive
+  // ── Launch when spin + outcome arrive ─────────────────────────────────────
   useEffect(() => {
-    if (isSpinning && outcome && !processing && stateMachine.canSpin()) {
-      setProcessing(true);
+    if (!isSpinning || !outcome || processing) return;
+    if (!stateMachine.canSpin()) return;
+
+    setProcessing(true);
+
+    // FIX 5: surface the transition result and log if blocked
+    const transitioned = stateMachine.transition("START_SPIN");
+    if (!transitioned) {
+      console.warn(
+        "[PremiumSpinWheel] stateMachine.transition('START_SPIN') was blocked." +
+        " Current state:", stateMachine.getCurrentState(),
+        "— forcing via reset."
+      );
+      stateMachine.reset();          // reset to IDLE
       stateMachine.transition("START_SPIN");
-      setScreenDarken(0.3);
     }
+
+    setScreenDarken(0.3);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSpinning, outcome]);
 
-  // ---- Wheel stop callback ----
-  const handleWheelStop = useCallback(() => {
-    stateMachine.transition("SPIN_COMPLETE");
-    setScreenDarken(0);
-
-    // Brief silence before reveal
-    schedule(() => {
-      stateMachine.transition("REVEAL_BEGIN");
-      setShowReveal(true);
-    }, REVEAL_TIMINGS.SUSPENSE_PAUSE);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stateMachine]);
-
-  // ---- Card visible callback ----
-  const handleCardShow = useCallback(() => {
-    stateMachine.transition("REVEAL_COMPLETE");
-    setShowCard(true);
-    if (outcome) spinAudio.playOutcome(outcome);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stateMachine, outcome]);
-
-  // ---- Animations + particles start ----
-  const handleAnimateStart = useCallback(async () => {
-    setShowParticles(true);
-    if (!outcome) return;
-
-    // Delay before next phase
-    const SETTLE = 600;
-
-    if (outcome === "STEAL") {
-      schedule(() => {
-        onStealActivated?.();
-        schedule(finishSpin, 800);
-      }, SETTLE + 600);
-    } else if (tokenAmount > 0) {
-      schedule(() => {
-        setShowTokens(true);
-      }, SETTLE);
-    } else {
-      // VOID — no tokens, just finish
-      schedule(finishSpin, SETTLE + TOKEN_TIMINGS.TOKEN_FLY_DURATION);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [outcome, tokenAmount]);
-
-  // ---- Token collection complete ----
-  const handleTokensComplete = useCallback(() => {
-    setShowTokens(false);
-    // Brief celebration beat
-    setShowCelebration(true);
-    schedule(() => {
-      setShowCelebration(false);
-      finishSpin();
-    }, 1200);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // ---- Finish ----
+  // ── finishSpin — FIX 3: uses completionTimerRef, not timersRef ──────────
   const finishSpin = useCallback(() => {
     clearTimers();
     setShowReveal(false);
@@ -176,29 +139,77 @@ export function PremiumSpinWheel({
     setShowParticles(false);
     setScreenDarken(0);
     stateMachine.transition("COOLDOWN_END");
-    schedule(() => {
-      setProcessing(false);
-      onSpinComplete();
-    }, SPIN_TIMINGS.SPIN_COOLDOWN);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stateMachine, onSpinComplete]);
 
-  // ---- Environment lighting while revealing ----
-  const revealLighting =
-    showCard && outcome
-      ? {
-          background: `radial-gradient(circle, ${"STEAL" === outcome
-            ? "rgba(239,68,68,0.35)"
-            : "VOID" === outcome
-            ? "rgba(0,0,0,0.3)"
-            : `${import_glow(outcome)}`} 0%, rgba(8,4,21,0.85) 80%)`,
-          zIndex: 38,
-        }
-      : null;
+    // Use dedicated ref so reset useEffect can't kill this timer
+    if (completionTimerRef.current) clearTimeout(completionTimerRef.current);
+    completionTimerRef.current = setTimeout(() => {
+      completionTimerRef.current = null;
+      setProcessing(false);
+      onSpinCompleteRef.current();   // always latest callback (Fix 4)
+    }, SPIN_TIMINGS.SPIN_COOLDOWN);
+  }, [clearTimers, stateMachine]);
+
+  // ── Wheel stop callback ───────────────────────────────────────────────────
+  const handleWheelStop = useCallback(() => {
+    stateMachine.transition("SPIN_COMPLETE");
+    setScreenDarken(0);
+
+    schedule(() => {
+      stateMachine.transition("REVEAL_BEGIN");
+      setShowReveal(true);
+    }, REVEAL_TIMINGS.SUSPENSE_PAUSE);
+  }, [stateMachine, schedule]);
+
+  // ── Card visible callback ─────────────────────────────────────────────────
+  const handleCardShow = useCallback(() => {
+    stateMachine.transition("REVEAL_COMPLETE");
+    setShowCard(true);
+    if (outcomeRef.current) spinAudio.playOutcome(outcomeRef.current);
+  }, [stateMachine]);
+
+  // ── Animations + particles start — FIX 4: reads refs, no stale deps ──────
+  const handleAnimateStart = useCallback(() => {
+    setShowParticles(true);
+    const currentOutcome   = outcomeRef.current;
+    const currentTokenAmt  = tokenAmountRef.current;
+    if (!currentOutcome) return;
+
+    const SETTLE = 600;
+
+    if (currentOutcome === "STEAL") {
+      schedule(() => {
+        onStealActivated?.();
+        schedule(finishSpin, 800);
+      }, SETTLE + 600);
+    } else if (currentTokenAmt > 0) {
+      schedule(() => setShowTokens(true), SETTLE);
+    } else {
+      // VOID — no tokens
+      schedule(finishSpin, SETTLE + TOKEN_TIMINGS.TOKEN_FLY_DURATION);
+    }
+  }, [schedule, finishSpin, onStealActivated]);
+
+  // ── Token collection complete ─────────────────────────────────────────────
+  const handleTokensComplete = useCallback(() => {
+    setShowTokens(false);
+    setShowCelebration(true);
+    schedule(() => {
+      setShowCelebration(false);
+      finishSpin();
+    }, 1200);
+  }, [schedule, finishSpin]);
+
+  // ── Environment lighting ──────────────────────────────────────────────────
+  const revealLighting = showCard && outcome
+    ? {
+        background: `radial-gradient(circle, ${glowForOutcome(outcome)} 0%, rgba(8,4,21,0.85) 80%)`,
+        zIndex: 38,
+      }
+    : null;
 
   return (
     <div className="relative w-full h-full">
-      {/* Cinematic screen darkening */}
+      {/* Screen darken */}
       <AnimatePresence>
         {screenDarken > 0 && (
           <motion.div
@@ -226,7 +237,7 @@ export function PremiumSpinWheel({
         )}
       </AnimatePresence>
 
-      {/* Wheel */}
+      {/* Wheel — scale up slightly during processing */}
       <motion.div
         animate={{ scale: processing ? 1.04 : 1 }}
         transition={{ duration: 0.3 }}
@@ -239,7 +250,7 @@ export function PremiumSpinWheel({
         />
       </motion.div>
 
-      {/* Cinematic reveal sequence */}
+      {/* Cinematic reveal */}
       {outcome && (
         <RevealSequence
           outcome={outcome}
@@ -286,17 +297,17 @@ export function PremiumSpinWheel({
 // Re-export alias
 export { PremiumSpinWheel as SpinWheel };
 
-// ---- Helper: glow colour by outcome ----
-function import_glow(outcome: SpinOutcome): string {
-  const glows: Record<SpinOutcome, string> = {
-    ADVANCE: "rgba(255,215,0,0.35)",
-    ACQUIRE: "rgba(16,185,129,0.3)",
+// ── Glow colour helper ───────────────────────────────────────────────────────
+function glowForOutcome(outcome: SpinOutcome): string {
+  const map: Record<SpinOutcome, string> = {
+    ADVANCE:  "rgba(255,215,0,0.35)",
+    ACQUIRE:  "rgba(16,185,129,0.3)",
     DISCOVER: "rgba(59,130,246,0.3)",
-    STEAL: "rgba(239,68,68,0.35)",
-    VOID: "rgba(107,114,128,0.15)",
+    STEAL:    "rgba(239,68,68,0.35)",
+    VOID:     "rgba(107,114,128,0.15)",
   };
-  return glows[outcome] ?? "rgba(139,92,246,0.25)";
+  return map[outcome] ?? "rgba(139,92,246,0.25)";
 }
 
-// ---- Expose ButtonAnimator for external use ----
+// ── Expose ButtonAnimator ────────────────────────────────────────────────────
 export { ButtonAnimator };

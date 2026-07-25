@@ -159,7 +159,7 @@ export default function HomePage() {
           <div>
             <p className="text-xs text-phantom-muted uppercase tracking-widest mb-1">Welcome to</p>
             <h1 className="text-3xl md:text-4xl font-display font-bold text-white neon-text">
-              THE PHANTOM
+              LEGACIES
             </h1>
             <p className="text-sm md:text-base text-phantom-muted italic mt-1">Shadow in. Rise above.</p>
           </div>
@@ -177,7 +177,7 @@ export default function HomePage() {
           </div>
           {/* PHANTOM TOKENS CARD */}
           <div className="glass rounded-xl px-4 py-3 flex flex-col items-end flex-1 lg:flex-none min-w-[160px]">
-            <p className="text-[10px] text-phantom-muted uppercase mb-1">Phantom Tokens</p>
+            <p className="text-[10px] text-phantom-muted uppercase mb-1">Legacy Credits</p>
             <div className="flex items-center gap-2">
               <span className="text-phantom-purple font-bold text-xl">💎</span>
               <span className="text-2xl font-bold text-white">250</span>

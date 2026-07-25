@@ -50,6 +50,18 @@ export async function GET(request: Request) {
   const advanced = await checkAndAdvanceDuePhases();
   const forceCompleted = await forceCompleteStaleSessions();
 
+  const { data: activeSubs } = await admin
+    .from("sub_sessions")
+    .select("id, sessions(session_type)")
+    .eq("status", "active");
+
+  for (const sub of activeSubs ?? []) {
+    const sessionType = (sub.sessions as { session_type?: string })?.session_type;
+    if (sessionType === "ai_practice") {
+      await runBotSpinTick(sub.id);
+    }
+  }
+
   const { data: activeSessions } = await admin
     .from("sessions")
     .select("id")
