@@ -3,26 +3,14 @@
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
-/** Omit drag/animation handlers that conflict with framer-motion's motion.div typings */
-type CardDivProps = Omit<
-  React.HTMLAttributes<HTMLDivElement>,
-  "onDrag" | "onDragStart" | "onDragEnd" | "onAnimationStart"
->;
-
-interface CardProps extends CardDivProps {
+interface CardProps {
   children: React.ReactNode;
   className?: string;
   glow?: boolean;
   hoverable?: boolean;
 }
 
-export function Card({
-  children,
-  className,
-  glow,
-  hoverable = false,
-  ...rest
-}: CardProps) {
+export function Card({ children, className, glow, hoverable = false }: CardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -35,7 +23,6 @@ export function Card({
         hoverable && "hover:shadow-[var(--shadow-glow-purple)]",
         className
       )}
-      {...rest}
     >
       {children}
     </motion.div>
