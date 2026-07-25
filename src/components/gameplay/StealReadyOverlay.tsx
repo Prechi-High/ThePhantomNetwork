@@ -6,7 +6,12 @@ import { useStealStore } from "@/stores/useStealStore";
 
 /** Steal Ready overlay — Use Now / Save for Later */
 export function StealReadyOverlay() {
-  const { stealReady, stealSaved, setStealReady, saveStealForLater, useStealNow } = useStealStore();
+  const { stealReady, stealSaved, setStealReady, saveStealForLater, activateStealNow } = useStealStore();
+
+  const handleUseSavedSteal = () => {
+    setStealReady(true);
+    activateStealNow();
+  };
 
   const visible = stealReady || stealSaved;
 
@@ -29,14 +34,14 @@ export function StealReadyOverlay() {
             <p className="text-sm text-phantom-muted">Steal saved — tap when ready</p>
           ) : (
             <div className="flex gap-3">
-              <Button size="sm" onClick={useStealNow}>Use Now</Button>
+              <Button size="sm" onClick={activateStealNow}>Use Now</Button>
               <Button size="sm" variant="secondary" onClick={saveStealForLater}>
                 Save for Later
               </Button>
             </div>
           )}
           {stealSaved && (
-            <Button size="sm" onClick={() => { setStealReady(true); useStealNow(); }}>
+            <Button size="sm" onClick={handleUseSavedSteal}>
               Use Steal
             </Button>
           )}

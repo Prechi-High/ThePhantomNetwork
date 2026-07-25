@@ -5,7 +5,7 @@ import { REGISTRATION_LOCK_MINUTES } from "@/types/gameplay";
 import type { SessionMode, SessionType } from "@/types/gameplay";
 
 export async function POST(request: Request) {
-  const { user, error } = await requireAuth();
+  const { error } = await requireAuth();
   if (error) return error;
 
   const body = await request.json();

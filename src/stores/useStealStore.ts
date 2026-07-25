@@ -100,7 +100,7 @@ interface StealStoreActions {
   // Steal ready
   setStealReady: (ready: boolean) => void;
   saveStealForLater: () => void;
-  useStealNow: () => void;
+  activateStealNow: () => void;
 
   // Reset
   resetSteal: () => void;
@@ -206,7 +206,7 @@ export const useStealStore = create<StealStore>((set, get) => ({
 
   setStealReady: (ready) => set({ stealReady: ready }),
   saveStealForLater: () => set({ stealSaved: true, stealReady: false }),
-  useStealNow: () => set({ stealSaved: false, isPickerOpen: true }),
+  activateStealNow: () => set({ stealSaved: false, isPickerOpen: true }),
 
   // ---- Reset ----
 
