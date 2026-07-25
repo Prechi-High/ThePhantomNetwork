@@ -107,17 +107,18 @@ export async function getUserLoadouts(userId: string): Promise<Loadout[]> {
     .eq("user_id", userId)
     .order("created_at");
 
-  if (!loadouts?.length) {
+  let loadoutRows = loadouts ?? [];
+  if (!loadoutRows.length) {
     const { data: created } = await admin
       .from("player_loadouts")
       .insert({ user_id: userId, name: "Default", is_active: true })
       .select("id, name, is_active")
       .single();
-    if (created) loadouts.push(created);
+    if (created) loadoutRows = [created];
   }
 
   const result: Loadout[] = [];
-  for (const lo of loadouts ?? []) {
+  for (const lo of loadoutRows) {
     const { data: items } = await admin
       .from("loadout_items")
       .select("asset_slug, quantity")
