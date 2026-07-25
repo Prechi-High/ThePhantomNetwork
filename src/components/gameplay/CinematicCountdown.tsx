@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface CinematicCountdownProps {
@@ -12,17 +12,19 @@ const STEPS = ["5", "4", "3", "2", "1", "GO"] as const;
 export function CinematicCountdown({ onComplete }: CinematicCountdownProps) {
   const [step, setStep] = useState(0);
   const [done, setDone] = useState(false);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   useEffect(() => {
     if (step >= STEPS.length) {
       setDone(true);
-      const t = setTimeout(onComplete, 600);
+      const t = setTimeout(() => onCompleteRef.current(), 600);
       return () => clearTimeout(t);
     }
     const delay = step === STEPS.length - 1 ? 800 : 900;
     const t = setTimeout(() => setStep((s) => s + 1), delay);
     return () => clearTimeout(t);
-  }, [step, onComplete]);
+  }, [step]);
 
   if (done) return null;
 

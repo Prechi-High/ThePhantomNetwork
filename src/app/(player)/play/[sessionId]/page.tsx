@@ -300,6 +300,11 @@ export default function PlayPage() {
     setLifecycle("active");
   }, []);
 
+  const handleCinematicCountdownComplete = useCallback(() => {
+    setShowCinematicCountdown(false);
+    setLifecycle("active");
+  }, []);
+
   // ── ⑦ ADAPTIVE POLLING (urgent near phase end) ──────────────────────────
   useEffect(() => {
     if (!subSessionId || lifecycle !== "active") return;
@@ -492,12 +497,7 @@ export default function PlayPage() {
     <>
       {/* ── Cinematic countdown (session start) ── */}
       {showCinematicCountdown && (
-        <CinematicCountdown
-          onComplete={() => {
-            setShowCinematicCountdown(false);
-            setLifecycle("active");
-          }}
-        />
+        <CinematicCountdown onComplete={handleCinematicCountdownComplete} />
       )}
 
       {/* ── Network intro (phase transitions) ── */}
