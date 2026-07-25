@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSessionStore } from "@/stores/useSessionStore";
 import { useLiveFeedStore, type FeedEvent } from "@/stores/useLiveFeedStore";
+import { useLiveFeedUpdates } from "@/hooks/useLiveFeedUpdates";
 import { getAssetDisplayName } from "@/lib/brand/terminology";
 
 interface EventStyle {
