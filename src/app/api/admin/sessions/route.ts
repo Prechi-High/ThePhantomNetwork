@@ -10,7 +10,6 @@ import type { PhaseConfig } from "@/types/gameplay";
 import { requireAdmin, verifyAdminOrCron } from "@/lib/api/role-helpers";
 import { publishSessionStatus } from "@/lib/gameplay/realtime-events";
 import { initBotsInSubSession } from "@/lib/gameplay/ai-players";
-import { runBotSpinTick } from "@/lib/gameplay/ai-players";
 
 export async function GET() {
   const { error } = await requireAdmin();
