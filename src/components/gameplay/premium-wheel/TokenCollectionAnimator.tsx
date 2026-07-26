@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import type { SpinOutcome } from "@/types/gameplay";
 import { TOKEN_TIMINGS, OUTCOME_CONFIG, EASING } from "@/config/spinConfig";
 import { Z } from "./config";
-import { spinAudio } from "./SpinAudioController";
+import { interactionController } from "@/lib/motion/InteractionController";
 
 interface TokenCollectionAnimatorProps {
   outcome: SpinOutcome;
@@ -120,7 +120,7 @@ export function TokenCollectionAnimator({
   }, [outcome, tokenAmount, count]);
 
   const handleLanded = (amount: number) => {
-    spinAudio.playTokenTick();
+    interactionController.playEffect("token_collected");
     onTokenArrived?.(amount);
     landedRef.current += 1;
     if (landedRef.current >= count && !completeCalledRef.current) {

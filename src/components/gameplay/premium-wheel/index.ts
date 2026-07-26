@@ -14,7 +14,8 @@
  * Secondary API (for custom embedding):
  *   <SpinAnimator />     — wheel visual only, no orchestration
  *   <OutcomeCard />      — outcome reveal card
- *   spinAudio            — audio controller singleton
+ *
+ * Motion FX — use @/lib/motion interactionController
  *
  * Configuration (for tuning without touching components):
  *   getTargetAngle()     — used by the server API route
@@ -35,10 +36,6 @@ export { OutcomeCard }              from "./OutcomeCard";
 export { TokenCollectionAnimator }  from "./TokenCollectionAnimator";
 export { ParticleController }       from "./ParticleController";
 export { OutcomeCelebration }       from "./OutcomeCelebration";
-
-// ── Audio controller (singleton) ──────────────────────────────────────────
-
-export { spinAudio } from "./SpinAudioController";
 
 // ── Geometry helpers (used by API route + tests) ──────────────────────────
 

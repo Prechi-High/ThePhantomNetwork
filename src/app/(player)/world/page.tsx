@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import BottomNav from "@/components/ui/BottomNav";
+import { ScreenAmbience } from "@/components/motion/ScreenAmbience";
 import {
   ChevronLeft,
   Trophy,
@@ -167,7 +168,8 @@ export default function WorldPage() {
   }, []);
 
   return (
-    <div className="space-y-8 pb-24">
+    <div className="space-y-8 pb-24 relative">
+      <ScreenAmbience screen="leaderboard" />
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Link href="/home" className="p-3 rounded-full hover:bg-phantom-surface transition-colors">

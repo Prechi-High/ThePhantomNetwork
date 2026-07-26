@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
+import { ScreenAmbience } from "@/components/motion/ScreenAmbience";
 
 export default function CampsPage() {
   const [camps, setCamps] = useState<Record<string, unknown>[]>([]);
@@ -14,7 +15,8 @@ export default function CampsPage() {
   }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      <ScreenAmbience screen="camp" />
       <h1 className="font-display text-2xl font-bold">Camps</h1>
       <div className="space-y-3">
         {camps.map((camp) => (

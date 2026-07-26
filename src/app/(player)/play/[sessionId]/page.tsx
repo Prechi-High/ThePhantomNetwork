@@ -51,6 +51,7 @@ import { reportClientError }     from "@/lib/monitoring/client-report";
 
 import type { StealTarget, SpinOutcome } from "@/types/gameplay";
 import { StealTargetPicker } from "@/components/gameplay/StealTargetPicker";
+import { interactionController } from "@/lib/motion/InteractionController";
 
 // ── Gameplay lifecycle ─────────────────────────────────────────────────────
 
@@ -130,6 +131,11 @@ export default function PlayPage() {
   const [showCinematicCountdown, setShowCinematicCountdown] = useState(false);
   const [sessionMode, setSessionMode] = useState<"squad" | "solo">("squad");
   const lastKnownPhaseRef = useRef<number>(1);
+
+  useEffect(() => {
+    interactionController.setScreen("play");
+    interactionController.startArenaAmbience();
+  }, []);
   const lastAdvanceAttemptRef = useRef<number | null>(null);
   const advanceInFlightRef = useRef(false);
   const phaseTimerAnchorRef = useRef<{ phase: number; endsAt: number } | null>(null);

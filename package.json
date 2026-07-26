@@ -8,17 +8,22 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "fetch-audio": "node scripts/fetch-kenney-audio.mjs"
   },
   "dependencies": {
-    "@rive-app/react-canvas": "^4.30.0",
+    "@gsap/react": "^2.1.2",
     "@stripe/react-stripe-js": "^6.6.0",
     "@stripe/stripe-js": "^9.8.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.8",
+    "@tsparticles/react": "^4.3.2",
+    "@tsparticles/slim": "^4.3.2",
     "@upstash/redis": "^1.38.0",
     "date-fns": "^4.4.0",
     "framer-motion": "^12.12.1",
+    "gsap": "^3.15.0",
+    "howler": "^2.2.4",
     "lucide-react": "^1.22.0",
     "next": "^15.3.3",
     "react": "^19.1.0",
@@ -29,6 +34,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@tailwindcss/postcss": "^4.1.8",
+    "@types/howler": "^2.2.13",
     "@types/node": "^22.15.21",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.5",

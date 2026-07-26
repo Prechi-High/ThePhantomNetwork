@@ -21,6 +21,7 @@ import { useServerTime } from "@/hooks/useServerTime";
 import { PremiumSpinWheel } from "@/components/gameplay/premium-wheel";
 import { TargetSelectionModal } from "@/components/gameplay/TargetSelectionModal";
 import { AnimatedTokenCounter } from "@/components/gameplay/hud/AnimatedTokenCounter";
+import { interactionController } from "@/lib/motion/InteractionController";
 import { getAssetDisplayName } from "@/lib/brand/terminology";
 import { TACTICAL_ASSET_DEFS } from "@/lib/armory/tactical-assets";
 import "./arena-hud.css";
@@ -207,6 +208,12 @@ export function GameplayHUD({
     setCounterReceiving(true);
     onTokensAwarded?.(amount);
   }, [onTokensAwarded]);
+
+  const handleSpinPress = useCallback(() => {
+    if (isSpinning || spinLocked) return;
+    interactionController.playEffect("ui_button_press");
+    onSpin?.();
+  }, [isSpinning, spinLocked, onSpin]);
 
   const activateAsset = useCallback(
     async (assetSlug: TacticalAssetSlug, targetId?: string) => {
@@ -602,7 +609,7 @@ export function GameplayHUD({
             type="button"
             className="arena-spin-btn"
             disabled={isSpinning || spinLocked}
-            onClick={() => { if (!isSpinning && !spinLocked) onSpin?.(); }}
+            onClick={handleSpinPress}
           >
             <span className="arena-spin-btn__label">{isSpinning ? "…" : "SPIN"}</span>
             <span className="arena-spin-btn__sub">HOLD FOR AUTO</span>

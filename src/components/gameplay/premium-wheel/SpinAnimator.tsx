@@ -5,7 +5,8 @@ import { motion, useAnimation } from "framer-motion";
 import type { SpinOutcome } from "@/types/gameplay";
 import { WHEEL_CONFIG, SPIN_TIMINGS, EASING } from "@/config/spinConfig";
 import { getTargetRotation, getTickInterval, Z } from "./config";
-import { spinAudio } from "./SpinAudioController";
+import { interactionController } from "@/lib/motion/InteractionController";
+import gsap from "gsap";
 
 interface SpinAnimatorProps {
   isSpinning: boolean;
@@ -224,7 +225,23 @@ export function SpinAnimator({ isSpinning, outcome, onSpinComplete }: SpinAnimat
     const spinDuration  = SPIN_TIMINGS.SPIN_DURATION;
     const startTime     = Date.now();
 
-    spinAudio.playSpinStart();
+    interactionController.playEffect("spin_request");
+    interactionController.playEffect("spin_acceleration");
+
+    const wheelEl = document.querySelector("[data-wheel-rotor]");
+    if (wheelEl) {
+      gsap.fromTo(
+        wheelEl,
+        { filter: "brightness(1)" },
+        {
+          filter: "brightness(1.4)",
+          duration: spinDuration / 1000 * 0.7,
+          ease: "power2.in",
+          yoyo: true,
+          repeat: 1,
+        }
+      );
+    }
 
     // Pointer wiggle
     pointerControls.start({
@@ -236,12 +253,15 @@ export function SpinAnimator({ isSpinning, outcome, onSpinComplete }: SpinAnimat
     const scheduleTick = () => {
       const elapsed = Date.now() - startTime;
       if (elapsed >= spinDuration) return;
-      spinAudio.playPointerTick();
+      interactionController.playSound("needle_tick");
+      const progress = elapsed / spinDuration;
+      const speedRatio = 0.6 + progress * 1.2;
+      interactionController.setPlaybackRate("spin_loop", speedRatio);
       tickTimerRef.current = setTimeout(scheduleTick, getTickInterval(elapsed, spinDuration));
     };
     tickTimerRef.current = setTimeout(scheduleTick, 100);
 
-    const brakeTimer = setTimeout(() => spinAudio.playSpinSlowdown(), SPIN_TIMINGS.SLOWDOWN_START);
+    const brakeTimer = setTimeout(() => interactionController.playEffect("spin_brake"), SPIN_TIMINGS.SLOWDOWN_START);
 
     wheelControls
       .start({
@@ -258,7 +278,8 @@ export function SpinAnimator({ isSpinning, outcome, onSpinComplete }: SpinAnimat
       })
       .then(() => {
         if (tickTimerRef.current) clearTimeout(tickTimerRef.current);
-        spinAudio.playSpinStop();
+        interactionController.playEffect("spin_lock");
+        interactionController.setPlaybackRate("spin_loop", 0.5);
         pointerControls.start({
           rotate: [0, -15, 7, -3, 1, 0],
           transition: { duration: 0.45, ease: "easeOut" },
@@ -313,6 +334,7 @@ export function SpinAnimator({ isSpinning, outcome, onSpinComplete }: SpinAnimat
 
       {/* ── Rotating wheel body ── */}
       <motion.div
+        data-wheel-rotor
         animate={wheelControls}
         initial={{ rotate: 0 }}
         className="absolute inset-0 rounded-full overflow-hidden"

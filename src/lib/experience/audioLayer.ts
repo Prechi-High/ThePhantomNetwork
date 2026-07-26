@@ -1,7 +1,5 @@
 /**
  * Audio Layer Architecture — Layered Gameplay Audio
- *
- * All audio is organized by layer — not by component.
  * Nothing plays independently. Everything mixed through one controller.
  *
  * Layers (mixed simultaneously):
@@ -16,6 +14,8 @@
  *
  * Dynamic music — intensity changes with gameplay state.
  */
+
+import { audioManager } from "@/lib/motion/AudioManager";
 
 export type AudioLayer =
   | "ambient"
@@ -119,6 +119,10 @@ export class AudioLayerController {
 
   // ── Playback ──────────────────────────────────────────────────────────────
   play(cueId: string, overrideVolume?: number): void {
+    if (audioManager.isInitialized()) {
+      audioManager.play(cueId, overrideVolume);
+      return;
+    }
     if (this.muted || !this.initialized) return;
     const cue = AUDIO_CUES[cueId];
     if (!cue) { console.warn(`[AudioLayer] Unknown cue: ${cueId}`); return; }

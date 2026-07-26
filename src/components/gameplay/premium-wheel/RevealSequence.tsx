@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { SpinOutcome } from "@/types/gameplay";
 import { REVEAL_TIMINGS, OUTCOME_CONFIG, CAMERA_FX } from "@/config/spinConfig";
-import { spinAudio } from "./SpinAudioController";
+import { interactionController } from "@/lib/motion/InteractionController";
 
 type RevealPhase = "idle" | "silence" | "energy" | "burst" | "flash" | "card";
 
@@ -48,10 +48,13 @@ export function RevealSequence({ outcome, active, onCardShow, onAnimateStart }: 
 
     // t=0 — silence, play pre-reveal stinger
     setPhase("silence");
-    spinAudio.playRevealBurst();
+    interactionController.playEffect("reveal_start");
 
     schedule(() => setPhase("energy"),  REVEAL_TIMINGS.ENERGY_FORMATION_START);
-    schedule(() => setPhase("burst"),   REVEAL_TIMINGS.LIGHT_BURST_START);
+    schedule(() => {
+      setPhase("burst");
+      interactionController.playEffect(outcome.toLowerCase());
+    }, REVEAL_TIMINGS.LIGHT_BURST_START);
     schedule(() => {
       setPhase("flash");
       applyCameraShake(cfg.cameraShake);

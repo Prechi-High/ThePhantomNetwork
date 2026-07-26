@@ -33,12 +33,13 @@ import { cameraSystem, type CameraReaction }          from "./cameraSystem";
 import { lightingEngine, type LightingState }         from "./lightingEngine";
 import { particleOrchestrator }                       from "./particleOrchestrator";
 import { audioLayerController, type MusicIntensity }  from "./audioLayer";
+import { audioManager } from "@/lib/motion/AudioManager";
+import { interactionController } from "@/lib/motion/InteractionController";
 import { screenFX, type ScreenFXType }                from "./screenFX";
 import { haptics, GAMEPLAY_HAPTICS }                  from "./haptics";
 import { qualityManager }                             from "./qualityManager";
 import { getMotionPreset, type GameplayEventMotion }  from "./motionLanguage";
 import { gameplayEvents }                             from "@/lib/gameplay/events";
-import type { SpinOutcome }                           from "@/types/gameplay";
 
 // ── Experience definition ──────────────────────────────────────────────────
 
@@ -320,7 +321,13 @@ export class ExperienceEngineClass {
 
   trigger(experienceId: string, _context?: Record<string, unknown>): void {
     const def = EXPERIENCES[experienceId];
-    if (!def) return;
+    if (!def) {
+      interactionController.triggerExperience(experienceId);
+      return;
+    }
+
+    // Cinematic audio + animation states (synced via AudioStateMachine)
+    interactionController.triggerExperience(experienceId);
 
     const quality = qualityManager.getProfile();
 
@@ -353,13 +360,8 @@ export class ExperienceEngineClass {
       particleOrchestrator.emitGroup(def.particles);
     }
 
-    // Audio
-    if (def.audio) {
-      def.audio.forEach((cueId) => audioLayerController.play(cueId));
-    }
-    if (def.stopAudio) {
-      def.stopAudio.forEach((cueId) => audioLayerController.stop(cueId, 200));
-    }
+    // Audio — handled by AnimationController / AudioStateMachine
+    // (legacy def.audio kept for reference; cinematic registry owns playback)
 
     // Screen FX
     if (def.screenFx && def.screenFx !== "none" && quality.screenFxEnabled) {
@@ -395,30 +397,36 @@ export class ExperienceEngineClass {
     on("TOKEN_COLLECTION_COMPLETED", () => this.trigger("tokens_complete"));
     on("STEAL_ACTIVATED",         () => this.trigger("steal_executed"));
     on("EFFECT_TRIGGERED",        () => this.trigger("shield_triggered"));
+    on("EFFECT_APPLIED", (event) => {
+      const payload = event.payload as { type?: string } | undefined;
+      const t = payload?.type;
+      if (t === "shield") interactionController.playEffect("guardian");
+      else if (t === "cloak") interactionController.playEffect("cloak");
+      else if (t === "insurance") interactionController.playEffect("insurance");
+      else this.trigger("shield_triggered");
+    });
     on("REVIVE_TRIGGERED",        () => this.trigger("revive_start"));
     on("REVIVE_COMPLETED",        () => this.trigger("revive_complete"));
 
-    on("OUTCOME_RECEIVED", (event) => {
-      const payload = event.payload as { outcome?: SpinOutcome } | undefined;
-      const outcome = payload?.outcome;
-      if (outcome) {
-        const id = outcome.toLowerCase() as Lowercase<SpinOutcome>;
-        this.trigger(id);
-      }
-    });
+    // Outcome FX timed via RevealSequence at light-burst — not on early OUTCOME_RECEIVED
 
     on("PHASE_STARTED", (event) => {
       const payload = event.payload as { phase?: number } | undefined;
       if (payload?.phase && payload.phase >= 5) {
         this.trigger("championship_start");
       }
+      if (payload?.phase) interactionController.setPhase(payload.phase);
     });
   }
 
   // ── Audio controls ──────────────────────────────────────────────────────
 
-  setMasterVolume(v: number): void { audioLayerController.setMasterVolume(v); }
+  setMasterVolume(v: number): void {
+    audioManager.setMasterVolume(v);
+    audioLayerController.setMasterVolume(v);
+  }
   setMute(mute: boolean): void {
+    audioManager.setMute(mute);
     audioLayerController.setMute(mute);
     haptics.setEnabled(!mute);
   }

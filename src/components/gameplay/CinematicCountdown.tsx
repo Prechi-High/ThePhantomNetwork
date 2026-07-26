@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import gsap from "gsap";
+import { appEvents } from "@/lib/motion/appEvents";
 
 interface CinematicCountdownProps {
   onComplete: () => void;
@@ -13,6 +15,7 @@ export function CinematicCountdown({ onComplete }: CinematicCountdownProps) {
   const [step, setStep] = useState(0);
   const [done, setDone] = useState(false);
   const onCompleteRef = useRef(onComplete);
+  const ringRef = useRef<HTMLDivElement>(null);
   onCompleteRef.current = onComplete;
 
   useEffect(() => {
@@ -21,6 +24,18 @@ export function CinematicCountdown({ onComplete }: CinematicCountdownProps) {
       const t = setTimeout(() => onCompleteRef.current(), 600);
       return () => clearTimeout(t);
     }
+
+    const label = STEPS[step];
+    if (label === "GO") {
+      appEvents.emit({ type: "COUNTDOWN_GO", timestamp: Date.now(), source: "system" });
+    } else {
+      appEvents.emit({ type: "COUNTDOWN_TICK", timestamp: Date.now(), payload: { value: label }, source: "system" });
+    }
+
+    if (ringRef.current) {
+      gsap.fromTo(ringRef.current, { scale: 0.8, opacity: 0.6 }, { scale: 2.2, opacity: 0, duration: 0.7, ease: "power2.out" });
+    }
+
     const delay = step === STEPS.length - 1 ? 800 : 900;
     const t = setTimeout(() => setStep((s) => s + 1), delay);
     return () => clearTimeout(t);
@@ -38,13 +53,15 @@ export function CinematicCountdown({ onComplete }: CinematicCountdownProps) {
         background: "radial-gradient(ellipse at center, rgba(88,28,135,0.4), rgba(4,2,10,0.98))",
       }}
     >
+      <div ref={ringRef} className="absolute w-[200px] h-[200px] rounded-full border-2 border-purple-400/50 pointer-events-none" />
+
       <AnimatePresence mode="wait">
         <motion.div
           key={label}
           initial={{ scale: 0.5, opacity: 0, filter: "blur(8px)" }}
           animate={{
-            scale: isGo ? 1.3 : 1,
-            opacity: 1,
+            scale: isGo ? [0.5, 1.15, 1.3] : [0.5, 1.15, 1],
+            opacity: [0, 1, 0.9],
             filter: "blur(0px)",
           }}
           exit={{ scale: 1.5, opacity: 0 }}
@@ -63,23 +80,6 @@ export function CinematicCountdown({ onComplete }: CinematicCountdownProps) {
           {label}
         </motion.div>
       </AnimatePresence>
-
-      {/* Energy pulse ring on GO */}
-      {isGo && (
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0.8 }}
-          animate={{ scale: 2.5, opacity: 0 }}
-          transition={{ duration: 0.8 }}
-          style={{
-            position: "absolute",
-            width: 200,
-            height: 200,
-            borderRadius: "50%",
-            border: "2px solid rgba(212,168,83,0.6)",
-            pointerEvents: "none",
-          }}
-        />
-      )}
     </div>
   );
 }

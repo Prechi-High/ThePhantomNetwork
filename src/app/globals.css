@@ -215,6 +215,11 @@ body:has([data-gameplay="true"]) .bottom-nav {
   animation: gold-breathe 2s ease-in-out infinite;
 }
 
+@keyframes wheelGlowPulse {
+  0%, 100% { opacity: 0.25; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(1.02); }
+}
+
 /* Voice bar wave */
 @keyframes voice-wave {
   0%, 100% { transform: scaleY(0.5); }

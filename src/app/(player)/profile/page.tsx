@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { GameplayLayoutSettings } from "@/components/gameplay/GameplayLayoutSettings";
+import { ScreenAmbience } from "@/components/motion/ScreenAmbience";
 
 import {
   Trophy,
@@ -94,7 +95,8 @@ export default function ProfilePage() {
   const avatar = AVATARS.find((a) => a.id === profile.avatar_id);
 
   return (
-    <div className="space-y-8 pb-24">
+    <div className="space-y-8 pb-24 relative">
+      <ScreenAmbience screen="profile" />
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Link href="/" className="p-3 rounded-full hover:bg-phantom-surface transition-colors">

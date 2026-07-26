@@ -4,6 +4,7 @@ import { SessionBootstrap } from "@/components/auth/SessionBootstrap";
 import { ClientErrorReporter } from "@/components/monitoring/ClientErrorReporter";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { PlayerLayoutShell } from "@/components/layout/PlayerLayoutShell";
+import { MotionProvider } from "@/components/motion/MotionProvider";
 
 export default function PlayerLayout({
   children,
@@ -11,12 +12,14 @@ export default function PlayerLayout({
   children: React.ReactNode;
 }) {
   return (
-    <PlayerLayoutShell>
-      <SessionBootstrap />
-      <ClientErrorReporter />
-      <LiveFeed />
-      <ErrorBoundary>{children}</ErrorBoundary>
-      <BottomNav />
-    </PlayerLayoutShell>
+    <MotionProvider>
+      <PlayerLayoutShell>
+        <SessionBootstrap />
+        <ClientErrorReporter />
+        <LiveFeed />
+        <ErrorBoundary>{children}</ErrorBoundary>
+        <BottomNav />
+      </PlayerLayoutShell>
+    </MotionProvider>
   );
 }

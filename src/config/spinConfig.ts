@@ -335,27 +335,9 @@ export const AUDIO_VOLUME = {
   AMBIENT_WORLD: 0.3,
 } as const;
 
-export const AUDIO_PATHS = {
-  SPIN_START: '/audio/wheel/spin-start.mp3',
-  SPIN_LOOP: '/audio/wheel/spin-loop.mp3',
-  SPIN_SLOWDOWN: '/audio/wheel/spin-slowdown.mp3',
-  SPIN_STOP: '/audio/wheel/spin-stop.mp3',
-  REVEAL_BURST: '/audio/wheel/reveal-burst.mp3',
-  OUTCOME_ADVANCE: '/audio/wheel/outcome-advance.mp3',
-  OUTCOME_ACQUIRE: '/audio/wheel/outcome-acquire.mp3',
-  OUTCOME_DISCOVER: '/audio/wheel/outcome-discover.mp3',
-  OUTCOME_STEAL: '/audio/wheel/outcome-steal.mp3',
-  OUTCOME_VOID: '/audio/wheel/outcome-void.mp3',
-  TOKEN_TICK: '/audio/wheel/token-tick.mp3',
-  TOKENS_COMPLETE: '/audio/wheel/tokens-complete.mp3',
-  AMBIENT_IDLE: '/audio/ambient/phantom-idle.mp3',
-  PHASE_TRANSITION: '/audio/session/phase-transition.mp3',
-} as const;
-
-/** Unified AUDIO_CONFIG for backward compatibility */
+/** Unified AUDIO_CONFIG — volumes only; paths live in @/lib/motion/AudioRegistry */
 export const AUDIO_CONFIG = {
   VOLUME: AUDIO_VOLUME,
-  PATHS: AUDIO_PATHS,
 } as const;
 
 // ============================================================================

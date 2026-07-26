@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { ScreenAmbience } from "@/components/motion/ScreenAmbience";
 import {
   ChevronLeft,
   UserPlus,
@@ -170,7 +171,8 @@ function SquadPage({ squad }: { squad: Record<string, unknown> }) {
   }, []);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 relative">
+      <ScreenAmbience screen="squad" />
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
         <div className="flex items-center gap-4">
           <Link href="/home" className="p-3 rounded-full hover:bg-phantom-surface">

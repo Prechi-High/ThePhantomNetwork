@@ -8,6 +8,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Bell, ChevronRight, Users, Trophy, Coins, TrendingUp, Globe, Skull, Sparkles, Zap, Crown } from "lucide-react";
 import BottomNav from "@/components/ui/BottomNav";
+import { ScreenAmbience } from "@/components/motion/ScreenAmbience";
 
 function StatCard({ icon, value, label, colorClass = "text-phantom-purple" }: { icon: React.ReactNode; value: string; label: string; colorClass?: string }) {
   return (
@@ -138,7 +139,8 @@ export default function HomePage() {
   const nextSession = sessions.find((s) => s.is_featured) || sessions[0];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 relative">
+      <ScreenAmbience screen="home" />
       {/* TOP HEADER */}
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
         <div className="flex items-center gap-4">

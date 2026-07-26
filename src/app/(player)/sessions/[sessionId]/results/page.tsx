@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/Button";
 import BottomNav from "@/components/ui/BottomNav";
 import { MESSAGES, CURRENCY } from "@/lib/brand/terminology";
 import { TACTICAL_ASSET_DEFS } from "@/lib/armory/tactical-assets";
+import { ScreenAmbience } from "@/components/motion/ScreenAmbience";
+import { appEvents } from "@/lib/motion/appEvents";
 
 interface SessionResult {
   final_rank: number;
@@ -43,8 +45,15 @@ export default function SessionResultsPage() {
 
   const isWinner = result?.final_rank === 1;
 
+  useEffect(() => {
+    if (isWinner) {
+      appEvents.emit({ type: "VICTORY", timestamp: Date.now(), source: "system" });
+    }
+  }, [isWinner]);
+
   return (
-    <div className="min-h-screen bg-phantom-bg pb-24">
+    <div className="min-h-screen bg-phantom-bg pb-24 relative">
+      <ScreenAmbience screen="results" />
       <div className="container-responsive pt-8 space-y-6">
         <div className="text-center">
           <motion.div

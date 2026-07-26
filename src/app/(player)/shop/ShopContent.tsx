@@ -6,6 +6,8 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { useShopStore } from "@/stores/useShopStore";
+import { ScreenAmbience } from "@/components/motion/ScreenAmbience";
+import { appEvents } from "@/lib/motion/appEvents";
 
 export default function ShopContent() {
   const router = useRouter();
@@ -41,6 +43,7 @@ export default function ShopContent() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ itemId, sessionId }),
     });
+    appEvents.emit({ type: "PURCHASE_COMPLETE", timestamp: Date.now(), source: "player" });
     setPurchasing(null);
   };
 
@@ -51,7 +54,8 @@ export default function ShopContent() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      <ScreenAmbience screen="shop" />
       <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl font-bold">Shop</h1>
         {isLocked && <Badge variant="danger">Locked</Badge>}

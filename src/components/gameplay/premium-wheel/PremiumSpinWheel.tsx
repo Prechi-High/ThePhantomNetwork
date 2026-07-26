@@ -12,7 +12,7 @@ import { TokenCollectionAnimator } from "./TokenCollectionAnimator";
 import { ParticleController } from "./ParticleController";
 import { OutcomeCelebration } from "./OutcomeCelebration";
 import { ButtonAnimator } from "./ButtonAnimator";
-import { spinAudio } from "./SpinAudioController";
+import { interactionController } from "@/lib/motion/InteractionController";
 
 interface PremiumSpinWheelProps {
   /** True while the server spin request is in flight + while animating */
@@ -87,7 +87,8 @@ export function PremiumSpinWheel({
     return () => {
       clearTimers();
       if (completionTimerRef.current) clearTimeout(completionTimerRef.current);
-      spinAudio.stopAll();
+      interactionController.stopSound("spin_loop", 150);
+      interactionController.stopSound("spin_start", 100);
     };
   }, [clearTimers]);
 
@@ -164,7 +165,7 @@ export function PremiumSpinWheel({
   const handleCardShow = useCallback(() => {
     stateMachine.transition("REVEAL_COMPLETE");
     setShowCard(true);
-    if (outcomeRef.current) spinAudio.playOutcome(outcomeRef.current);
+    // Outcome FX triggered by RevealSequence at light-burst phase
   }, [stateMachine]);
 
   // ── Animations + particles start — FIX 4: reads refs, no stale deps ──────
@@ -236,6 +237,18 @@ export function PremiumSpinWheel({
           />
         )}
       </AnimatePresence>
+
+      {/* Wheel glow layer — code-driven motion */}
+      <div className="absolute inset-0 pointer-events-none opacity-30" style={{ zIndex: 1 }}>
+        <div
+          data-motion-layer="wheel_glow"
+          className="w-full h-full rounded-full"
+          style={{
+            background: "radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 65%)",
+            animation: "wheelGlowPulse 2s ease-in-out infinite",
+          }}
+        />
+      </div>
 
       {/* Wheel — fixed size; no scale transform (scale shifts surrounding layout) */}
       <div className="relative w-full h-full">
