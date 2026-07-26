@@ -130,12 +130,14 @@ export async function GET(request: Request) {
   });
 
   const sessionStatus = sessionMeta?.status;
+  const subSessionStatus = subSession?.status;
   const session = sessionMeta;
 
   return NextResponse.json({
     player,
     subSession,
     sessionStatus,
+    subSessionStatus,
     phase: timing.phase,
     phaseEndsAt: timing.phaseEndsAt ?? null,
     phaseStartedAt: timing.phaseStartedAtMs ?? null,

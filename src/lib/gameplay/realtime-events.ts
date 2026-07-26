@@ -24,3 +24,11 @@ export async function publishSessionStatus(sessionId: string, status: string) {
     at: Date.now(),
   });
 }
+
+export async function publishSubSessionComplete(subSessionId: string) {
+  await redisPublish(redisKeys.realtimeChannel(subSessionId), {
+    type: "session_complete",
+    subSessionId,
+    at: Date.now(),
+  });
+}

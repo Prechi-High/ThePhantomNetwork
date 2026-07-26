@@ -3,7 +3,7 @@ import { classifyTargetElimination, classifyPercentileElimination } from "@/lib/
 import type { PhaseConfig, TargetEliminationConfig, PercentageEliminationConfig } from "@/types/gameplay";
 import { redisSet, redisGet } from "@/lib/redis/client";
 import { redisKeys } from "@/lib/redis/keys";
-import { publishPhaseChange } from "@/lib/gameplay/realtime-events";
+import { publishPhaseChange, publishSessionStatus, publishSubSessionComplete } from "@/lib/gameplay/realtime-events";
 import {
   getPhaseEntry,
   getPhaseDurationMs,
@@ -270,6 +270,21 @@ export async function advanceSubSessionPhase(subSessionId: string) {
   return { done: false, phase: nextPhase };
 }
 
+async function maybeCompleteParentSession(sessionId: string) {
+  const admin = createAdminClient();
+  const { data: subs } = await admin
+    .from("sub_sessions")
+    .select("id, status")
+    .eq("session_id", sessionId);
+
+  if (!subs?.length) return false;
+  if (!subs.every((s) => s.status === "completed")) return false;
+
+  await admin.from("sessions").update({ status: "completed" }).eq("id", sessionId);
+  await publishSessionStatus(sessionId, "completed");
+  return true;
+}
+
 async function finalizeSubSession(subSessionId: string) {
   const admin = createAdminClient();
 
@@ -346,7 +361,10 @@ async function finalizeSubSession(subSessionId: string) {
     .single();
   if (subMeta?.session_id) {
     await settleSessionLoadouts(subMeta.session_id);
+    await maybeCompleteParentSession(subMeta.session_id);
   }
+
+  await publishSubSessionComplete(subSessionId);
 }
 
 export async function checkAndAdvanceDuePhases() {

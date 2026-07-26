@@ -83,10 +83,20 @@ export async function POST(request: Request) {
   const result = await advanceSubSessionPhase(subSessionId);
 
   if (result.done) {
+    const { data: finalizedSub } = await admin
+      .from("sub_sessions")
+      .select("status, session_id, sessions(status)")
+      .eq("id", subSessionId)
+      .single();
+
+    const parentStatus = (finalizedSub?.sessions as { status?: string } | null)?.status;
+
     return NextResponse.json({
       advanced: true,
       done: true,
       phase: currentPhase,
+      subSessionStatus: finalizedSub?.status ?? "completed",
+      sessionStatus: parentStatus ?? "completed",
     });
   }
 

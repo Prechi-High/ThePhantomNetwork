@@ -47,6 +47,7 @@ export function useRealtimeSession(
   subSessionId: string | null,
   onPhaseChange?: (payload: PhaseChangePayload) => void,
   onTokensUpdated?: () => void,
+  onSessionComplete?: () => void,
 ) {
   const [connectionState, setConnectionState] = useState<ConnectionState>("disconnected");
   const [latencyMs, setLatencyMs] = useState(0);
@@ -100,6 +101,10 @@ export function useRealtimeSession(
         break;
       }
 
+      case "session_complete":
+        onSessionComplete?.();
+        break;
+
       // ---- Player status ----
       case "elimination":
         setEliminated(Boolean(event.eliminated));
@@ -134,7 +139,7 @@ export function useRealtimeSession(
   }, [
     setTokens, setPhase, setRound, setPhaseEndsAt, setLastOutcome,
     setEliminated, setStealInProgress, incrementFireBoost, resetFireBoost,
-    advancePhase, setPlayerCounts, onPhaseChange, onTokensUpdated,
+    advancePhase, setPlayerCounts, onPhaseChange, onTokensUpdated, onSessionComplete,
   ]);
 
   // ── Batch flush ──────────────────────────────────────────────────────────

@@ -95,6 +95,7 @@ interface GameplayStateResponse {
     profiles?: { username: string } | null;
   }>;
   sessionStatus?: string;
+  subSessionStatus?: string;
   totalPoolCents?: number;
   topPlayers?: Array<{ rank: number; username: string; tokens: number; userId?: string }>;
   totalPhases?: number;
@@ -112,6 +113,7 @@ export default function PlayPage() {
   // ── Lifecycle state ──────────────────────────────────────────────────────
   const [lifecycle, setLifecycle] = useState<GameplayLifecycle>("created");
   const [sessionStatus, setSessionStatus] = useState<string>("active");
+  const [subSessionStatus, setSubSessionStatus] = useState<string>("active");
 
   // ── UI state (only what page.tsx must own) ───────────────────────────────
   const [currentUserId, setCurrentUserId]   = useState<string>();
@@ -207,6 +209,7 @@ export default function PlayPage() {
     if (data.playerRank  != null) setPlayerRank(data.playerRank);
     if (data.totalPlayers!= null) setTotalPlayers(data.totalPlayers);
     if (data.sessionStatus)       setSessionStatus(data.sessionStatus);
+    if (data.subSessionStatus)    setSubSessionStatus(data.subSessionStatus);
     if (data.totalPoolCents != null) setTotalPoolCents(data.totalPoolCents);
     if (data.topPlayers) setTopPlayers(data.topPlayers);
     if (data.totalPhases != null) setTotalPhases(data.totalPhases);
@@ -244,7 +247,21 @@ export default function PlayPage() {
     []
   );
 
-  useRealtimeSession(subSessionId, handlePhaseChange, refreshState);
+  const handleSessionComplete = useCallback(() => {
+    setSubSessionStatus("completed");
+    setSessionStatus("completed");
+  }, []);
+
+  useRealtimeSession(subSessionId, handlePhaseChange, refreshState, handleSessionComplete);
+
+  const isSessionComplete =
+    sessionStatus === "completed" || subSessionStatus === "completed";
+
+  useEffect(() => {
+    if (isSessionComplete) {
+      router.replace(`/sessions/${sessionId}/results`);
+    }
+  }, [isSessionComplete, sessionId, router]);
 
   // ── ⑥ BOOT SEQUENCE ─────────────────────────────────────────────────────
 
@@ -322,11 +339,16 @@ export default function PlayPage() {
 
     const advancePhase = async () => {
       try {
-        await fetch("/api/gameplay/phase/advance", {
+        const res = await fetch("/api/gameplay/phase/advance", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ subSessionId }),
         });
+        const data = await res.json();
+        if (data.done) {
+          setSubSessionStatus(data.subSessionStatus ?? "completed");
+          if (data.sessionStatus) setSessionStatus(data.sessionStatus);
+        }
       } catch (err) {
         reportClientError({
           area: "gameplay",
@@ -513,8 +535,7 @@ export default function PlayPage() {
   }, [subSessionId, reviveTargetId, refreshState]);
 
   // ── ⑩ SESSION COMPLETE SCREEN ────────────────────────────────────────────
-  if (sessionStatus === "completed") {
-    router.replace(`/sessions/${sessionId}/results`);
+  if (isSessionComplete) {
     return (
       <div className="fixed inset-0 flex flex-col items-center justify-center gap-4 bg-phantom-bg p-6 text-center">
         <h2 className="font-display text-2xl font-bold text-phantom-gold">Legacy Forged</h2>
