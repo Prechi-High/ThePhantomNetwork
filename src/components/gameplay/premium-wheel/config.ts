@@ -50,10 +50,10 @@ export function getSectorIndex(id: SpinOutcome): number {
 
 /** Tick interval (ms) as a function of elapsed time during spin */
 export function getTickInterval(elapsedMs: number, spinDurationMs: number): number {
-  const slowdownStart = spinDurationMs * 0.8;
-  if (elapsedMs < slowdownStart) return 80;
+  const slowdownStart = spinDurationMs * 0.78;
+  if (elapsedMs < slowdownStart) return 40;
   const t = (elapsedMs - slowdownStart) / (spinDurationMs - slowdownStart);
-  return 80 + t * 420; // 80ms → 500ms
+  return 40 + t * 420; // 40ms → 460ms
 }
 
 // ---- Visual layer depths (z-index) ----

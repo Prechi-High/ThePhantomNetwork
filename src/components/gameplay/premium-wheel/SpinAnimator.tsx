@@ -247,12 +247,12 @@ export function SpinAnimator({ isSpinning, outcome, onSpinComplete }: SpinAnimat
       .start({
         rotate: [
           currentRotationRef.current,
-          currentRotationRef.current + finalRotation * 0.88,
+          currentRotationRef.current + finalRotation * 0.92,
           currentRotationRef.current + finalRotation,
         ],
         transition: {
           duration: spinDuration / 1000,
-          times: [0, 0.55, 1],
+          times: [0, 0.78, 1],
           ease: ["easeIn", "linear", EASING.SPIN_EASE],
         },
       })

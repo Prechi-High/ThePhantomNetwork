@@ -429,7 +429,7 @@ export const SUB_SESSION_MAX_PLAYERS = 100;
 export const REGISTRATION_LOCK_MINUTES = 10;
 
 /** @deprecated Use SPIN_TIMINGS from spinConfig.ts instead */
-export const SPIN_DURATION_MS = 6000;
+export const SPIN_DURATION_MS = 3200;
 
 // ============================================================================
 // LEGACY COMPAT — keep these until all references are updated

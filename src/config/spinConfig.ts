@@ -36,7 +36,7 @@ import type { SpinOutcome, OutcomeVisual } from '@/types/gameplay';
 
 export const WHEEL_PHYSICS = {
   /** Number of full rotations the wheel completes before slowing */
-  BASE_ROTATIONS: 5,
+  BASE_ROTATIONS: 8,
 
   /** Additional rotations added by the outcome angle calculation */
   EXTRA_ROTATION_BUFFER: 2,
@@ -66,25 +66,25 @@ export const WHEEL_PHYSICS = {
 
 export const SPIN_TIMINGS = {
   /** Total spin animation duration */
-  SPIN_DURATION: 6000,
+  SPIN_DURATION: 3200,
 
   // — Acceleration —
   /** Impulse phase start */
   IMPULSE_START: 0,
   /** Impulse phase end — wheel has reached full speed */
-  IMPULSE_DURATION: 300,
+  IMPULSE_DURATION: 160,
 
   // — High-speed cruise —
-  FAST_SPIN_START: 300,
-  FAST_SPIN_END: 4800,
+  FAST_SPIN_START: 160,
+  FAST_SPIN_END: 2400,
 
   // — Deceleration —
-  SLOWDOWN_START: 4800,
-  SLOWDOWN_END: 5600,
+  SLOWDOWN_START: 2400,
+  SLOWDOWN_END: 3000,
 
   // — Final lock —
-  STOP_START: 5600,
-  STOP_END: 6000,
+  STOP_START: 3000,
+  STOP_END: 3200,
 
   /** Delay between button press and wheel visually starting */
   PRE_SPIN_DELAY: 150,
@@ -191,7 +191,7 @@ export const WHEEL_CONFIG = {
   /** @deprecated Use CAMERA_FX.SPIN_DARKEN_OPACITY */
   DARKEN_OPACITY: 0.35,
   /** @deprecated Use WHEEL_PHYSICS.BASE_ROTATIONS */
-  BASE_ROTATIONS: 5,
+  BASE_ROTATIONS: 8,
 } as const;
 
 // ============================================================================

@@ -32,7 +32,7 @@ import { useParams, useRouter } from "next/navigation";
 
 import { GameplayHUD } from "@/components/gameplay/hud";
 import { CinematicCountdown }    from "@/components/gameplay/CinematicCountdown";
-import { PhantomNetworkIntro, type NetworkPlayer } from "@/components/gameplay/PhantomNetworkIntro";
+import { PhaseSlideTransition } from "@/components/gameplay/PhaseSlideTransition";
 
 // ── Stores (via public module boundary) ───────────────────────────────────
 
@@ -42,7 +42,7 @@ import { useStealStore }     from "@/stores/useStealStore";
 
 // ── Synchronization hooks ──────────────────────────────────────────────────
 
-import { useRealtimeSession } from "@/hooks/useRealtimeSession";
+import { useRealtimeSession, usePhaseTimer } from "@/hooks/useRealtimeSession";
 import { useServerTime }         from "@/hooks/useServerTime";
 import { useLeaderboardUpdates } from "@/hooks/useLeaderboardUpdates";
 import { reportClientError }     from "@/lib/monitoring/client-report";
@@ -94,7 +94,6 @@ interface GameplayStateResponse {
     session_tokens: number;
     profiles?: { username: string } | null;
   }>;
-  networkPlayers?: NetworkPlayer[];
   sessionStatus?: string;
   totalPoolCents?: number;
   topPlayers?: Array<{ rank: number; username: string; tokens: number; userId?: string }>;
@@ -116,7 +115,6 @@ export default function PlayPage() {
 
   // ── UI state (only what page.tsx must own) ───────────────────────────────
   const [currentUserId, setCurrentUserId]   = useState<string>();
-  const [networkPlayers, setNetworkPlayers] = useState<NetworkPlayer[]>([]);
   const [totalPoolCents, setTotalPoolCents] = useState<number | null>(null);
   const [playerRank, setPlayerRank]         = useState(0);
   const [totalPlayers, setTotalPlayers]     = useState(0);
@@ -126,11 +124,10 @@ export default function PlayPage() {
   const [squadMembers, setSquadMembers]     = useState<GameplayStateResponse["squadMembers"]>([]);
 
   // ── Intro ────────────────────────────────────────────────────────────────
-  const [showNetworkIntro, setShowNetworkIntro] = useState(false);
   const [showCinematicCountdown, setShowCinematicCountdown] = useState(false);
   const [sessionMode, setSessionMode] = useState<"squad" | "solo">("squad");
-  const [introPhase, setIntroPhase]             = useState(0);
-  const lastIntroPhaseRef = useRef<number | null>(null);
+  const lastKnownPhaseRef = useRef<number>(1);
+  const lastAdvanceAttemptRef = useRef<number | null>(null);
 
   // ── Pending spin data (server result awaiting animation) ────────────────
   const pendingSpinRef = useRef<{
@@ -199,12 +196,16 @@ export default function PlayPage() {
       setEliminated(data.player.is_eliminated);
       setRevivable(data.player.is_revivable);
     }
-    if (data.phase       != null) setPhase(data.phase);
+    if (data.phase != null) {
+      if (data.phase > lastKnownPhaseRef.current) {
+        lastKnownPhaseRef.current = data.phase;
+      }
+      setPhase(data.phase);
+    }
     if (data.round       != null) setRound(data.round);
     if (data.phaseEndsAt != null) setPhaseEndsAt(data.phaseEndsAt);
     if (data.playerRank  != null) setPlayerRank(data.playerRank);
     if (data.totalPlayers!= null) setTotalPlayers(data.totalPlayers);
-    if (data.networkPlayers)      setNetworkPlayers(data.networkPlayers);
     if (data.sessionStatus)       setSessionStatus(data.sessionStatus);
     if (data.totalPoolCents != null) setTotalPoolCents(data.totalPoolCents);
     if (data.topPlayers) setTopPlayers(data.topPlayers);
@@ -236,10 +237,8 @@ export default function PlayPage() {
   // ── ⑤ REALTIME SESSION — phase change / combat events ───────────────────
   const handlePhaseChange = useCallback(
     (payload: { phase: number; round?: number; phaseEndsAt?: number }) => {
-      if (payload.phase && payload.phase !== lastIntroPhaseRef.current) {
-        setIntroPhase(payload.phase);
-        setShowNetworkIntro(true);
-        lastIntroPhaseRef.current = payload.phase;
+      if (payload.phase && payload.phase > lastKnownPhaseRef.current) {
+        lastKnownPhaseRef.current = payload.phase;
       }
     },
     []
@@ -288,17 +287,15 @@ export default function PlayPage() {
     const boot = async () => {
       setLifecycle("booting");
       resetGameplay();
-      lastIntroPhaseRef.current = null;
+      lastKnownPhaseRef.current = 1;
+      lastAdvanceAttemptRef.current = null;
 
       const data = await refreshState();
       if (cancelled) return;
 
-      const phase = data?.phase ?? 1;
-      if (lastIntroPhaseRef.current === null) {
-        setIntroPhase(phase);
-        setShowCinematicCountdown(true);
-        lastIntroPhaseRef.current = phase;
-      }
+      const bootPhase = data?.phase ?? 1;
+      lastKnownPhaseRef.current = bootPhase;
+      setShowCinematicCountdown(true);
 
       setLifecycle("ready");
     };
@@ -308,16 +305,50 @@ export default function PlayPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subSessionId]);
 
-  // Step C: after intro closes → active
-  const handleIntroComplete = useCallback(() => {
-    setShowNetworkIntro(false);
-    setLifecycle("active");
-  }, []);
-
   const handleCinematicCountdownComplete = useCallback(() => {
     setShowCinematicCountdown(false);
     setLifecycle("active");
   }, []);
+
+  const phaseRemaining = usePhaseTimer(phaseEndsAt);
+
+  // ── ⑦a PHASE ADVANCE ON TIMER EXPIRY ─────────────────────────────────────
+  useEffect(() => {
+    if (lifecycle !== "active" || !subSessionId || !phaseEndsAt) return;
+    if (phaseRemaining > 0) return;
+    if (lastAdvanceAttemptRef.current === phase) return;
+
+    lastAdvanceAttemptRef.current = phase ?? 1;
+
+    const advancePhase = async () => {
+      try {
+        await fetch("/api/gameplay/phase/advance", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ subSessionId }),
+        });
+      } catch (err) {
+        reportClientError({
+          area: "gameplay",
+          severity: "high",
+          message: "Failed to advance phase",
+          cause: err instanceof Error ? err.message : String(err),
+          context: { sessionId, subSessionId, phase },
+        });
+      } finally {
+        refreshState();
+      }
+    };
+
+    advancePhase();
+  }, [lifecycle, subSessionId, phaseEndsAt, phaseRemaining, phase, refreshState, sessionId]);
+
+  // Reset advance guard when phase increments
+  useEffect(() => {
+    if (phase != null && lastAdvanceAttemptRef.current != null && phase > lastAdvanceAttemptRef.current) {
+      lastAdvanceAttemptRef.current = null;
+    }
+  }, [phase]);
 
   // ── ⑦ ADAPTIVE POLLING (urgent near phase end) ──────────────────────────
   useEffect(() => {
@@ -493,7 +524,7 @@ export default function PlayPage() {
   }
 
   // ── ⑪ CONNECTING / BOOT SCREEN ───────────────────────────────────────────
-  if (lifecycle === "created" || lifecycle === "connecting" || (lifecycle === "booting" && !showNetworkIntro)) {
+  if (lifecycle === "created" || lifecycle === "connecting" || lifecycle === "booting") {
     return (
       <div className="fixed inset-0 flex flex-col items-center justify-center gap-3 bg-[#04020a]">
         <div
@@ -527,17 +558,9 @@ export default function PlayPage() {
         <CinematicCountdown onComplete={handleCinematicCountdownComplete} />
       )}
 
-      {/* ── Network intro (phase transitions) ── */}
-      <PhantomNetworkIntro
-        visible={showNetworkIntro}
-        players={networkPlayers}
-        phase={introPhase}
-        onComplete={handleIntroComplete}
-      />
-
-      {/* ── Gameplay HUD ── */}
-      {!showNetworkIntro && !showCinematicCountdown && (
-        <>
+      {/* ── Gameplay HUD with TikTok-style phase slide ── */}
+      {!showCinematicCountdown && (
+        <PhaseSlideTransition phase={phase || 1}>
           <GameplayHUD
             sessionId={sessionId}
             soloMode={sessionMode === "solo"}
@@ -570,7 +593,7 @@ export default function PlayPage() {
               onCancel={handleStealCancel}
             />
           )}
-        </>
+        </PhaseSlideTransition>
       )}
     </>
   );

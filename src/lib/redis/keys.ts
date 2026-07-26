@@ -4,6 +4,8 @@ export const redisKeys = {
     `sub:${subSessionId}:player:${userId}`,
   spinLock: (subSessionId: string, userId: string) =>
     `sub:${subSessionId}:spin:${userId}:lock`,
+  phaseAdvanceLock: (subSessionId: string) =>
+    `sub:${subSessionId}:phase-advance:lock`,
   stealInProgress: (subSessionId: string, userId: string) =>
     `sub:${subSessionId}:steal:${userId}`,
   leaderboard: (subSessionId: string) => `sub:${subSessionId}:leaderboard`,
