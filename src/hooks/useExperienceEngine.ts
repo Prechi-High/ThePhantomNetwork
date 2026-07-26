@@ -25,6 +25,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { experienceEngine }  from "@/lib/experience/ExperienceEngine";
 import { qualityManager }    from "@/lib/experience/qualityManager";
 import { audioLayerController } from "@/lib/experience/audioLayer";
+import { interactionController } from "@/lib/motion/InteractionController";
 import type { QualityTier }  from "@/lib/experience/qualityManager";
 
 interface UseExperienceEngineReturn {
@@ -61,8 +62,9 @@ export function useExperienceEngine(): UseExperienceEngineReturn {
 
     experienceEngine.initialize(root, fx, lighting);
 
-    // Initialize audio on first user interaction
+    // Initialize cinematic audio on first user interaction
     const handleFirstInteraction = () => {
+      interactionController.initialize();
       audioLayerController.initialize();
       window.removeEventListener("pointerdown", handleFirstInteraction);
     };
