@@ -228,6 +228,8 @@ export function usePhaseTimer(phaseEndsAt: number | null) {
   useEffect(() => {
     if (!phaseEndsAt) { setRemaining(0); return; }
 
+    let id: ReturnType<typeof setInterval>;
+
     const tick = () => {
       const ms = Math.max(0, phaseEndsAt - Date.now());
       setRemaining((prev) => {
@@ -239,7 +241,7 @@ export function usePhaseTimer(phaseEndsAt: number | null) {
     };
 
     tick();
-    const id = setInterval(tick, 1000);
+    id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, [phaseEndsAt]);
 
