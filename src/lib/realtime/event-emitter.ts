@@ -9,6 +9,27 @@ import type { ActiveEffect } from "@/stores/useEffectsStore";
  * All events are published to a Redis channel and picked up by polling clients
  */
 
+/** Persist feed event for polling fallback (live_feed_events table). */
+export async function persistLiveFeedEvent(
+  subSessionId: string,
+  event: FeedEvent
+) {
+  try {
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const admin = createAdminClient();
+    await admin.from("live_feed_events").insert({
+      event_type: event.type,
+      message: `${event.actor.username}: ${event.type}`,
+      metadata: {
+        subSessionId,
+        feedEvent: event,
+      },
+    });
+  } catch {
+    // Polling fallback is optional — SSE is primary
+  }
+}
+
 /**
  * Emit a live feed event when something happens in gameplay
  * Examples: steal, revive, elimination, phase change, etc.
@@ -22,6 +43,7 @@ export async function emitLiveFeedEvent(
     type: "livefeed:event",
     payload: event,
   });
+  await persistLiveFeedEvent(subSessionId, event);
 }
 
 /**

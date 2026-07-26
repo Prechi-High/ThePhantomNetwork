@@ -34,12 +34,25 @@ export function getRedis() {
   return getUpstash();
 }
 
+function deserializeRedisValue<T>(data: unknown): T | null {
+  if (data == null) return null;
+  if (typeof data === "string") {
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return data as T;
+    }
+  }
+  return data as T;
+}
+
 export async function redisGet<T>(key: string): Promise<T | null> {
   try {
     const client = getUpstash();
     if (client) {
-      const data = await client.get<string>(key);
-      if (data) return JSON.parse(data) as T;
+      const data = await client.get(key);
+      const parsed = deserializeRedisValue<T>(data);
+      if (parsed != null) return parsed;
     }
   } catch {
     // fallback
@@ -139,15 +152,9 @@ export async function redisPollEvents(
   try {
     const client = getUpstash();
     if (client) {
-      const items = await client.lrange<string>(listKey, 0, 49);
+      const items = await client.lrange(listKey, 0, 49);
       return (items ?? [])
-        .map((item) => {
-          try {
-            return JSON.parse(item);
-          } catch {
-            return null;
-          }
-        })
+        .map((item) => deserializeRedisValue<{ at: number }>(item))
         .filter((e): e is { at: number } => e !== null && e.at > since);
     }
   } catch {

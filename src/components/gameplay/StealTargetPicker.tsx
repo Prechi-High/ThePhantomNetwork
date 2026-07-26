@@ -6,6 +6,7 @@ import type { StealTarget } from "@/types/gameplay";
 
 interface StealTargetPickerProps {
   targets: StealTarget[];
+  emptyMessage?: string;
   onSelect: (target: StealTarget) => void;
   onCancel: () => void;
 }
@@ -186,7 +187,7 @@ function TargetCard({
   );
 }
 
-export function StealTargetPicker({ targets, onSelect, onCancel }: StealTargetPickerProps) {
+export function StealTargetPicker({ targets, emptyMessage, onSelect, onCancel }: StealTargetPickerProps) {
   const [selected, setSelected] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [countdown, setCountdown] = useState(15);
@@ -285,7 +286,7 @@ export function StealTargetPicker({ targets, onSelect, onCancel }: StealTargetPi
 
             {targets.length === 0 && (
               <div style={{ textAlign: "center", padding: "24px 0", color: "rgba(255,255,255,0.4)", fontSize: 13 }}>
-                No targets available
+                {emptyMessage ?? "No targets available"}
               </div>
             )}
           </div>

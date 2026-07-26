@@ -174,13 +174,13 @@ export function PremiumSpinWheel({
     const currentTokenAmt  = tokenAmountRef.current;
     if (!currentOutcome) return;
 
-    const SETTLE = 600;
+    const SETTLE = 250;
 
     if (currentOutcome === "STEAL") {
       schedule(() => {
         onStealActivated?.();
-        schedule(finishSpin, 800);
-      }, SETTLE + 600);
+        schedule(finishSpin, 400);
+      }, SETTLE + 350);
     } else if (currentTokenAmt > 0) {
       schedule(() => setShowTokens(true), SETTLE);
     } else {
@@ -196,7 +196,7 @@ export function PremiumSpinWheel({
     schedule(() => {
       setShowCelebration(false);
       finishSpin();
-    }, 1200);
+    }, 700);
   }, [schedule, finishSpin]);
 
   // ── Environment lighting ──────────────────────────────────────────────────

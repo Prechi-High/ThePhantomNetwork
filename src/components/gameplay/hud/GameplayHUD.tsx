@@ -183,15 +183,21 @@ export function GameplayHUD({
   const [targetModalOpen, setTargetModalOpen] = useState(false);
   const [pendingAsset, setPendingAsset] = useState<TacticalAssetSlug | null>(null);
   const [skillTargets, setSkillTargets] = useState<StealTarget[]>([]);
+  const [activatingSkillId, setActivatingSkillId] = useState<string | null>(null);
 
   const activateAsset = useCallback(
     async (assetSlug: TacticalAssetSlug, targetId?: string) => {
       if (!subSessionId || !sessionId) return;
-      await fetch("/api/gameplay/tactical/activate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subSessionId, sessionId, assetSlug, targetId }),
-      });
+      setActivatingSkillId(assetSlug);
+      try {
+        await fetch("/api/gameplay/tactical/activate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ subSessionId, sessionId, assetSlug, targetId }),
+        });
+      } finally {
+        setTimeout(() => setActivatingSkillId(null), 700);
+      }
     },
     [subSessionId, sessionId]
   );
@@ -517,13 +523,20 @@ export function GameplayHUD({
             {displaySkills.map((skill) => {
               const st = SKILL_STYLES[skill.id] ?? SKILL_STYLES.default;
               const cdSec = skill.cooldownMs > 0 ? Math.ceil(skill.cooldownMs / 1000) : 0;
+              const isActivating = activatingSkillId === skill.id;
               return (
                 <div key={skill.id} className="arena-skill-card">
-                  <button
+                  <motion.button
                     type="button"
                     className="arena-skill-card__btn"
                     disabled={!skill.isReady}
                     onClick={() => handleSkillActivate(skill.id)}
+                    animate={
+                      isActivating
+                        ? { scale: [1, 1.12, 1], boxShadow: [`0 0 0px ${st.border}`, `0 0 24px ${st.border}`, `0 0 0px ${st.border}`] }
+                        : { scale: 1 }
+                    }
+                    transition={{ duration: 0.55, ease: "easeOut" }}
                     style={{
                       "--skill-border": st.border,
                       "--skill-from": st.from,
@@ -534,7 +547,7 @@ export function GameplayHUD({
                     {skill.charges !== undefined && skill.charges > 1 && (
                       <span className="arena-skill-card__charges">×{skill.charges}</span>
                     )}
-                  </button>
+                  </motion.button>
                   <span className="arena-skill-card__name">{skill.name}</span>
                   <span className={`arena-skill-card__status ${skill.isReady ? "arena-skill-card__status--ready" : cdSec ? "arena-skill-card__status--cd" : "arena-skill-card__status--empty"}`}>
                     {skill.isReady ? "READY" : cdSec ? `${cdSec}s` : "EMPTY"}

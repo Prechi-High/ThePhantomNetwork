@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/api/auth-helpers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { computeStealAmount } from "@/lib/gameplay/steal";
-import { adjustBotTokens, isAiBotId } from "@/lib/gameplay/ai-players";
+import { adjustBotTokens, getBots, isAiBotId } from "@/lib/gameplay/ai-players";
+import { emitLiveFeedEvent } from "@/lib/realtime/event-emitter";
 import { redisGet, redisSet, redisPublish } from "@/lib/redis/client";
 import { redisKeys } from "@/lib/redis/keys";
 import { BASE_STEAL_AMOUNT } from "@/types/gameplay";
@@ -62,7 +63,15 @@ export async function POST(request: Request) {
 
   let blocked = false;
   let counterstruck = false;
+  let stealAmount = 0;
   const victimIsBot = isAiBotId(progress.victimId);
+
+  const { data: attackerProfile } = await admin
+    .from("profiles")
+    .select("username")
+    .eq("id", user!.id)
+    .single();
+  const attackerName = attackerProfile?.username ?? "Player";
 
   if (victimIsBot) {
     const totalSteal = computeStealAmount(
@@ -70,6 +79,7 @@ export async function POST(request: Request) {
       progress.fireBoostTaps,
       attacker.steal_boost_active
     );
+    stealAmount = totalSteal;
     await adjustBotTokens(subSessionId, progress.victimId, -totalSteal);
     const attackerTokens = Number(attacker.session_tokens) + totalSteal;
     await admin
@@ -127,6 +137,7 @@ export async function POST(request: Request) {
         progress.fireBoostTaps,
         attacker.steal_boost_active
       );
+      stealAmount = totalSteal;
 
       const victimTokens = Math.max(0, Number(victim.session_tokens) - totalSteal);
       const attackerTokens = Number(attacker.session_tokens) + totalSteal;
@@ -176,6 +187,37 @@ export async function POST(request: Request) {
   });
 
   await redisSet(stealKey, { ...progress, resolved: true }, 5);
+
+  if (stealAmount > 0 && !blocked && !counterstruck) {
+    let victimName = "Target";
+    if (victimIsBot) {
+      const bots = await getBots(subSessionId);
+      victimName = bots.find((b) => b.id === progress.victimId)?.username ?? "Bot";
+    } else {
+      const { data: victimProfile } = await admin
+        .from("profiles")
+        .select("username")
+        .eq("id", progress.victimId)
+        .single();
+      victimName = victimProfile?.username ?? "Target";
+    }
+
+    await emitLiveFeedEvent(subSessionId, {
+      id: `steal-${user!.id}-${Date.now()}`,
+      type: "steal",
+      timestamp: new Date().toISOString(),
+      actor: {
+        user_id: user!.id,
+        username: attackerName,
+        avatar: "",
+      },
+      target: {
+        user_id: progress.victimId,
+        username: victimName,
+      },
+      details: { amount: stealAmount },
+    });
+  }
 
   return NextResponse.json({ success: true, blocked, counterstruck });
 }

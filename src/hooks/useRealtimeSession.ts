@@ -230,12 +230,16 @@ export function usePhaseTimer(phaseEndsAt: number | null) {
 
     const tick = () => {
       const ms = Math.max(0, phaseEndsAt - Date.now());
-      setRemaining(ms);
+      setRemaining((prev) => {
+        const prevSec = Math.ceil(prev / 1000);
+        const nextSec = Math.ceil(ms / 1000);
+        return prevSec !== nextSec || prev === 0 ? ms : prev;
+      });
       if (ms === 0) clearInterval(id);
     };
 
     tick();
-    const id = setInterval(tick, 250);
+    const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, [phaseEndsAt]);
 

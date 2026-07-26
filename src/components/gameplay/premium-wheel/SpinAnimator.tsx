@@ -246,8 +246,16 @@ export function SpinAnimator({ isSpinning, outcome, onSpinComplete }: SpinAnimat
 
     wheelControls
       .start({
-        rotate: currentRotationRef.current + finalRotation,
-        transition: { duration: spinDuration / 1000, ease: EASING.SPIN_EASE },
+        rotate: [
+          currentRotationRef.current,
+          currentRotationRef.current + finalRotation * 0.88,
+          currentRotationRef.current + finalRotation,
+        ],
+        transition: {
+          duration: spinDuration / 1000,
+          times: [0, 0.55, 1],
+          ease: ["easeIn", "linear", EASING.SPIN_EASE],
+        },
       })
       .then(() => {
         if (tickTimerRef.current) clearTimeout(tickTimerRef.current);

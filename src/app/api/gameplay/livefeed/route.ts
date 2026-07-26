@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/api/auth-helpers";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { FeedEventActor, FeedEventTarget, FeedEvent } from "@/stores/useLiveFeedStore";
+import type { FeedEvent } from "@/stores/useLiveFeedStore";
 
 /**
  * GET /api/gameplay/livefeed
@@ -25,7 +25,6 @@ export async function GET(request: Request) {
 
   const admin = createAdminClient();
 
-  // Verify user is in the session
   const { data: playerInSession } = await admin
     .from("sub_session_players")
     .select("id")
@@ -37,56 +36,40 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Not in sub-session" }, { status: 403 });
   }
 
-  // Fetch recent livefeed events
-  // This assumes a livefeed_events table exists with the structure from the schema
-  const { data: events } = await admin
-    .from("livefeed_events")
-    .select(`
-      id,
-      type,
-      timestamp,
-      actor_id,
-      actor_name,
-      actor_avatar,
-      target_id,
-      target_name,
-      details
-    `)
-    .eq("sub_session_id", subSessionId)
-    .order("timestamp", { ascending: false })
+  const { data: rows } = await admin
+    .from("live_feed_events")
+    .select("id, event_type, message, metadata, created_at")
+    .contains("metadata", { subSessionId })
+    .order("created_at", { ascending: false })
     .limit(limit);
 
-  // Transform to frontend format
-  interface LiveFeedEventRow {
+  interface LiveFeedRow {
     id: string;
-    type: "steal" | "revive" | "elimination" | "phase" | "effect" | "lead" | "surge";
-    timestamp: string;
-    actor_id: string;
-    actor_name: string;
-    actor_avatar: string | null;
-    target_id: string | null;
-    target_name: string | null;
-    details: Record<string, unknown> | null;
+    event_type: string;
+    message: string;
+    metadata: Record<string, unknown> | null;
+    created_at: string;
   }
-  const formattedEvents: FeedEvent[] = (events || []).map((event: LiveFeedEventRow) => ({
-    id: event.id,
-    type: event.type,
-    timestamp: event.timestamp,
-    actor: {
-      user_id: event.actor_id,
-      username: event.actor_name,
-      avatar: event.actor_avatar || "",
-    } as FeedEventActor,
-    target: event.target_id
-      ? ({
-          user_id: event.target_id,
-          username: event.target_name,
-        } as FeedEventTarget)
-      : undefined,
-    details: event.details || {},
-  }));
+
+  const formattedEvents: FeedEvent[] = (rows ?? []).map((row: LiveFeedRow) => {
+    const stored = row.metadata?.feedEvent as FeedEvent | undefined;
+    if (stored?.id && stored?.type) {
+      return stored;
+    }
+    return {
+      id: row.id,
+      type: (row.event_type as FeedEvent["type"]) ?? "announcement",
+      timestamp: row.created_at,
+      actor: {
+        user_id: (row.metadata?.userId as string) ?? "system",
+        username: "System",
+        avatar: "",
+      },
+      details: { message: row.message, ...(row.metadata ?? {}) },
+    };
+  });
 
   return NextResponse.json({
-    events: formattedEvents.reverse(), // Return oldest first so newest is first when displayed
+    events: formattedEvents.reverse(),
   });
 }

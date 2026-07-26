@@ -42,7 +42,7 @@ import { useStealStore }     from "@/stores/useStealStore";
 
 // ── Synchronization hooks ──────────────────────────────────────────────────
 
-import { useRealtimeSession, usePhaseTimer } from "@/hooks/useRealtimeSession";
+import { useRealtimeSession } from "@/hooks/useRealtimeSession";
 import { useServerTime }         from "@/hooks/useServerTime";
 import { useLeaderboardUpdates } from "@/hooks/useLeaderboardUpdates";
 import { reportClientError }     from "@/lib/monitoring/client-report";
@@ -50,7 +50,6 @@ import { reportClientError }     from "@/lib/monitoring/client-report";
 // ── Types ──────────────────────────────────────────────────────────────────
 
 import type { StealTarget, SpinOutcome } from "@/types/gameplay";
-import { StealReadyOverlay } from "@/components/gameplay/StealReadyOverlay";
 import { StealTargetPicker } from "@/components/gameplay/StealTargetPicker";
 
 // ── Gameplay lifecycle ─────────────────────────────────────────────────────
@@ -159,14 +158,19 @@ export default function PlayPage() {
   const {
     targets, stealInProgress, attackerId, fireBoostTaps,
     setTargets, setStealInProgress, incrementFireBoost, resetFireBoost,
-    setStealReady,
   } = useStealStore();
 
   const [showStealPicker, setShowStealPicker] = useState(false);
+  const [stealTargetError, setStealTargetError] = useState<string | null>(null);
   const [reviveTargetId, setReviveTargetId]   = useState<string | null>(null);
 
-  // ── Phase timer (server-synchronized) ───────────────────────────────────
-  const remaining = usePhaseTimer(phaseEndsAt);
+  // Tick once per second so surgePercent updates without 250ms re-renders
+  const [surgeTick, setSurgeTick] = useState(0);
+  useEffect(() => {
+    if (!phaseEndsAt) return;
+    const id = setInterval(() => setSurgeTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, [phaseEndsAt]);
 
   const surgePercent = useMemo(() => {
     if (!phaseEndsAt || !phaseStartedAt) return 0;
@@ -174,7 +178,7 @@ export default function PlayPage() {
     if (total <= 0) return 0;
     const elapsed = Date.now() - phaseStartedAt;
     return Math.min(100, Math.max(0, Math.round((elapsed / total) * 100)));
-  }, [phaseEndsAt, phaseStartedAt, remaining]);
+  }, [phaseEndsAt, phaseStartedAt, surgeTick]);
 
   const rankingPercentile = useMemo(() => {
     if (!playerRank || !totalPlayers) return 0;
@@ -318,10 +322,10 @@ export default function PlayPage() {
   // ── ⑦ ADAPTIVE POLLING (urgent near phase end) ──────────────────────────
   useEffect(() => {
     if (!subSessionId || lifecycle !== "active") return;
-    const pollMs = remaining <= 0 && phaseEndsAt ? 2_000 : 5_000;
+    const pollMs = phaseEndsAt && phaseEndsAt - Date.now() <= 0 ? 2_000 : 5_000;
     const id = setInterval(refreshState, pollMs);
     return () => clearInterval(id);
-  }, [subSessionId, lifecycle, remaining, phaseEndsAt, refreshState]);
+  }, [subSessionId, lifecycle, phaseEndsAt, refreshState]);
 
   // ── ⑧ CLEANUP on unmount ────────────────────────────────────────────────
   useEffect(() => {
@@ -377,17 +381,14 @@ export default function PlayPage() {
 
   const handleSpinComplete = useCallback(() => {
     setSpinning(false);
-    setTimeout(() => setSpinLocked(false), 500);
-    if (pendingSpinRef.current?.outcome === "STEAL") {
-      setStealReady(true);
-    }
+    setTimeout(() => setSpinLocked(false), 250);
     // Hard-sync tokens from server after animation resolves
     if (pendingSpinRef.current?.tokens !== undefined) {
       setTokens(pendingSpinRef.current.tokens);
     }
     pendingSpinRef.current = null;
     setSpinTokenAmount(0);
-  }, [setSpinning, setSpinLocked, setTokens, setStealReady]);
+  }, [setSpinning, setSpinLocked, setTokens]);
 
   const handleTokensAwarded = useCallback((amount: number) => {
     const current = useGameplayStore.getState().tokens ?? 0;
@@ -403,11 +404,17 @@ export default function PlayPage() {
         body: JSON.stringify({ subSessionId }),
       });
       const data = await res.json();
-      setTargets(data.targets ?? []);
-      setStealReady(false);
+      const nextTargets = data.targets ?? [];
+      setTargets(nextTargets);
+      setStealTargetError(
+        nextTargets.length === 0 ? "No steal targets available right now." : null
+      );
       setShowStealPicker(true);
-    } catch {/* steal target fetch failure — picker stays closed */}
-  }, [subSessionId, setTargets, setStealReady]);
+    } catch {
+      setStealTargetError("Could not load steal targets. Try again.");
+      setShowStealPicker(true);
+    }
+  }, [subSessionId, setTargets]);
 
   const handleStealSelect = useCallback(async (target: StealTarget) => {
     if (!subSessionId) return;
@@ -424,15 +431,16 @@ export default function PlayPage() {
       });
     } finally {
       setShowStealPicker(false);
-      setStealReady(false);
+      setStealTargetError(null);
       resetFireBoost();
       setStealInProgress(false);
       refreshState();
     }
-  }, [subSessionId, refreshState, resetFireBoost, setStealInProgress, setStealReady]);
+  }, [subSessionId, refreshState, resetFireBoost, setStealInProgress]);
 
   const handleStealCancel = useCallback(() => {
     setShowStealPicker(false);
+    setStealTargetError(null);
   }, []);
 
   const handleResolveSteal = useCallback(async () => {
@@ -555,10 +563,10 @@ export default function PlayPage() {
             onTokensAwarded={handleTokensAwarded}
             onStealActivated={handleStealActivated}
           />
-          <StealReadyOverlay onUseNow={handleStealActivated} />
           {showStealPicker && (
             <StealTargetPicker
               targets={targets}
+              emptyMessage={stealTargetError ?? undefined}
               onSelect={handleStealSelect}
               onCancel={handleStealCancel}
             />

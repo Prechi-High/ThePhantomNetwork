@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { redisSet, redisGet, redisPublish } from "@/lib/redis/client";
 import { redisKeys } from "@/lib/redis/keys";
 import { publishLiveFeed } from "@/lib/api/rate-limit";
+import { applyTacticalEffectFeedback } from "@/lib/gameplay/tactical-effects";
 import { consumeSessionAsset } from "@/lib/armory/service";
 import { TACTICAL_ASSET_DEFS } from "@/lib/armory/tactical-assets";
 import { LIVE_FEED_TEMPLATES } from "@/lib/brand/terminology";
@@ -69,10 +70,7 @@ export async function POST(request: Request) {
         { assetSlug: slug, expiresAt: now + def.durationMs } satisfies ArmedState,
         Math.ceil(def.durationMs / 1000)
       );
-      await publishLiveFeed("effect", LIVE_FEED_TEMPLATES.guardianActivated(username), {
-        effect: slug,
-        userId: user!.id,
-      });
+      await applyTacticalEffectFeedback(subSessionId, user!.id, username, slug);
       break;
     }
     case "veil": {
@@ -83,10 +81,7 @@ export async function POST(request: Request) {
           cloak_expires_at: new Date(now + def.durationMs).toISOString(),
         })
         .eq("id", player.id);
-      await publishLiveFeed("effect", LIVE_FEED_TEMPLATES.veilActivated(username), {
-        effect: slug,
-        userId: user!.id,
-      });
+      await applyTacticalEffectFeedback(subSessionId, user!.id, username, slug);
       break;
     }
     case "counterstrike": {
@@ -95,10 +90,7 @@ export async function POST(request: Request) {
         { assetSlug: slug, expiresAt: now + def.durationMs } satisfies ArmedState,
         Math.ceil(def.durationMs / 1000)
       );
-      await publishLiveFeed("effect", LIVE_FEED_TEMPLATES.counterstrikeActivated(username), {
-        effect: slug,
-        userId: user!.id,
-      });
+      await applyTacticalEffectFeedback(subSessionId, user!.id, username, slug);
       break;
     }
     case "intercept": {
@@ -119,6 +111,7 @@ export async function POST(request: Request) {
         effect: slug,
         targetId,
         userId: user!.id,
+        subSessionId,
       });
       break;
     }
@@ -132,6 +125,7 @@ export async function POST(request: Request) {
         effect: slug,
         targetId,
         userId: user!.id,
+        subSessionId,
       });
       break;
     }
@@ -145,6 +139,7 @@ export async function POST(request: Request) {
         effect: slug,
         targetId,
         userId: user!.id,
+        subSessionId,
       });
       break;
     }

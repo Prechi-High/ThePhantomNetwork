@@ -90,7 +90,7 @@ export const SPIN_TIMINGS = {
   PRE_SPIN_DELAY: 150,
 
   /** Minimum time between two consecutive spins */
-  SPIN_COOLDOWN: 500,
+  SPIN_COOLDOWN: 250,
 
   // ---- Legacy aliases — keys used by existing components ----
   /** @deprecated Use REVEAL_TIMINGS.ENERGY_FORMATION_START */
@@ -119,38 +119,38 @@ export const SPIN_TIMINGS = {
 
 export const REVEAL_TIMINGS = {
   /** Total reveal sequence duration */
-  REVEAL_DURATION: 3000,
+  REVEAL_DURATION: 1800,
 
   /** Initial silence after wheel stops — build tension */
-  SUSPENSE_PAUSE: 300,
+  SUSPENSE_PAUSE: 150,
 
   /** Golden energy forms around the locked segment */
-  ENERGY_FORMATION_START: 300,
-  ENERGY_FORMATION_END: 800,
+  ENERGY_FORMATION_START: 150,
+  ENERGY_FORMATION_END: 450,
 
   /** Large light burst erupts from segment */
-  LIGHT_BURST_START: 800,
-  LIGHT_BURST_END: 1100,
+  LIGHT_BURST_START: 450,
+  LIGHT_BURST_END: 650,
 
   /** Full-screen flash */
-  SCREEN_FLASH_START: 1100,
-  SCREEN_FLASH_END: 1200,
+  SCREEN_FLASH_START: 650,
+  SCREEN_FLASH_END: 720,
 
   /** Outcome card explodes into view */
-  CARD_ENTRY_START: 1300,
-  CARD_ENTRY_END: 1600,
+  CARD_ENTRY_START: 780,
+  CARD_ENTRY_END: 960,
 
   /** Particles and ambient animations begin */
-  PARTICLES_START: 1500,
+  PARTICLES_START: 900,
 
   /** HUD reacts to outcome */
-  HUD_REACT_START: 1800,
+  HUD_REACT_START: 1080,
 
   /** Outcome card settles — player can read result */
-  OUTCOME_SETTLED_AT: 2000,
+  OUTCOME_SETTLED_AT: 1200,
 
   /** Reveal sequence complete — move to token collection */
-  REVEAL_COMPLETE_AT: 3000,
+  REVEAL_COMPLETE_AT: 1800,
 } as const;
 
 // ============================================================================
@@ -159,16 +159,16 @@ export const REVEAL_TIMINGS = {
 
 export const TOKEN_TIMINGS = {
   /** Duration of a single token flying to the counter */
-  TOKEN_FLY_DURATION: 1000,
+  TOKEN_FLY_DURATION: 600,
 
   /** Delay between each successive token in a burst */
-  TOKEN_INCREMENT_DELAY: 150,
+  TOKEN_INCREMENT_DELAY: 90,
 
   /** How long the counter glows after receiving tokens */
-  COUNTER_GLOW_DURATION: 600,
+  COUNTER_GLOW_DURATION: 350,
 
   /** Delay before token collection animation starts (after reveal) */
-  COLLECTION_START_DELAY: 500,
+  COLLECTION_START_DELAY: 300,
 } as const;
 
 // ============================================================================

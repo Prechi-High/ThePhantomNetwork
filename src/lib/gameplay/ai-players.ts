@@ -4,6 +4,8 @@
 
 import { redisGet, redisSet } from "@/lib/redis/client";
 import { redisKeys } from "@/lib/redis/keys";
+import { emitLiveFeedEvent } from "@/lib/realtime/event-emitter";
+import type { FeedEvent } from "@/stores/useLiveFeedStore";
 
 const BOT_NAMES = [
   "ShadowAce", "NightRaven", "IronLegacy", "StormBlade", "GhostKing",
@@ -16,6 +18,7 @@ export interface AiBot {
   username: string;
   tokens: number;
   isEliminated: boolean;
+  shieldExpiresAt?: number;
 }
 
 export function isAiBotId(userId: string): boolean {
@@ -26,11 +29,32 @@ function botsKey(subSessionId: string) {
   return `sub:${subSessionId}:ai_bots`;
 }
 
+function botFeedEvent(
+  bot: AiBot,
+  type: FeedEvent["type"],
+  details: Record<string, unknown>,
+  target?: { id: string; username: string }
+): FeedEvent {
+  return {
+    id: `bot-${type}-${bot.id}-${Date.now()}`,
+    type,
+    timestamp: new Date().toISOString(),
+    actor: {
+      user_id: bot.id,
+      username: bot.username,
+      avatar: "",
+    },
+    target: target
+      ? { user_id: target.id, username: target.username }
+      : undefined,
+    details,
+  };
+}
+
 export async function seedAiBotsForSession(
   sessionId: string,
   botCount: number
 ): Promise<void> {
-  // Stored on session via economy_config at create time — no-op here
   void sessionId;
   void botCount;
 }
@@ -78,16 +102,63 @@ export async function runBotSpinTick(subSessionId: string): Promise<number> {
   if (!bots.length) return 0;
 
   let spins = 0;
-  for (const bot of bots) {
-    if (bot.isEliminated) continue;
+  const now = Date.now();
+  const activeBots = bots.filter((b) => !b.isEliminated && b.tokens >= 0);
+
+  for (const bot of activeBots) {
+    if (bot.shieldExpiresAt && bot.shieldExpiresAt <= now) {
+      bot.shieldExpiresAt = undefined;
+    }
+
     if (Math.random() > 0.35) continue;
+
+    const roll = Math.random();
+    if (roll < 0.08 && activeBots.length >= 2) {
+      const victims = activeBots.filter(
+        (b) =>
+          b.id !== bot.id &&
+          b.tokens >= 1 &&
+          !(b.shieldExpiresAt && b.shieldExpiresAt > now)
+      );
+      if (victims.length) {
+        const victim = victims[Math.floor(Math.random() * victims.length)];
+        const stealAmount = Math.min(1, victim.tokens);
+        victim.tokens = Math.round((victim.tokens - stealAmount) * 10) / 10;
+        bot.tokens = Math.round((bot.tokens + stealAmount) * 10) / 10;
+        await emitLiveFeedEvent(
+          subSessionId,
+          botFeedEvent(bot, "steal", { amount: stealAmount }, victim)
+        );
+        spins++;
+        continue;
+      }
+    }
+
+    if (roll < 0.12 && !bot.shieldExpiresAt) {
+      bot.shieldExpiresAt = now + 30_000;
+      await emitLiveFeedEvent(
+        subSessionId,
+        botFeedEvent(bot, "effect", { effect: "guardian" })
+      );
+      spins++;
+      continue;
+    }
+
     const outcomes = [3, 1, 0.5, 0];
     const gain = outcomes[Math.floor(Math.random() * outcomes.length)];
     bot.tokens = Math.round((bot.tokens + gain) * 10) / 10;
+
+    if (gain >= 1) {
+      await emitLiveFeedEvent(
+        subSessionId,
+        botFeedEvent(bot, gain >= 3 ? "lead" : "effect", { tokens: gain, spin: true })
+      );
+    }
+
     spins++;
   }
 
-  await redisSet(botsKey(subSessionId), bots, 3600);
+  await saveBots(subSessionId, bots);
   return spins;
 }
 
