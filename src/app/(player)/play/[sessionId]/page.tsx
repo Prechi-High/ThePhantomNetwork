@@ -132,6 +132,7 @@ export default function PlayPage() {
   const lastKnownPhaseRef = useRef<number>(1);
   const lastAdvanceAttemptRef = useRef<number | null>(null);
   const advanceInFlightRef = useRef(false);
+  const phaseTimerAnchorRef = useRef<{ phase: number; endsAt: number } | null>(null);
 
   // ── Pending spin data (server result awaiting animation) ────────────────
   const pendingSpinRef = useRef<{
@@ -201,10 +202,20 @@ export default function PlayPage() {
       setRevivable(data.player.is_revivable);
     }
     if (data.phase != null && data.phase >= lastKnownPhaseRef.current) {
+      const phaseAdvanced = data.phase > lastKnownPhaseRef.current;
       lastKnownPhaseRef.current = data.phase;
       setPhase(data.phase);
-      if (data.phaseEndsAt != null) setPhaseEndsAt(data.phaseEndsAt);
-      if (data.phaseStartedAt != null) setPhaseStartedAt(data.phaseStartedAt);
+
+      if (data.phaseEndsAt != null) {
+        const anchor = phaseTimerAnchorRef.current;
+        if (phaseAdvanced || !anchor || anchor.phase !== data.phase) {
+          setPhaseEndsAt(data.phaseEndsAt);
+          phaseTimerAnchorRef.current = { phase: data.phase, endsAt: data.phaseEndsAt };
+          if (data.phaseStartedAt != null) setPhaseStartedAt(data.phaseStartedAt);
+        }
+      } else if (phaseAdvanced && data.phaseStartedAt != null) {
+        setPhaseStartedAt(data.phaseStartedAt);
+      }
     }
     if (data.round       != null) setRound(data.round);
     if (data.playerRank  != null) setPlayerRank(data.playerRank);
@@ -243,6 +254,12 @@ export default function PlayPage() {
     (payload: { phase: number; round?: number; phaseEndsAt?: number }) => {
       if (payload.phase && payload.phase > lastKnownPhaseRef.current) {
         lastKnownPhaseRef.current = payload.phase;
+        if (payload.phaseEndsAt) {
+          phaseTimerAnchorRef.current = {
+            phase: payload.phase,
+            endsAt: payload.phaseEndsAt,
+          };
+        }
       }
     },
     []
@@ -307,12 +324,16 @@ export default function PlayPage() {
       resetGameplay();
       lastKnownPhaseRef.current = 1;
       lastAdvanceAttemptRef.current = null;
+      phaseTimerAnchorRef.current = null;
 
       const data = await refreshState();
       if (cancelled) return;
 
       const bootPhase = data?.phase ?? 1;
       lastKnownPhaseRef.current = bootPhase;
+      if (data?.phaseEndsAt != null) {
+        phaseTimerAnchorRef.current = { phase: bootPhase, endsAt: data.phaseEndsAt };
+      }
       setShowCinematicCountdown(true);
 
       setLifecycle("ready");
@@ -359,7 +380,10 @@ export default function PlayPage() {
         if (data.advanced && data.phase != null && data.phase >= lastKnownPhaseRef.current) {
           lastKnownPhaseRef.current = data.phase;
           setPhase(data.phase);
-          if (data.phaseEndsAt != null) setPhaseEndsAt(data.phaseEndsAt);
+          if (data.phaseEndsAt != null) {
+            setPhaseEndsAt(data.phaseEndsAt);
+            phaseTimerAnchorRef.current = { phase: data.phase, endsAt: data.phaseEndsAt };
+          }
           lastAdvanceAttemptRef.current = phase ?? 1;
         } else if (data.reason !== "advance_in_progress") {
           lastAdvanceAttemptRef.current = null;

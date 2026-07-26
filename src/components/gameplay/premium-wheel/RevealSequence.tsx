@@ -199,27 +199,8 @@ export function RevealSequence({ outcome, active, onCardShow, onAnimateStart }: 
   );
 }
 
-// ---- Camera shake ----
+// ---- Camera shake (overlay only — never shake documentElement) ----
 
-function applyCameraShake(level: "none" | "subtle" | "medium" | "strong"): void {
-  if (level === "none" || typeof document === "undefined") return;
-  const intensity = CAMERA_FX.SHAKE_INTENSITY[level as keyof Omit<typeof CAMERA_FX.SHAKE_INTENSITY, "none">];
-  if (!intensity) return;
-
-  const root = document.documentElement;
-  const frames = [
-    `translate(${intensity}px, ${intensity * 0.6}px) rotate(0.4deg)`,
-    `translate(-${intensity * 0.8}px, -${intensity * 0.5}px) rotate(-0.3deg)`,
-    `translate(${intensity * 0.5}px, -${intensity * 0.3}px) rotate(0.15deg)`,
-    `translate(-${intensity * 0.2}px, ${intensity * 0.2}px) rotate(0deg)`,
-    "translate(0, 0)",
-  ];
-
-  root.style.transition = "none";
-  frames.forEach((frame, i) => {
-    setTimeout(() => {
-      root.style.transform = frame;
-      if (i === frames.length - 1) root.style.transition = "";
-    }, i * 45);
-  });
+function applyCameraShake(_level: "none" | "subtle" | "medium" | "strong"): void {
+  // Intentionally no-op: transforming html/body shifts the entire gameplay HUD.
 }

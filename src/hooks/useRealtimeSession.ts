@@ -237,22 +237,11 @@ export function usePhaseTimer(phaseEndsAt: number | null) {
     if (!phaseEndsAt) { setRemaining(0); return; }
 
     const tick = () => {
-      const ms = Math.max(0, phaseEndsAt - Date.now());
-      setRemaining((prev) => {
-        const prevSec = Math.ceil(prev / 1000);
-        const nextSec = Math.ceil(ms / 1000);
-        return prevSec !== nextSec || prev === 0 ? ms : prev;
-      });
-      return ms;
+      setRemaining(Math.max(0, phaseEndsAt - Date.now()));
     };
 
-    const initialMs = tick();
-    if (initialMs === 0) return;
-
-    const id = setInterval(() => {
-      const ms = tick();
-      if (ms === 0) clearInterval(id);
-    }, 1000);
+    tick();
+    const id = setInterval(tick, 250);
 
     return () => clearInterval(id);
   }, [phaseEndsAt]);

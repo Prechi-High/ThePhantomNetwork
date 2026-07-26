@@ -237,18 +237,14 @@ export function PremiumSpinWheel({
         )}
       </AnimatePresence>
 
-      {/* Wheel — scale up slightly during processing */}
-      <motion.div
-        animate={{ scale: processing ? 1.04 : 1 }}
-        transition={{ duration: 0.3 }}
-        className="relative w-full h-full"
-      >
+      {/* Wheel — fixed size; no scale transform (scale shifts surrounding layout) */}
+      <div className="relative w-full h-full">
         <SpinAnimator
           isSpinning={!!outcome && stateMachine.isSpinning()}
           outcome={outcome}
           onSpinComplete={handleWheelStop}
         />
-      </motion.div>
+      </div>
 
       {/* Cinematic reveal */}
       {outcome && (
