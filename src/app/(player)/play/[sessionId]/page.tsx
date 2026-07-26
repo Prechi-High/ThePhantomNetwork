@@ -241,11 +241,7 @@ export default function PlayPage() {
     []
   );
 
-  const { connectionState } = useRealtimeSession(
-    subSessionId,
-    handlePhaseChange,
-    refreshState,
-  );
+  useRealtimeSession(subSessionId, handlePhaseChange, refreshState);
 
   // ── ⑥ BOOT SEQUENCE ─────────────────────────────────────────────────────
 
@@ -554,12 +550,6 @@ export default function PlayPage() {
             lastOutcome={lastOutcome}
             tokenAmount={spinTokenAmount}
             surgePercent={surgePercent}
-            connectionQuality={
-              connectionState === "live" ? "good"
-              : connectionState === "reconnecting" ? "poor"
-              : "good"
-            }
-            isSynced={connectionState === "live"}
             onSpin={handleSpin}
             onSpinComplete={handleSpinComplete}
             onTokensAwarded={handleTokensAwarded}
