@@ -602,88 +602,64 @@
   margin-top: 2px;
 }
 
-/* ── ACTION ROW ── */
-.arena-engage {
+/* ── BOTTOM DOCK ── */
+.arena-bottom-dock {
   position: relative;
   z-index: 10;
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px clamp(8px, 2.2vw, 12px) max(8px, env(safe-area-inset-bottom));
+  background: rgba(8, 4, 18, 0.92);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Row 1: voice | effects panel | rec */
+.arena-effects-bar {
   display: grid;
-  grid-template-columns: auto auto 1fr auto auto;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 6px;
-  padding: 4px clamp(8px, 2.2vw, 12px) max(8px, env(safe-area-inset-bottom));
+  gap: clamp(6px, 1.8vw, 10px);
 }
 
-.arena-voice--compact {
-  padding: 8px;
+.arena-side-stack {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  border-color: rgba(34, 197, 94, 0.25);
-  background: rgba(4, 14, 8, 0.65);
-  cursor: pointer;
-  border: 1px solid rgba(34, 197, 94, 0.25);
-  border-radius: 10px;
-}
-
-.arena-rec--compact {
-  padding: 8px 10px;
-  display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 4px;
-  border-color: rgba(239, 68, 68, 0.28);
-  background: rgba(14, 4, 4, 0.65);
+  background: none;
+  border: none;
+  padding: 0;
   cursor: pointer;
-  border-radius: 10px;
-}
-
-.arena-auto-btn,
-.arena-speed-btn {
-  width: clamp(36px, 10vw, 44px);
-  height: clamp(36px, 10vw, 44px);
-  border-radius: 50%;
-  border: 1.5px solid rgba(168, 85, 247, 0.35);
-  background: rgba(10, 4, 22, 0.85);
-  color: rgba(168, 85, 247, 0.7);
-  font-size: clamp(6px, 1.5vw, 7px);
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  line-height: 1.1;
-  cursor: pointer;
-  flex-shrink: 0;
   -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
 }
 
-.arena-auto-btn--on {
-  border-color: #a855f7;
-  color: #e9d5ff;
-  box-shadow: 0 0 12px rgba(168, 85, 247, 0.45);
-  background: rgba(88, 28, 135, 0.4);
-}
-
-.arena-voice {
-  padding: 6px 8px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  border-color: rgba(34, 197, 94, 0.25);
-  background: rgba(4, 14, 8, 0.65);
-}
-
-.arena-voice__icon-wrap {
+.arena-voice-stack__icon {
   position: relative;
-  width: 24px;
-  height: 24px;
+  width: clamp(40px, 11vw, 48px);
+  height: clamp(40px, 11vw, 48px);
+  border-radius: 50%;
+  border: 1.5px solid rgba(34, 197, 94, 0.45);
+  background: rgba(4, 14, 8, 0.9);
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+}
+
+.arena-voice-stack__label {
+  font-size: clamp(6px, 1.5vw, 7px);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.55);
 }
 
 .arena-voice__badge {
   position: absolute;
-  top: -4px;
-  right: -4px;
+  top: -3px;
+  right: -3px;
   min-width: 14px;
   height: 14px;
   border-radius: 999px;
@@ -697,94 +673,109 @@
   padding: 0 3px;
 }
 
-.arena-voice__title {
-  font-size: clamp(7px, 1.8vw, 9px);
-  font-weight: 800;
-  color: var(--arena-green);
-  letter-spacing: 0.08em;
+.arena-effects-panel {
+  min-width: 0;
+  padding: 6px 8px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(4, 2, 12, 0.75);
 }
 
-.arena-voice__count {
-  font-size: clamp(7px, 1.8vw, 9px);
-  font-weight: 700;
-  color: rgba(34, 197, 94, 0.6);
-}
-
-.arena-voice__wave {
-  display: flex;
-  align-items: flex-end;
-  gap: 1px;
-  height: 10px;
-  margin-top: 2px;
-}
-
-.arena-voice__wave-bar {
-  width: 2px;
-  border-radius: 999px;
-  background: var(--arena-green);
-}
-
-.arena-spin-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-
-.arena-spin-btn {
-  width: 100%;
-  min-width: clamp(120px, 34vw, 150px);
-  height: clamp(44px, 12vw, 52px);
-  border-radius: 14px;
-  border: 2px solid rgba(234, 179, 8, 0.6);
-  background: linear-gradient(180deg, #fcd34d 0%, #ca8a04 45%, #854d0e 100%);
-  box-shadow:
-    0 0 24px rgba(234, 179, 8, 0.55),
-    0 4px 16px rgba(0, 0, 0, 0.5),
-    inset 0 2px 8px rgba(255, 255, 255, 0.25);
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.15s, box-shadow 0.15s;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.arena-spin-btn:not(:disabled):active {
-  transform: scale(0.94);
-}
-
-.arena-spin-btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  filter: grayscale(0.3);
-}
-
-.arena-spin-btn__label {
-  font-size: clamp(14px, 4vw, 18px);
-  font-weight: 900;
-  color: #1a0a00;
-  letter-spacing: 0.06em;
-  line-height: 1;
-}
-
-.arena-spin-btn__sub {
+.arena-effects-panel__header {
   font-size: clamp(6px, 1.5vw, 7px);
-  font-weight: 700;
-  color: rgba(26, 10, 0, 0.65);
-  letter-spacing: 0.06em;
-  margin-top: 2px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--arena-text-muted);
+  text-transform: uppercase;
+  margin-bottom: 6px;
 }
 
-.arena-rec {
-  padding: 6px 8px;
+.arena-effects-panel__row {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.arena-effects-panel__row::-webkit-scrollbar { display: none; }
+
+.arena-effects-panel__empty {
+  font-size: clamp(7px, 1.8vw, 8px);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.28);
+}
+
+.arena-effect-card {
   display: flex;
   align-items: center;
   gap: 6px;
-  border-color: rgba(239, 68, 68, 0.28);
-  background: rgba(14, 4, 4, 0.65);
-  justify-self: end;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: rgba(10, 4, 22, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+  min-width: clamp(72px, 20vw, 96px);
+}
+
+.arena-effect-card__icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--effect-color, #a855f7);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--effect-color, #a855f7) 35%, transparent);
+  flex-shrink: 0;
+}
+
+.arena-effect-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.arena-effect-card__name {
+  font-size: clamp(7px, 1.8vw, 8px);
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.arena-effect-card__timer {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: clamp(7px, 1.8vw, 8px);
+  font-weight: 800;
+  color: var(--effect-color, #a855f7);
+  font-variant-numeric: tabular-nums;
+}
+
+.arena-effect-card__hourglass {
+  color: var(--effect-color, #a855f7);
+  flex-shrink: 0;
+}
+
+.arena-rec-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: clamp(52px, 14vw, 64px);
+  height: clamp(40px, 11vw, 48px);
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: rgba(14, 4, 4, 0.85);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
 }
 
 .arena-rec__dot {
@@ -798,172 +789,78 @@
 }
 
 .arena-rec__title {
-  font-size: clamp(10px, 2.8vw, 12px);
+  font-size: clamp(11px, 3vw, 13px);
   font-weight: 900;
   color: var(--arena-red);
   letter-spacing: 0.08em;
 }
 
-.arena-rec__hd {
-  font-size: 7px;
-  font-weight: 800;
-  color: #f87171;
-  padding: 1px 4px;
-  border-radius: 3px;
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  background: rgba(239, 68, 68, 0.12);
+/* Row 2: skills grid */
+.arena-skills-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(6px, 1.6vw, 8px);
 }
 
-.arena-rec__sub {
-  font-size: clamp(6px, 1.5vw, 7px);
-  font-weight: 700;
-  color: rgba(239, 68, 68, 0.45);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-/* ── ACTIVE EFFECTS ── */
-.arena-effects {
+.arena-skill-tile {
   position: relative;
-  z-index: 10;
-  flex-shrink: 0;
-  padding: 0 clamp(8px, 2.2vw, 12px) 4px;
-}
-
-.arena-effects__empty {
-  font-size: clamp(7px, 1.8vw, 9px);
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.3);
-  padding: 4px 8px;
-}
-
-.arena-skill-card--empty {
-  opacity: 0.45;
-}
-
-.arena-effects__header {
-  font-size: clamp(7px, 1.8vw, 9px);
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  color: var(--arena-text-muted);
-  text-transform: uppercase;
-  margin-bottom: 4px;
-}
-
-.arena-effects__row {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.arena-effects__row::-webkit-scrollbar { display: none; }
-
-.arena-effect-pill {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: rgba(10, 4, 22, 0.85);
-  border: 1px solid var(--pill-color, rgba(168, 85, 247, 0.35));
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.arena-effect-pill__icon { font-size: 10px; }
-
-.arena-effect-pill__name {
-  font-size: clamp(7px, 1.8vw, 9px);
-  font-weight: 700;
-  color: #fff;
-}
-
-.arena-effect-pill__time {
-  font-size: clamp(7px, 1.8vw, 9px);
-  font-weight: 800;
-  color: var(--pill-color, #a855f7);
-  font-variant-numeric: tabular-nums;
-}
-
-/* ── MY SKILLS ── */
-.arena-skills {
-  position: relative;
-  z-index: 10;
-  flex-shrink: 0;
-  padding: 4px clamp(8px, 2.2vw, 12px) 2px;
-}
-
-.arena-skills__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
-}
-
-.arena-skills__title {
-  font-size: clamp(7px, 1.8vw, 9px);
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  color: var(--arena-text-muted);
-  text-transform: uppercase;
-}
-
-.arena-skills__scroll-hint {
-  font-size: clamp(6px, 1.6vw, 8px);
-  font-weight: 700;
-  color: rgba(168, 85, 247, 0.5);
-  letter-spacing: 0.1em;
-}
-
-.arena-skills__row {
-  display: flex;
-  gap: clamp(4px, 1.2vw, 8px);
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding-bottom: 2px;
-}
-
-.arena-skills__row::-webkit-scrollbar { display: none; }
-
-.arena-skill-card {
-  flex: 0 0 clamp(52px, 14vw, 64px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-}
-
-.arena-skill-card__btn {
-  width: 100%;
-  aspect-ratio: 0.72;
-  border-radius: 10px;
-  border: 1.5px solid var(--skill-border, rgba(107, 114, 128, 0.4));
-  background: linear-gradient(160deg, var(--skill-from, #111), var(--skill-to, #0a0a0a));
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 3px;
+  aspect-ratio: 0.85;
+  padding: 6px 4px 8px;
+  border-radius: 12px;
+  border: 1.5px solid var(--skill-border, rgba(107, 114, 128, 0.4));
+  background: linear-gradient(160deg, var(--skill-from, #111), var(--skill-to, #0a0a0a));
+  box-shadow: 0 0 14px color-mix(in srgb, var(--skill-border, #a855f7) 25%, transparent);
   cursor: pointer;
-  position: relative;
   -webkit-tap-highlight-color: transparent;
 }
 
-.arena-skill-card__btn:disabled {
+.arena-skill-tile:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
 
-.arena-skill-card__icon {
-  font-size: clamp(16px, 4.5vw, 22px);
-  line-height: 1;
+.arena-skill-tile--empty {
+  opacity: 0.4;
 }
 
-.arena-skill-card__charges {
+.arena-skill-tile__icon {
+  font-size: clamp(22px, 6vw, 28px);
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.arena-skill-tile__name {
+  font-size: clamp(6px, 1.5vw, 7px);
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.92);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 1.15;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.arena-skill-tile__status {
+  font-size: clamp(6px, 1.5vw, 7px);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.arena-skill-tile__status--ready { color: var(--arena-green); }
+.arena-skill-tile__status--cd { color: rgba(255, 255, 255, 0.75); }
+.arena-skill-tile__status--empty { color: var(--arena-text-muted); }
+
+.arena-skill-tile__charges {
   position: absolute;
-  top: 3px;
-  right: 4px;
+  top: 4px;
+  right: 5px;
   min-width: 14px;
   height: 14px;
   border-radius: 999px;
@@ -976,28 +873,100 @@
   justify-content: center;
 }
 
-.arena-skill-card__name {
-  font-size: clamp(6px, 1.5vw, 7px);
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.55);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  text-align: center;
-  line-height: 1.1;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* Row 3: auto | spin | speed */
+.arena-engage {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: end;
+  gap: clamp(8px, 2.2vw, 12px);
 }
 
-.arena-skill-card__status {
+.arena-auto-btn {
+  width: clamp(40px, 11vw, 48px);
+  height: clamp(40px, 11vw, 48px);
+  border-radius: 10px;
+  border: 1.5px solid rgba(168, 85, 247, 0.4);
+  background: rgba(10, 4, 22, 0.9);
+  color: rgba(168, 85, 247, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.arena-auto-stack--on .arena-auto-btn {
+  border-color: #a855f7;
+  color: #e9d5ff;
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.45);
+  background: rgba(88, 28, 135, 0.45);
+}
+
+.arena-auto-stack--on .arena-side-stack__label {
+  color: #e9d5ff;
+}
+
+.arena-side-stack__label {
   font-size: clamp(6px, 1.5vw, 7px);
   font-weight: 800;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.1em;
+  color: rgba(168, 85, 247, 0.6);
 }
 
-.arena-skill-card__status--ready { color: var(--arena-green); }
-.arena-skill-card__status--cd { color: var(--arena-gold); }
-.arena-skill-card__status--empty { color: var(--arena-text-muted); }
+.arena-spin-btn {
+  width: 100%;
+  height: clamp(48px, 13vw, 56px);
+  border-radius: 16px;
+  border: 2px solid rgba(234, 179, 8, 0.65);
+  background: linear-gradient(180deg, #fde68a 0%, #fbbf24 35%, #ca8a04 70%, #854d0e 100%);
+  box-shadow:
+    0 0 32px rgba(234, 179, 8, 0.6),
+    0 4px 20px rgba(0, 0, 0, 0.55),
+    inset 0 2px 10px rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s, box-shadow 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.arena-spin-btn:not(:disabled):active {
+  transform: scale(0.96);
+}
+
+.arena-spin-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: grayscale(0.3);
+}
+
+.arena-spin-btn__label {
+  font-size: clamp(16px, 4.5vw, 20px);
+  font-weight: 900;
+  color: #1a0a00;
+  letter-spacing: 0.08em;
+  line-height: 1;
+}
+
+.arena-spin-btn__sub {
+  font-size: clamp(6px, 1.5vw, 7px);
+  font-weight: 700;
+  color: rgba(26, 10, 0, 0.6);
+  letter-spacing: 0.06em;
+  margin-top: 3px;
+}
+
+.arena-speed-value {
+  font-size: clamp(14px, 4vw, 18px);
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1;
+}
+
+.arena-speed-stack__label {
+  color: rgba(255, 255, 255, 0.45);
+}
 
 /* Tablet / desktop — keep phone frame */
 @media (min-width: 431px) {
@@ -1011,6 +980,24 @@
 @media (max-width: 340px) {
   .arena-main {
     grid-template-columns: clamp(64px, 20vw, 72px) 1fr clamp(64px, 20vw, 72px);
+  }
+
+  .arena-bottom-dock {
+    gap: 6px;
+    padding: 6px 6px max(6px, env(safe-area-inset-bottom));
+  }
+
+  .arena-skills-grid {
+    gap: 4px;
+  }
+
+  .arena-skill-tile__icon {
+    font-size: clamp(18px, 5vw, 22px);
+  }
+
+  .arena-effect-card {
+    min-width: 64px;
+    padding: 4px 6px;
   }
 }
 

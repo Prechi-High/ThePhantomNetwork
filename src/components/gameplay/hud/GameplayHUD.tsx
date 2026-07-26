@@ -419,15 +419,6 @@ export function GameplayHUD({
               onStealActivated={onStealActivated}
             />
           </div>
-          <div className="arena-wheel-zone__hint">TAP TO SPIN</div>
-          <div className="arena-wheel-zone__meter">
-            <div className="arena-wheel-zone__dots">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <span key={i} className="arena-wheel-zone__dot arena-wheel-zone__dot--full" />
-              ))}
-            </div>
-            <span className="arena-wheel-zone__spins-label">— / — SPINS</span>
-          </div>
         </div>
 
         {/* Squad / Competitors */}
@@ -496,96 +487,111 @@ export function GameplayHUD({
         </aside>
       </div>
 
-      {/* ── MY SKILLS (always visible) ── */}
-      <section className="arena-skills">
-        <div className="arena-skills__header">
-          <span className="arena-skills__title">MY SKILLS</span>
-          <span className="arena-skills__scroll-hint">SCROLL ›</span>
-        </div>
-        <div className="arena-skills__row">
+      <footer className="arena-bottom-dock">
+        {/* Row 1: voice | active effects panel | rec */}
+        <section className="arena-effects-bar">
+          <button type="button" className="arena-side-stack arena-voice-stack" aria-label="Squad voice chat">
+            <span className="arena-voice-stack__icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#22c55e" aria-hidden>
+                <rect x="9" y="3" width="6" height="11" rx="3" />
+                <path d="M5 11v1a7 7 0 0014 0v-1" stroke="#22c55e" strokeWidth="2" fill="none" />
+              </svg>
+              <span className="arena-voice__badge">{Math.min(9, voiceCount)}</span>
+            </span>
+            <span className="arena-voice-stack__label">VOICE</span>
+          </button>
+
+          <div className="arena-effects-panel">
+            <div className="arena-effects-panel__header">ACTIVE EFFECTS</div>
+            <div className="arena-effects-panel__row">
+              {effects.length === 0 ? (
+                <span className="arena-effects-panel__empty">No active effects</span>
+              ) : (
+                effects.map((effect) => {
+                  const d = EFFECT_STYLES[effect.type] ?? { color: "#a855f7", icon: "✦" };
+                  const sec = Math.max(0, Math.ceil(serverTime.getCountdown(effect.expires_at) / 1000));
+                  return (
+                    <div key={effect.id} className="arena-effect-card" style={{ "--effect-color": d.color } as React.CSSProperties}>
+                      <span className="arena-effect-card__icon">{d.icon}</span>
+                      <div className="arena-effect-card__body">
+                        <span className="arena-effect-card__name">{effect.name ?? effect.type}</span>
+                        <span className="arena-effect-card__timer">
+                          <svg className="arena-effect-card__hourglass" width="8" height="10" viewBox="0 0 8 10" aria-hidden>
+                            <path d="M1 0h6v2L4 5l3 3v2H1V8l3-3L1 2V0z" fill="currentColor" opacity="0.85" />
+                          </svg>
+                          {sec}s
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          <button type="button" className="arena-rec-btn" aria-label="Session recording">
+            <span className="arena-rec__dot" />
+            <span className="arena-rec__title">REC</span>
+          </button>
+        </section>
+
+        {/* Row 2: skill tiles */}
+        <section className="arena-skills-grid">
           {skillSlots.map((skill) => {
             const st = SKILL_STYLES[skill.id] ?? SKILL_STYLES.default;
             const cdSec = skill.cooldownMs > 0 ? Math.ceil(skill.cooldownMs / 1000) : 0;
             const isActivating = activatingSkillId === skill.id;
             const isPlaceholder = "placeholder" in skill && skill.placeholder;
             return (
-              <div key={skill.id} className={`arena-skill-card ${isPlaceholder ? "arena-skill-card--empty" : ""}`}>
-                <motion.button
-                  type="button"
-                  className="arena-skill-card__btn"
-                  disabled={!skill.isReady || isPlaceholder}
-                  onClick={() => !isPlaceholder && handleSkillActivate(skill.id)}
-                  animate={
-                    isActivating
-                      ? { scale: [1, 1.12, 1], boxShadow: [`0 0 0px ${st.border}`, `0 0 24px ${st.border}`, `0 0 0px ${st.border}`] }
-                      : { scale: 1 }
-                  }
-                  transition={{ duration: 0.55, ease: "easeOut" }}
-                  style={{
-                    "--skill-border": st.border,
-                    "--skill-from": st.from,
-                    "--skill-to": st.to,
-                  } as React.CSSProperties}
-                >
-                  <span className="arena-skill-card__icon">{st.icon}</span>
-                  {skill.charges !== undefined && skill.charges > 1 && (
-                    <span className="arena-skill-card__charges">×{skill.charges}</span>
-                  )}
-                </motion.button>
-                <span className="arena-skill-card__name">{skill.name}</span>
-                <span className={`arena-skill-card__status ${skill.isReady ? "arena-skill-card__status--ready" : cdSec ? "arena-skill-card__status--cd" : "arena-skill-card__status--empty"}`}>
+              <motion.button
+                key={skill.id}
+                type="button"
+                className={`arena-skill-tile ${isPlaceholder ? "arena-skill-tile--empty" : ""}`}
+                disabled={!skill.isReady || isPlaceholder}
+                onClick={() => !isPlaceholder && handleSkillActivate(skill.id)}
+                animate={
+                  isActivating
+                    ? { scale: [1, 1.06, 1], boxShadow: [`0 0 0px ${st.border}`, `0 0 20px ${st.border}`, `0 0 0px ${st.border}`] }
+                    : { scale: 1 }
+                }
+                transition={{ duration: 0.55, ease: "easeOut" }}
+                style={{
+                  "--skill-border": st.border,
+                  "--skill-from": st.from,
+                  "--skill-to": st.to,
+                } as React.CSSProperties}
+              >
+                <span className="arena-skill-tile__icon">{st.icon}</span>
+                <span className="arena-skill-tile__name">{skill.name}</span>
+                <span className={`arena-skill-tile__status ${skill.isReady ? "arena-skill-tile__status--ready" : cdSec ? "arena-skill-tile__status--cd" : "arena-skill-tile__status--empty"}`}>
                   {skill.isReady ? "READY" : cdSec ? `${cdSec}s` : "EMPTY"}
                 </span>
-              </div>
+                {skill.charges !== undefined && skill.charges > 1 && (
+                  <span className="arena-skill-tile__charges">×{skill.charges}</span>
+                )}
+              </motion.button>
             );
           })}
-        </div>
-      </section>
+        </section>
 
-      {/* ── ACTIVE EFFECTS (always visible) ── */}
-      <section className="arena-effects">
-        <div className="arena-effects__header">ACTIVE EFFECTS</div>
-        <div className="arena-effects__row">
-          {effects.length === 0 ? (
-            <span className="arena-effects__empty">No active effects</span>
-          ) : (
-            effects.map((effect) => {
-              const d = EFFECT_STYLES[effect.type] ?? { color: "#a855f7", icon: "✦" };
-              const sec = Math.max(0, Math.ceil(serverTime.getCountdown(effect.expires_at) / 1000));
-              return (
-                <div key={effect.id} className="arena-effect-pill" style={{ "--pill-color": d.color } as React.CSSProperties}>
-                  <span className="arena-effect-pill__icon">{d.icon}</span>
-                  <span className="arena-effect-pill__name">{effect.name ?? effect.type}</span>
-                  <span className="arena-effect-pill__time">{sec}s</span>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </section>
+        {/* Row 3: auto | spin | speed */}
+        <div className="arena-engage">
+          <button
+            type="button"
+            className={`arena-side-stack arena-auto-stack ${autoSpinOn ? "arena-auto-stack--on" : ""}`}
+            onClick={() => setAutoSpinOn((v) => !v)}
+            aria-label="Auto spin"
+          >
+            <span className="arena-auto-btn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M12 4V1L8 5l4 4V6a6 6 0 016 6 6 6 0 01-6 6 6 6 0 01-5.2-3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <path d="M12 12h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <path d="M14 10v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </span>
+            <span className="arena-side-stack__label">AUTO</span>
+          </button>
 
-      {/* ── ACTION ROW: voice | auto | spin | speed | rec ── */}
-      <div className="arena-engage">
-        <button type="button" className="arena-card arena-voice arena-voice--compact" aria-label="Voice room">
-          <div className="arena-voice__icon-wrap">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="#22c55e">
-              <rect x="9" y="3" width="6" height="11" rx="3" />
-              <path d="M5 11v1a7 7 0 0014 0v-1" stroke="#22c55e" strokeWidth="2" fill="none" />
-            </svg>
-            <span className="arena-voice__badge">{Math.min(9, voiceCount)}</span>
-          </div>
-        </button>
-
-        <button
-          type="button"
-          className={`arena-auto-btn ${autoSpinOn ? "arena-auto-btn--on" : ""}`}
-          onClick={() => setAutoSpinOn((v) => !v)}
-          aria-label="Auto spin"
-        >
-          AUTO
-        </button>
-
-        <div className="arena-spin-wrap">
           <button
             type="button"
             className="arena-spin-btn"
@@ -595,17 +601,13 @@ export function GameplayHUD({
             <span className="arena-spin-btn__label">{isSpinning ? "…" : "SPIN"}</span>
             <span className="arena-spin-btn__sub">HOLD FOR AUTO</span>
           </button>
+
+          <button type="button" className="arena-side-stack arena-speed-stack" aria-label="Spin speed">
+            <span className="arena-speed-value">x1</span>
+            <span className="arena-side-stack__label arena-speed-stack__label">SPEED</span>
+          </button>
         </div>
-
-        <button type="button" className="arena-speed-btn" aria-label="Spin speed">
-          x1<br />SPEED
-        </button>
-
-        <button type="button" className="arena-card arena-rec arena-rec--compact" aria-label="Session recording">
-          <span className="arena-rec__dot" />
-          <span className="arena-rec__title">REC</span>
-        </button>
-      </div>
+      </footer>
 
       <TargetSelectionModal
         open={targetModalOpen}
