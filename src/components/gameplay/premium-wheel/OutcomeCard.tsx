@@ -51,6 +51,7 @@ export function OutcomeCard({ outcome, visible, tokenAmount }: OutcomeCardProps)
         <div className="fixed inset-0 flex items-center justify-center pointer-events-none select-none" style={{ zIndex: 55 }}>
           {/* 3-D container */}
           <motion.div
+            id="outcome-card-anchor"
             initial={{ opacity: 0, scale: 0.3, rotateX: 55, y: 120 }}
             animate={{ opacity: 1, scale: 1, rotateX: 0, y: 0 }}
             exit={{ opacity: 0, scale: 0.85, y: -60, transition: { duration: 0.3 } }}

@@ -16,52 +16,58 @@ interface SpinAnimatorProps {
 // ── Segment visual design (matches reference image exactly) ───────────────
 
 const SEGMENT_DESIGN: Record<SpinOutcome, {
-  fill:        string;   // background gradient
+  fill:        string;
   label:       string;
   sublabel:    string;
   labelColor:  string;
   sublabelColor: string;
-  icon:        string;   // SVG/emoji icon key
+  icon:        string;
+  accentGlow:  string;
 }> = {
   ACQUIRE: {
-    fill:         "radial-gradient(ellipse at 50% 0%, #7a5520 0%, #4a3010 40%, #2a1a08 100%)",
+    fill:         "radial-gradient(ellipse at 50% 15%, rgba(234,179,8,0.35) 0%, rgba(20,12,4,0.95) 55%, rgba(8,4,2,0.98) 100%)",
     label:        "ACQUIRE",
     sublabel:     "+1 TOK",
-    labelColor:   "#e8b84b",
-    sublabelColor:"#c4952a",
+    labelColor:   "#fcd34d",
+    sublabelColor:"#ca8a04",
     icon:         "coin",
+    accentGlow:   "rgba(234,179,8,0.5)",
   },
   DISCOVER: {
-    fill:         "radial-gradient(ellipse at 50% 0%, #1a2d4a 0%, #0f1e35 40%, #080e1a 100%)",
+    fill:         "radial-gradient(ellipse at 50% 15%, rgba(59,130,246,0.35) 0%, rgba(8,16,32,0.95) 55%, rgba(4,8,16,0.98) 100%)",
     label:        "DISCOVER",
     sublabel:     "+0.5 TOK",
-    labelColor:   "#7ab3d4",
-    sublabelColor:"#4a80a0",
+    labelColor:   "#93c5fd",
+    sublabelColor:"#3b82f6",
     icon:         "magnify",
+    accentGlow:   "rgba(59,130,246,0.45)",
   },
   VOID: {
-    fill:         "radial-gradient(ellipse at 50% 0%, #111418 0%, #0a0c10 40%, #050608 100%)",
+    fill:         "radial-gradient(ellipse at 50% 15%, rgba(107,114,128,0.2) 0%, rgba(12,12,16,0.95) 55%, rgba(4,4,8,0.98) 100%)",
     label:        "VOID",
     sublabel:     "0 TOK",
-    labelColor:   "#8a8e96",
-    sublabelColor:"#5a5e66",
+    labelColor:   "#9ca3af",
+    sublabelColor:"#6b7280",
     icon:         "vortex",
+    accentGlow:   "rgba(107,114,128,0.25)",
   },
   ADVANCE: {
-    fill:         "radial-gradient(ellipse at 50% 0%, #1a2a40 0%, #0f1c30 40%, #080e1a 100%)",
+    fill:         "radial-gradient(ellipse at 50% 15%, rgba(245,158,11,0.4) 0%, rgba(24,16,4,0.95) 55%, rgba(8,4,2,0.98) 100%)",
     label:        "ADVANCE",
     sublabel:     "+3 TOK",
-    labelColor:   "#7ab3d4",
-    sublabelColor:"#4a80a0",
-    icon:         "chevrons",
+    labelColor:   "#fbbf24",
+    sublabelColor:"#d97706",
+    icon:         "crown",
+    accentGlow:   "rgba(245,158,11,0.55)",
   },
   STEAL: {
-    fill:         "radial-gradient(ellipse at 50% 0%, #5a1a1a 0%, #3a0f0f 40%, #1a0808 100%)",
+    fill:         "radial-gradient(ellipse at 50% 15%, rgba(239,68,68,0.35) 0%, rgba(24,8,8,0.95) 55%, rgba(8,2,2,0.98) 100%)",
     label:        "STEAL",
     sublabel:     "",
-    labelColor:   "#d45050",
-    sublabelColor:"#a03030",
+    labelColor:   "#f87171",
+    sublabelColor:"#dc2626",
     icon:         "hook",
+    accentGlow:   "rgba(239,68,68,0.5)",
   },
 };
 
@@ -72,7 +78,7 @@ function CoinIcon() {
     <svg width="38" height="38" viewBox="0 0 38 38" fill="none">
       <circle cx="19" cy="19" r="17" fill="url(#coinGrad)" stroke="#8a6020" strokeWidth="1.5"/>
       <circle cx="19" cy="19" r="13" fill="url(#coinInner)" stroke="#6a4a10" strokeWidth="1"/>
-      <text x="19" y="24" textAnchor="middle" fontSize="14" fontWeight="900" fill="#3a2008" fontFamily="serif">$</text>
+      <text x="19" y="24" textAnchor="middle" fontSize="13" fontWeight="900" fill="#1a0a00" fontFamily="serif">P</text>
       <defs>
         <radialGradient id="coinGrad" cx="40%" cy="30%">
           <stop offset="0%" stopColor="#f0c040"/>
@@ -117,21 +123,6 @@ function VortexIcon() {
   );
 }
 
-function ChevronsIcon() {
-  return (
-    <svg width="52" height="36" viewBox="0 0 52 36" fill="none">
-      {/* Three chevron arrows, steel-blue, 3D embossed look */}
-      {[0, 16, 32].map((ox, i) => (
-        <g key={i} opacity={1 - i * 0.15}>
-          <path d={`M${ox + 2} 4 L${ox + 12} 18 L${ox + 2} 32`} stroke="#5080a8" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-          <path d={`M${ox + 2} 4 L${ox + 12} 18 L${ox + 2} 32`} stroke="#3a6080" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-          <path d={`M${ox + 2} 4 L${ox + 12} 18 L${ox + 2} 32`} stroke="#7aaad0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity="0.5"/>
-        </g>
-      ))}
-    </svg>
-  );
-}
-
 function HookIcon() {
   return (
     <svg width="36" height="44" viewBox="0 0 36 44" fill="none">
@@ -150,11 +141,26 @@ function HookIcon() {
   );
 }
 
+function CrownIcon() {
+  return (
+    <svg width="40" height="36" viewBox="0 0 40 36" fill="none">
+      <path d="M6 28 L34 28 L32 14 L26 20 L20 8 L14 20 L8 14 Z" fill="url(#crownGrad)" stroke="#d97706" strokeWidth="1.2"/>
+      <rect x="6" y="28" width="28" height="5" rx="1" fill="#ca8a04" stroke="#92400e" strokeWidth="0.8"/>
+      <defs>
+        <linearGradient id="crownGrad" x1="20" y1="8" x2="20" y2="28">
+          <stop offset="0%" stopColor="#fcd34d"/>
+          <stop offset="100%" stopColor="#ca8a04"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
 const SEGMENT_ICONS: Record<string, React.ReactNode> = {
   coin:     <CoinIcon />,
   magnify:  <MagnifyIcon />,
   vortex:   <VortexIcon />,
-  chevrons: <ChevronsIcon />,
+  crown:    <CrownIcon />,
   hook:     <HookIcon />,
 };
 
@@ -172,41 +178,34 @@ function buildArcPath(startAngle: number, endAngle: number): string {
   return pts.join(", ");
 }
 
-// ── Gear-tooth ring SVG (center hub decoration) ───────────────────────────
-
-function GearRing({ size }: { size: number }) {
-  const cx = size / 2;
-  const cy = size / 2;
-  const r  = size * 0.42;
-  const teeth = 24;
-  const toothH = size * 0.035;
-  const toothW = (2 * Math.PI * r / teeth) * 0.55;
-
-  const teeth_paths: string[] = [];
-  for (let i = 0; i < teeth; i++) {
-    const angle = (i / teeth) * 2 * Math.PI - Math.PI / 2;
-    const x1 = cx + (r - toothH) * Math.cos(angle - toothW / r / 2);
-    const y1 = cy + (r - toothH) * Math.sin(angle - toothW / r / 2);
-    const x2 = cx + r * Math.cos(angle - toothW / r / 2);
-    const y2 = cy + r * Math.sin(angle - toothW / r / 2);
-    const x3 = cx + r * Math.cos(angle + toothW / r / 2);
-    const y3 = cy + r * Math.sin(angle + toothW / r / 2);
-    const x4 = cx + (r - toothH) * Math.cos(angle + toothW / r / 2);
-    const y4 = cy + (r - toothH) * Math.sin(angle + toothW / r / 2);
-    teeth_paths.push(`M${x1},${y1} L${x2},${y2} L${x3},${y3} L${x4},${y4} Z`);
-  }
-
+function PhantomHub({ size }: { size: number }) {
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-      {/* Outer bronze ring */}
-      <circle cx={cx} cy={cy} r={r + toothH + 1} fill="none" stroke="#8a6820" strokeWidth="2"/>
-      {/* Teeth */}
-      {teeth_paths.map((d, i) => (
-        <path key={i} d={d} fill={i % 2 === 0 ? "#7a5818" : "#6a4a10"} stroke="#5a3a08" strokeWidth="0.5"/>
-      ))}
-      {/* Inner ring */}
-      <circle cx={cx} cy={cy} r={r - toothH - 2} fill="#0a0a0c" stroke="#5a4010" strokeWidth="1.5"/>
-    </svg>
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        background: "radial-gradient(circle at 40% 35%, #7c3aed 0%, #4c1d95 45%, #1e0a3c 100%)",
+        border: "2px solid rgba(168,85,247,0.6)",
+        boxShadow: "0 0 24px rgba(168,85,247,0.55), inset 0 0 16px rgba(0,0,0,0.5)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <span
+        style={{
+          fontFamily: "Impact, Arial Black, sans-serif",
+          fontSize: size * 0.42,
+          fontWeight: 900,
+          color: "#e9d5ff",
+          textShadow: "0 0 12px rgba(168,85,247,0.9)",
+          lineHeight: 1,
+        }}
+      >
+        P
+      </span>
+    </div>
   );
 }
 
@@ -280,33 +279,33 @@ export function SpinAnimator({ isSpinning, outcome, onSpinComplete }: SpinAnimat
   return (
     <div className="relative w-full h-full select-none" style={{ zIndex: Z.WHEEL_BODY }}>
 
-      {/* ── Outer drop shadow ── */}
+      {/* ── Purple neon outer glow ── */}
       <div
         className="absolute rounded-full pointer-events-none"
         style={{
-          inset: "-8px",
-          boxShadow: "0 0 60px rgba(0,0,0,0.95), 0 0 20px rgba(0,0,0,0.8)",
+          inset: "-10px",
+          boxShadow: "0 0 40px rgba(168,85,247,0.45), 0 0 80px rgba(88,28,135,0.25)",
           borderRadius: "50%",
           zIndex: 0,
         }}
       />
 
-      {/* ── Outermost thick bronze ring ── */}
+      {/* ── Neon purple ring ── */}
       <div
         className="absolute rounded-full pointer-events-none"
         style={{
-          inset: "-7px",
-          background: "conic-gradient(from 0deg, #3a2808, #7a5018, #c8901a, #8a6010, #5a3808, #c07010, #4a3008, #9a6818, #3a2808)",
+          inset: "-6px",
+          background: "conic-gradient(from 0deg, #581c87, #a855f7, #7c3aed, #c084fc, #7c3aed, #581c87)",
           borderRadius: "50%",
           zIndex: 1,
+          opacity: 0.9,
         }}
       />
-      {/* Bronze ring inner bevel */}
       <div
         className="absolute rounded-full pointer-events-none"
         style={{
-          inset: "-3px",
-          background: "conic-gradient(from 0deg, #1a1008, #3a2010, #201408, #2a1808, #1a1008)",
+          inset: "-2px",
+          background: "radial-gradient(circle, rgba(15,8,30,0.95) 60%, rgba(3,1,8,1) 100%)",
           borderRadius: "50%",
           zIndex: 2,
         }}
@@ -318,9 +317,10 @@ export function SpinAnimator({ isSpinning, outcome, onSpinComplete }: SpinAnimat
         initial={{ rotate: 0 }}
         className="absolute inset-0 rounded-full overflow-hidden"
         style={{
-          background: "#0a0806",
+          background: "#0f0820",
           willChange: "transform",
           zIndex: 3,
+          border: "1px solid rgba(168,85,247,0.25)",
         }}
       >
         {/* Render 5 segments */}
@@ -344,13 +344,12 @@ export function SpinAnimator({ isSpinning, outcome, onSpinComplete }: SpinAnimat
                 style={{ background: design.fill }}
               />
 
-              {/* Subtle leather texture overlay */}
+              {/* Subtle grid overlay */}
               <div
                 className="absolute inset-0"
                 style={{
-                  backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='4' height='4' viewBox='0 0 4 4' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h1v1H0zm2 2h1v1H2z' fill='rgba(0,0,0,0.15)'/%3E%3C/svg%3E\")",
-                  backgroundSize: "4px 4px",
-                  opacity: 0.6,
+                  background: "linear-gradient(180deg, rgba(168,85,247,0.06) 0%, transparent 40%)",
+                  opacity: 0.8,
                 }}
               />
 
@@ -374,7 +373,7 @@ export function SpinAnimator({ isSpinning, outcome, onSpinComplete }: SpinAnimat
                       fontWeight: 900,
                       letterSpacing: "0.08em",
                       color: design.labelColor,
-                      textShadow: `1px 1px 2px rgba(0,0,0,0.9), 0 0 8px ${design.labelColor}60`,
+                      textShadow: `0 0 10px ${design.accentGlow}, 1px 1px 2px rgba(0,0,0,0.9)`,
                       lineHeight: 1,
                       textTransform: "uppercase",
                     }}
@@ -405,7 +404,7 @@ export function SpinAnimator({ isSpinning, outcome, onSpinComplete }: SpinAnimat
                 </div>
               </div>
 
-              {/* Gold divider line at segment edge */}
+              {/* Purple divider line at segment edge */}
               <div
                 className="absolute inset-0 origin-center pointer-events-none"
                 style={{ transform: `rotate(${endAngle}deg)` }}
@@ -413,10 +412,10 @@ export function SpinAnimator({ isSpinning, outcome, onSpinComplete }: SpinAnimat
                 <div
                   className="absolute top-0 left-1/2"
                   style={{
-                    width: "2px",
+                    width: "1.5px",
                     height: "50%",
-                    background: "linear-gradient(180deg, #a07020 0%, #d4a030 30%, #8a5a10 70%, transparent 100%)",
-                    boxShadow: "0 0 3px rgba(180,130,40,0.5)",
+                    background: "linear-gradient(180deg, rgba(168,85,247,0.9) 0%, rgba(124,58,237,0.5) 50%, transparent 100%)",
+                    boxShadow: "0 0 4px rgba(168,85,247,0.6)",
                     transform: "translateX(-50%)",
                   }}
                 />
@@ -425,34 +424,24 @@ export function SpinAnimator({ isSpinning, outcome, onSpinComplete }: SpinAnimat
           );
         })}
 
-        {/* Center hole — pure black opening */}
+        {/* Center cutout for static hub */}
         <div
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
           style={{
-            width:  "22%",
-            height: "22%",
-            background: "#000",
+            width:  "24%",
+            height: "24%",
+            background: "transparent",
             zIndex: 10,
           }}
         />
       </motion.div>
 
-      {/* ── Center gear-tooth hub (sits on top of wheel, does NOT rotate) ── */}
+      {/* ── Static Phantom P hub ── */}
       <div
         className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-        style={{ width: hubSize, height: hubSize, zIndex: Z.CENTER_HUB }}
+        style={{ zIndex: Z.CENTER_HUB }}
       >
-        <GearRing size={hubSize} />
-        {/* Black void in center */}
-        <div
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
-          style={{
-            width:  "56%",
-            height: "56%",
-            background: "radial-gradient(circle, #050505 60%, #0f0a05 100%)",
-            boxShadow: "inset 0 0 10px rgba(0,0,0,0.9)",
-          }}
-        />
+        <PhantomHub size={hubSize} />
       </div>
 
       {/* ── Pointer needle (top center, does NOT rotate) ── */}
@@ -467,15 +456,15 @@ export function SpinAnimator({ isSpinning, outcome, onSpinComplete }: SpinAnimat
         >
           {/* Outer shadow */}
           <div style={{ width: 0, height: 0, borderLeft: "10px solid transparent", borderRight: "10px solid transparent", borderTop: "30px solid rgba(0,0,0,0.5)", filter: "blur(2px)", position: "absolute", top: 1, left: 1 }} />
-          {/* Bronze needle */}
+          {/* Purple needle */}
           <div
             style={{
               width: 0,
               height: 0,
               borderLeft: "9px solid transparent",
               borderRight: "9px solid transparent",
-              borderTop: "28px solid #c89020",
-              filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.6))",
+              borderTop: "28px solid #a855f7",
+              filter: "drop-shadow(0 0 8px rgba(168,85,247,0.8))",
               position: "relative",
             }}
           />
@@ -486,7 +475,7 @@ export function SpinAnimator({ isSpinning, outcome, onSpinComplete }: SpinAnimat
               height: 0,
               borderLeft: "4px solid transparent",
               borderRight: "4px solid transparent",
-              borderTop: "14px solid rgba(255,220,80,0.35)",
+              borderTop: "14px solid rgba(233,213,255,0.45)",
               position: "absolute",
               top: 0,
               left: "50%",

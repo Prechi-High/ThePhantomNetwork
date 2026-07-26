@@ -390,10 +390,9 @@ export default function PlayPage() {
     setSpinTokenAmount(0);
   }, [setSpinning, setSpinLocked, setTokens]);
 
-  const handleTokensAwarded = useCallback((amount: number) => {
-    const current = useGameplayStore.getState().tokens ?? 0;
-    setTokens(Math.round((current + amount) * 10) / 10);
-  }, [setTokens]);
+  const handleTokensAwarded = useCallback((_amount: number) => {
+    // Display counter animates in GameplayHUD; store syncs in handleSpinComplete
+  }, []);
 
   const handleStealActivated = useCallback(async () => {
     if (!subSessionId) return;

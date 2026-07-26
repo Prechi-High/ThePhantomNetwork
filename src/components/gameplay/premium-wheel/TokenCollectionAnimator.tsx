@@ -16,6 +16,8 @@ interface TokenCollectionAnimatorProps {
   onTokenArrived?: (amount: number) => void;
   /** ID of the HUD element to fly toward */
   targetElementId?: string;
+  /** ID of the element tokens spawn from (outcome card) */
+  originElementId?: string;
 }
 
 interface TokenParticle {
@@ -47,6 +49,7 @@ export function TokenCollectionAnimator({
   onComplete,
   onTokenArrived,
   targetElementId = "token-counter",
+  originElementId = "outcome-card-anchor",
 }: TokenCollectionAnimatorProps) {
   const cfg = OUTCOME_CONFIG[outcome];
   const [particles, setParticles] = useState<TokenParticle[]>([]);
@@ -67,20 +70,25 @@ export function TokenCollectionAnimator({
       return;
     }
 
-    // Locate target
     let targetX = typeof window !== "undefined" ? window.innerWidth * 0.92 : 300;
     let targetY = typeof window !== "undefined" ? window.innerHeight * 0.06 : 40;
+    let sx = typeof window !== "undefined" ? window.innerWidth / 2 : 0;
+    let sy = typeof window !== "undefined" ? window.innerHeight / 2 : 0;
+
     if (typeof document !== "undefined") {
-      const el = document.getElementById(targetElementId);
-      if (el) {
-        const r = el.getBoundingClientRect();
+      const targetEl = document.getElementById(targetElementId);
+      if (targetEl) {
+        const r = targetEl.getBoundingClientRect();
         targetX = r.left + r.width / 2;
         targetY = r.top + r.height / 2;
       }
+      const originEl = document.getElementById(originElementId);
+      if (originEl) {
+        const r = originEl.getBoundingClientRect();
+        sx = r.left + r.width / 2;
+        sy = r.top + r.height / 2;
+      }
     }
-
-    const sx = typeof window !== "undefined" ? window.innerWidth / 2 : 0;
-    const sy = typeof window !== "undefined" ? window.innerHeight / 2 : 0;
     const steps = 20;
 
     const generated: TokenParticle[] = Array.from({ length: count }).map((_, i) => {
@@ -133,11 +141,13 @@ export function TokenCollectionAnimator({
         initial={{ opacity: 0, y: 0 }}
         animate={{ opacity: [0, 1, 1, 0], y: [0, -60] }}
         transition={{ duration: 1.4, ease: "easeOut" }}
-        className="absolute left-1/2 -translate-x-1/2 font-display font-black text-3xl"
+        className="absolute font-display font-black text-3xl"
         style={{
-          top: "48vh",
-          color: cfg.primary,
-          textShadow: `0 0 20px ${cfg.glow}`,
+          left: "50%",
+          top: "42vh",
+          transform: "translateX(-50%)",
+          color: "#fcd34d",
+          textShadow: "0 0 20px rgba(234,179,8,0.7)",
         }}
       >
         {valueLabel}
@@ -168,16 +178,16 @@ export function TokenCollectionAnimator({
             onAnimationComplete={() => handleLanded(p.amount)}
             className="absolute -translate-x-1/2 -translate-y-1/2"
           >
-            {/* Token coin */}
+            {/* Token coin — gold Phantom style */}
             <div
-              className="w-10 h-10 rounded-full flex items-center justify-center font-display font-black text-[0.7rem] border-2 border-white/50 shadow-lg"
+              className="w-10 h-10 rounded-full flex items-center justify-center font-display font-black text-[0.75rem] border-2 border-amber-200/60 shadow-lg"
               style={{
-                background: `radial-gradient(circle at 35% 30%, #fff 0%, ${cfg.primary} 50%, ${cfg.accent} 100%)`,
-                boxShadow: `0 0 24px ${cfg.glow}, 0 0 8px rgba(0,0,0,0.6)`,
-                color: outcome === "ADVANCE" ? "#1e0b36" : "#ffffff",
+                background: "radial-gradient(circle at 35% 28%, #fff8dc 0%, #fcd34d 35%, #ca8a04 70%, #854d0e 100%)",
+                boxShadow: "0 0 24px rgba(234,179,8,0.65), 0 0 8px rgba(0,0,0,0.6)",
+                color: "#1a0a00",
               }}
             >
-              {tokenAmount === 0.5 ? "½" : "+1"}
+              P
             </div>
 
             {/* Motion trail glow */}

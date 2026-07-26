@@ -5,7 +5,7 @@
  * Built from scratch: mobile portrait, live API data throughout.
  */
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import type { SpinOutcome, StealTarget, TacticalAssetSlug } from "@/types/gameplay";
@@ -20,6 +20,7 @@ import { useInventoryUpdates } from "@/hooks/useInventoryUpdates";
 import { useServerTime } from "@/hooks/useServerTime";
 import { PremiumSpinWheel } from "@/components/gameplay/premium-wheel";
 import { TargetSelectionModal } from "@/components/gameplay/TargetSelectionModal";
+import { AnimatedTokenCounter } from "@/components/gameplay/hud/AnimatedTokenCounter";
 import { getAssetDisplayName } from "@/lib/brand/terminology";
 import { TACTICAL_ASSET_DEFS } from "@/lib/armory/tactical-assets";
 import "./arena-hud.css";
@@ -96,6 +97,13 @@ const EFFECT_STYLES: Record<string, { color: string; icon: string }> = {
   insurance:  { color: "#fbbf24", icon: "☂" },
   boost:      { color: "#f97316", icon: "⚡" },
 };
+
+const DEFAULT_SKILL_SLOTS = [
+  { id: "steal_boost", name: "STEAL BOOST" },
+  { id: "guardian", name: "SHIELD" },
+  { id: "veil", name: "CLOAK" },
+  { id: "insurance", name: "INSURANCE" },
+] as const;
 
 const AVATARS = ["👻", "🌟", "🦇", "⚡", "🔥", "💀"];
 
@@ -184,6 +192,21 @@ export function GameplayHUD({
   const [pendingAsset, setPendingAsset] = useState<TacticalAssetSlug | null>(null);
   const [skillTargets, setSkillTargets] = useState<StealTarget[]>([]);
   const [activatingSkillId, setActivatingSkillId] = useState<string | null>(null);
+  const [displayTokens, setDisplayTokens] = useState(tokens);
+  const [counterReceiving, setCounterReceiving] = useState(false);
+  const [autoSpinOn, setAutoSpinOn] = useState(false);
+
+  useEffect(() => {
+    if (!isSpinning && !spinLocked) {
+      setDisplayTokens(tokens);
+    }
+  }, [tokens, isSpinning, spinLocked]);
+
+  const handleTokenArrived = useCallback((amount: number) => {
+    setDisplayTokens((prev) => Math.round((prev + amount) * 10) / 10);
+    setCounterReceiving(true);
+    onTokensAwarded?.(amount);
+  }, [onTokensAwarded]);
 
   const activateAsset = useCallback(
     async (assetSlug: TacticalAssetSlug, targetId?: string) => {
@@ -262,8 +285,27 @@ export function GameplayHUD({
         charges: s.charges,
         cooldownMs: s.cooldown_until ? serverTime.getCountdown(s.cooldown_until) : 0,
         isReady: s.available && s.charges > 0,
+        placeholder: false,
       }))
     : [];
+
+  const skillSlots = (() => {
+    const filled = [...displaySkills];
+    for (const def of DEFAULT_SKILL_SLOTS) {
+      if (filled.length >= 4) break;
+      if (!filled.some((s) => s.id === def.id)) {
+        filled.push({
+          id: def.id,
+          name: def.name,
+          charges: 0,
+          cooldownMs: 0,
+          isReady: false,
+          placeholder: true,
+        });
+      }
+    }
+    return filled.slice(0, 4);
+  })();
 
   const voiceCount = Math.min(alivePlayers, 20);
 
@@ -327,7 +369,11 @@ export function GameplayHUD({
             <div className="arena-tokens-row__avatar">👻</div>
             <div>
               <div className="arena-tokens-row__label">MY TOKENS</div>
-              <div className="arena-tokens-row__value">{Math.round(tokens * 10) / 10}</div>
+              <AnimatedTokenCounter
+                value={displayTokens}
+                isReceiving={counterReceiving}
+                onReceivePulseEnd={() => setCounterReceiving(false)}
+              />
             </div>
           </div>
           <div className="arena-tokens-row__ranking">
@@ -369,9 +415,18 @@ export function GameplayHUD({
               outcome={lastOutcome}
               tokenAmount={tokenAmount}
               onSpinComplete={onSpinComplete}
-              onTokensAwarded={onTokensAwarded}
+              onTokensAwarded={handleTokenArrived}
               onStealActivated={onStealActivated}
             />
+          </div>
+          <div className="arena-wheel-zone__hint">TAP TO SPIN</div>
+          <div className="arena-wheel-zone__meter">
+            <div className="arena-wheel-zone__dots">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <span key={i} className="arena-wheel-zone__dot arena-wheel-zone__dot--full" />
+              ))}
+            </div>
+            <span className="arena-wheel-zone__spins-label">— / — SPINS</span>
           </div>
         </div>
 
@@ -441,9 +496,77 @@ export function GameplayHUD({
         </aside>
       </div>
 
-      {/* ── ENGAGE ── */}
+      {/* ── MY SKILLS (always visible) ── */}
+      <section className="arena-skills">
+        <div className="arena-skills__header">
+          <span className="arena-skills__title">MY SKILLS</span>
+          <span className="arena-skills__scroll-hint">SCROLL ›</span>
+        </div>
+        <div className="arena-skills__row">
+          {skillSlots.map((skill) => {
+            const st = SKILL_STYLES[skill.id] ?? SKILL_STYLES.default;
+            const cdSec = skill.cooldownMs > 0 ? Math.ceil(skill.cooldownMs / 1000) : 0;
+            const isActivating = activatingSkillId === skill.id;
+            const isPlaceholder = "placeholder" in skill && skill.placeholder;
+            return (
+              <div key={skill.id} className={`arena-skill-card ${isPlaceholder ? "arena-skill-card--empty" : ""}`}>
+                <motion.button
+                  type="button"
+                  className="arena-skill-card__btn"
+                  disabled={!skill.isReady || isPlaceholder}
+                  onClick={() => !isPlaceholder && handleSkillActivate(skill.id)}
+                  animate={
+                    isActivating
+                      ? { scale: [1, 1.12, 1], boxShadow: [`0 0 0px ${st.border}`, `0 0 24px ${st.border}`, `0 0 0px ${st.border}`] }
+                      : { scale: 1 }
+                  }
+                  transition={{ duration: 0.55, ease: "easeOut" }}
+                  style={{
+                    "--skill-border": st.border,
+                    "--skill-from": st.from,
+                    "--skill-to": st.to,
+                  } as React.CSSProperties}
+                >
+                  <span className="arena-skill-card__icon">{st.icon}</span>
+                  {skill.charges !== undefined && skill.charges > 1 && (
+                    <span className="arena-skill-card__charges">×{skill.charges}</span>
+                  )}
+                </motion.button>
+                <span className="arena-skill-card__name">{skill.name}</span>
+                <span className={`arena-skill-card__status ${skill.isReady ? "arena-skill-card__status--ready" : cdSec ? "arena-skill-card__status--cd" : "arena-skill-card__status--empty"}`}>
+                  {skill.isReady ? "READY" : cdSec ? `${cdSec}s` : "EMPTY"}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ── ACTIVE EFFECTS (always visible) ── */}
+      <section className="arena-effects">
+        <div className="arena-effects__header">ACTIVE EFFECTS</div>
+        <div className="arena-effects__row">
+          {effects.length === 0 ? (
+            <span className="arena-effects__empty">No active effects</span>
+          ) : (
+            effects.map((effect) => {
+              const d = EFFECT_STYLES[effect.type] ?? { color: "#a855f7", icon: "✦" };
+              const sec = Math.max(0, Math.ceil(serverTime.getCountdown(effect.expires_at) / 1000));
+              return (
+                <div key={effect.id} className="arena-effect-pill" style={{ "--pill-color": d.color } as React.CSSProperties}>
+                  <span className="arena-effect-pill__icon">{d.icon}</span>
+                  <span className="arena-effect-pill__name">{effect.name ?? effect.type}</span>
+                  <span className="arena-effect-pill__time">{sec}s</span>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </section>
+
+      {/* ── ACTION ROW: voice | auto | spin | speed | rec ── */}
       <div className="arena-engage">
-        <div className="arena-card arena-voice">
+        <button type="button" className="arena-card arena-voice arena-voice--compact" aria-label="Voice room">
           <div className="arena-voice__icon-wrap">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="#22c55e">
               <rect x="9" y="3" width="6" height="11" rx="3" />
@@ -451,22 +574,16 @@ export function GameplayHUD({
             </svg>
             <span className="arena-voice__badge">{Math.min(9, voiceCount)}</span>
           </div>
-          <div>
-            <div className="arena-voice__title">VOICE ROOM</div>
-            <div className="arena-voice__count">{voiceCount} / 20</div>
-            <div className="arena-voice__wave">
-              {[4, 7, 10, 6, 8, 5, 9, 4].map((h, i) => (
-                <motion.div
-                  key={i}
-                  className="arena-voice__wave-bar"
-                  animate={{ height: [`${h}px`, `${h + 4}px`, `${h}px`] }}
-                  transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.07 }}
-                  style={{ opacity: i < 5 ? 1 : 0.4 }}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
+        </button>
+
+        <button
+          type="button"
+          className={`arena-auto-btn ${autoSpinOn ? "arena-auto-btn--on" : ""}`}
+          onClick={() => setAutoSpinOn((v) => !v)}
+          aria-label="Auto spin"
+        >
+          AUTO
+        </button>
 
         <div className="arena-spin-wrap">
           <button
@@ -480,84 +597,15 @@ export function GameplayHUD({
           </button>
         </div>
 
-        <div className="arena-card arena-rec">
+        <button type="button" className="arena-speed-btn" aria-label="Spin speed">
+          x1<br />SPEED
+        </button>
+
+        <button type="button" className="arena-card arena-rec arena-rec--compact" aria-label="Session recording">
           <span className="arena-rec__dot" />
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <span className="arena-rec__title">REC</span>
-              <span className="arena-rec__hd">HD</span>
-            </div>
-            <span className="arena-rec__sub">SESSION RECORDING</span>
-          </div>
-        </div>
+          <span className="arena-rec__title">REC</span>
+        </button>
       </div>
-
-      {/* ── ACTIVE EFFECTS ── */}
-      {effects.length > 0 && (
-        <section className="arena-effects">
-          <div className="arena-effects__header">ACTIVE EFFECTS</div>
-          <div className="arena-effects__row">
-            {effects.map((effect) => {
-              const d = EFFECT_STYLES[effect.type] ?? { color: "#a855f7", icon: "✦" };
-              const sec = Math.max(0, Math.ceil(serverTime.getCountdown(effect.expires_at) / 1000));
-              return (
-                <div key={effect.id} className="arena-effect-pill" style={{ "--pill-color": d.color } as React.CSSProperties}>
-                  <span className="arena-effect-pill__icon">{d.icon}</span>
-                  <span className="arena-effect-pill__name">{effect.name ?? effect.type}</span>
-                  <span className="arena-effect-pill__time">{sec}s</span>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* ── MY SKILLS ── */}
-      {displaySkills.length > 0 && (
-        <section className="arena-skills">
-          <div className="arena-skills__header">
-            <span className="arena-skills__title">MY SKILLS</span>
-            <span className="arena-skills__scroll-hint">SCROLL ›</span>
-          </div>
-          <div className="arena-skills__row">
-            {displaySkills.map((skill) => {
-              const st = SKILL_STYLES[skill.id] ?? SKILL_STYLES.default;
-              const cdSec = skill.cooldownMs > 0 ? Math.ceil(skill.cooldownMs / 1000) : 0;
-              const isActivating = activatingSkillId === skill.id;
-              return (
-                <div key={skill.id} className="arena-skill-card">
-                  <motion.button
-                    type="button"
-                    className="arena-skill-card__btn"
-                    disabled={!skill.isReady}
-                    onClick={() => handleSkillActivate(skill.id)}
-                    animate={
-                      isActivating
-                        ? { scale: [1, 1.12, 1], boxShadow: [`0 0 0px ${st.border}`, `0 0 24px ${st.border}`, `0 0 0px ${st.border}`] }
-                        : { scale: 1 }
-                    }
-                    transition={{ duration: 0.55, ease: "easeOut" }}
-                    style={{
-                      "--skill-border": st.border,
-                      "--skill-from": st.from,
-                      "--skill-to": st.to,
-                    } as React.CSSProperties}
-                  >
-                    <span className="arena-skill-card__icon">{st.icon}</span>
-                    {skill.charges !== undefined && skill.charges > 1 && (
-                      <span className="arena-skill-card__charges">×{skill.charges}</span>
-                    )}
-                  </motion.button>
-                  <span className="arena-skill-card__name">{skill.name}</span>
-                  <span className={`arena-skill-card__status ${skill.isReady ? "arena-skill-card__status--ready" : cdSec ? "arena-skill-card__status--cd" : "arena-skill-card__status--empty"}`}>
-                    {skill.isReady ? "READY" : cdSec ? `${cdSec}s` : "EMPTY"}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
 
       <TargetSelectionModal
         open={targetModalOpen}

@@ -300,13 +300,13 @@ export { PremiumSpinWheel as SpinWheel };
 // ── Glow colour helper ───────────────────────────────────────────────────────
 function glowForOutcome(outcome: SpinOutcome): string {
   const map: Record<SpinOutcome, string> = {
-    ADVANCE:  "rgba(255,215,0,0.35)",
-    ACQUIRE:  "rgba(16,185,129,0.3)",
-    DISCOVER: "rgba(59,130,246,0.3)",
+    ADVANCE:  "rgba(245,158,11,0.35)",
+    ACQUIRE:  "rgba(234,179,8,0.32)",
+    DISCOVER: "rgba(59,130,246,0.28)",
     STEAL:    "rgba(239,68,68,0.35)",
-    VOID:     "rgba(107,114,128,0.15)",
+    VOID:     "rgba(107,114,128,0.12)",
   };
-  return map[outcome] ?? "rgba(139,92,246,0.25)";
+  return map[outcome] ?? "rgba(168,85,247,0.25)";
 }
 
 // ── Expose ButtonAnimator ────────────────────────────────────────────────────
