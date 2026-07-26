@@ -81,6 +81,14 @@ export function resolvePhaseTiming(input: {
   return { phase, round, phaseStartedAtMs, phaseEndsAt };
 }
 
+/** Whether the current phase timer has elapsed for an active sub-session. */
+export function isPhaseTimerExpired(
+  phaseEndsAt: number | null | undefined,
+  nowMs: number = Date.now()
+): boolean {
+  return phaseEndsAt != null && nowMs >= phaseEndsAt;
+}
+
 export function formatCountdownHms(ms: number): string {
   if (ms <= 0) return "0h 0m 0s";
   const totalSec = Math.floor(ms / 1000);

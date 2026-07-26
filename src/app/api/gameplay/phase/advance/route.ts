@@ -35,11 +35,22 @@ export async function POST(request: Request) {
 
   const { data: subSession } = await admin
     .from("sub_sessions")
-    .select("id, status, current_phase, phase_started_at, sessions(phase_config)")
+    .select("id, status, session_id, current_phase, phase_started_at, sessions(phase_config, status)")
     .eq("id", subSessionId)
     .single();
 
   if (!subSession || subSession.status !== "active") {
+    if (subSession?.status === "completed") {
+      const parentStatus = (subSession.sessions as { status?: string } | null)?.status;
+
+      return NextResponse.json({
+        advanced: false,
+        done: true,
+        reason: "already_completed",
+        subSessionStatus: "completed",
+        sessionStatus: parentStatus ?? "completed",
+      });
+    }
     return NextResponse.json({ advanced: false, reason: "session_inactive" });
   }
 

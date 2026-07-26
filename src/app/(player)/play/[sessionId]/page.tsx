@@ -96,6 +96,7 @@ interface GameplayStateResponse {
   }>;
   sessionStatus?: string;
   subSessionStatus?: string;
+  subSession?: { status?: string };
   totalPoolCents?: number;
   topPlayers?: Array<{ rank: number; username: string; tokens: number; userId?: string }>;
   totalPhases?: number;
@@ -130,6 +131,7 @@ export default function PlayPage() {
   const [sessionMode, setSessionMode] = useState<"squad" | "solo">("squad");
   const lastKnownPhaseRef = useRef<number>(1);
   const lastAdvanceAttemptRef = useRef<number | null>(null);
+  const advanceInFlightRef = useRef(false);
 
   // ── Pending spin data (server result awaiting animation) ────────────────
   const pendingSpinRef = useRef<{
@@ -209,6 +211,7 @@ export default function PlayPage() {
     if (data.totalPlayers!= null) setTotalPlayers(data.totalPlayers);
     if (data.sessionStatus)       setSessionStatus(data.sessionStatus);
     if (data.subSessionStatus)    setSubSessionStatus(data.subSessionStatus);
+    else if (data.subSession?.status) setSubSessionStatus(data.subSession.status);
     if (data.totalPoolCents != null) setTotalPoolCents(data.totalPoolCents);
     if (data.topPlayers) setTopPlayers(data.topPlayers);
     if (data.totalPhases != null) setTotalPhases(data.totalPhases);
@@ -326,17 +329,18 @@ export default function PlayPage() {
   }, []);
 
   const phaseRemaining = usePhaseTimer(phaseEndsAt);
+  const phaseExpired = phaseEndsAt != null && phaseRemaining <= 0;
+  const gameplayLocked = phaseExpired || isSessionComplete;
 
-  // ── ⑦a PHASE ADVANCE ON TIMER EXPIRY ─────────────────────────────────────
   useEffect(() => {
     if (lifecycle !== "active" || !subSessionId || !phaseEndsAt) return;
-    if (subSessionStatus === "completed") return;
+    if (isSessionComplete) return;
     if (phaseRemaining > 0) return;
+    if (advanceInFlightRef.current) return;
     if (lastAdvanceAttemptRef.current === phase) return;
 
-    lastAdvanceAttemptRef.current = phase ?? 1;
-
     const advancePhase = async () => {
+      advanceInFlightRef.current = true;
       try {
         const res = await fetch("/api/gameplay/phase/advance", {
           method: "POST",
@@ -344,16 +348,24 @@ export default function PlayPage() {
           body: JSON.stringify({ subSessionId }),
         });
         const data = await res.json();
+
+        if (data.done || data.reason === "already_completed") {
+          setSubSessionStatus(data.subSessionStatus ?? "completed");
+          if (data.sessionStatus) setSessionStatus(data.sessionStatus);
+          lastAdvanceAttemptRef.current = phase ?? 1;
+          return;
+        }
+
         if (data.advanced && data.phase != null && data.phase >= lastKnownPhaseRef.current) {
           lastKnownPhaseRef.current = data.phase;
           setPhase(data.phase);
           if (data.phaseEndsAt != null) setPhaseEndsAt(data.phaseEndsAt);
-        }
-        if (data.done) {
-          setSubSessionStatus(data.subSessionStatus ?? "completed");
-          if (data.sessionStatus) setSessionStatus(data.sessionStatus);
+          lastAdvanceAttemptRef.current = phase ?? 1;
+        } else if (data.reason !== "advance_in_progress") {
+          lastAdvanceAttemptRef.current = null;
         }
       } catch (err) {
+        lastAdvanceAttemptRef.current = null;
         reportClientError({
           area: "gameplay",
           severity: "high",
@@ -362,12 +374,13 @@ export default function PlayPage() {
           context: { sessionId, subSessionId, phase },
         });
       } finally {
+        advanceInFlightRef.current = false;
         refreshState();
       }
     };
 
     advancePhase();
-  }, [lifecycle, subSessionId, phaseEndsAt, phaseRemaining, phase, refreshState, sessionId, subSessionStatus]);
+  }, [lifecycle, subSessionId, phaseEndsAt, phaseRemaining, phase, refreshState, sessionId, isSessionComplete]);
 
   // Reset advance guard when phase increments
   useEffect(() => {
@@ -379,10 +392,14 @@ export default function PlayPage() {
   // ── ⑦ ADAPTIVE POLLING (urgent near phase end) ──────────────────────────
   useEffect(() => {
     if (!subSessionId || lifecycle !== "active") return;
-    const pollMs = phaseEndsAt && phaseEndsAt - Date.now() <= 0 ? 2_000 : 5_000;
+    const pollMs = isSessionComplete
+      ? 1_000
+      : phaseExpired
+        ? 1_000
+        : 5_000;
     const id = setInterval(refreshState, pollMs);
     return () => clearInterval(id);
-  }, [subSessionId, lifecycle, phaseEndsAt, refreshState]);
+  }, [subSessionId, lifecycle, phaseEndsAt, phaseExpired, isSessionComplete, refreshState]);
 
   // ── ⑧ CLEANUP on unmount ────────────────────────────────────────────────
   useEffect(() => {
@@ -398,7 +415,7 @@ export default function PlayPage() {
   // They dispatch, then let the server response and realtime drive state.
 
   const handleSpin = useCallback(async () => {
-    if (!subSessionId || spinLocked || lifecycle !== "active") return;
+    if (!subSessionId || spinLocked || lifecycle !== "active" || gameplayLocked) return;
     setSpinning(true);
     setSpinLocked(true);
 
@@ -434,7 +451,7 @@ export default function PlayPage() {
         context: { subSessionId },
       });
     }
-  }, [subSessionId, spinLocked, lifecycle, setSpinning, setSpinLocked, setLastOutcome]);
+  }, [subSessionId, spinLocked, lifecycle, gameplayLocked, setSpinning, setSpinLocked, setLastOutcome]);
 
   const handleSpinComplete = useCallback(() => {
     setSpinning(false);
@@ -601,7 +618,7 @@ export default function PlayPage() {
             alivePlayers={totalPlayers}
             rankingPercentile={rankingPercentile}
             isSpinning={isSpinning}
-            spinLocked={spinLocked}
+            spinLocked={spinLocked || gameplayLocked}
             lastOutcome={lastOutcome}
             tokenAmount={spinTokenAmount}
             surgePercent={surgePercent}
@@ -610,15 +627,16 @@ export default function PlayPage() {
             onTokensAwarded={handleTokensAwarded}
             onStealActivated={handleStealActivated}
           />
-          {showStealPicker && (
-            <StealTargetPicker
-              targets={targets}
-              emptyMessage={stealTargetError ?? undefined}
-              onSelect={handleStealSelect}
-              onCancel={handleStealCancel}
-            />
-          )}
         </PhaseSlideTransition>
+      )}
+
+      {showStealPicker && !showCinematicCountdown && (
+        <StealTargetPicker
+          targets={targets}
+          emptyMessage={stealTargetError ?? undefined}
+          onSelect={handleStealSelect}
+          onCancel={handleStealCancel}
+        />
       )}
     </>
   );

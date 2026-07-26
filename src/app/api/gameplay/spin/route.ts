@@ -6,7 +6,8 @@ import { redisPublish, redisGet, redisSet } from "@/lib/redis/client";
 import { redisKeys } from "@/lib/redis/keys";
 import { checkRateLimit, acquireSpinLock } from "@/lib/api/rate-limit";
 import { SPIN_DURATION_MS } from "@/types/gameplay";
-import { PHASE_STATE_TTL_SECONDS } from "@/lib/gameplay/phase-timing";
+import { PHASE_STATE_TTL_SECONDS, getPhaseDurationMs, getPhaseEntry, LEGACY_PHASE_DURATIONS_MS, isPhaseTimerExpired } from "@/lib/gameplay/phase-timing";
+import type { PhaseConfig } from "@/types/gameplay";
 import { getTargetAngle } from "@/components/gameplay/premium-wheel/config";
 
 export async function POST(request: Request) {
@@ -35,6 +36,36 @@ export async function POST(request: Request) {
 
   if (!player || player.is_eliminated) {
     return NextResponse.json({ error: "Cannot spin" }, { status: 400 });
+  }
+
+  const { data: subSession } = await admin
+    .from("sub_sessions")
+    .select("id, status, current_phase, phase_started_at, sessions(phase_config)")
+    .eq("id", subSessionId)
+    .single();
+
+  if (!subSession || subSession.status !== "active") {
+    return NextResponse.json({ error: "Session ended" }, { status: 400 });
+  }
+
+  const redisState = await redisGet<{ phaseEndsAt?: number; phaseConfig?: PhaseConfig }>(
+    redisKeys.subState(subSessionId)
+  );
+  const currentPhase = subSession.current_phase ?? 1;
+  const phaseConfig =
+    redisState?.phaseConfig ??
+    (subSession.sessions as { phase_config?: PhaseConfig }).phase_config;
+  const phaseEntry = phaseConfig ? getPhaseEntry(phaseConfig, currentPhase) : undefined;
+  const duration = phaseEntry
+    ? getPhaseDurationMs(phaseEntry)
+    : LEGACY_PHASE_DURATIONS_MS[Math.max(0, currentPhase - 1)] ?? 6 * 60 * 1000;
+  const phaseStarted = subSession.phase_started_at
+    ? new Date(subSession.phase_started_at).getTime()
+    : 0;
+  const endsAt = redisState?.phaseEndsAt ?? (phaseStarted ? phaseStarted + duration : null);
+
+  if (isPhaseTimerExpired(endsAt)) {
+    return NextResponse.json({ error: "Phase ended" }, { status: 400 });
   }
 
   const fairSpin: ProvablyFairSpin = rollSpinOutcome();
