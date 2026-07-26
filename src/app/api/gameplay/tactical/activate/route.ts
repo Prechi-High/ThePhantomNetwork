@@ -9,6 +9,7 @@ import { consumeSessionAsset } from "@/lib/armory/service";
 import { TACTICAL_ASSET_DEFS } from "@/lib/armory/tactical-assets";
 import { LIVE_FEED_TEMPLATES } from "@/lib/brand/terminology";
 import type { TacticalAssetSlug } from "@/types/gameplay";
+import type { ActiveEffect } from "@/stores/useEffectsStore";
 
 interface ArmedState {
   assetSlug: TacticalAssetSlug;
@@ -58,6 +59,7 @@ export async function POST(request: Request) {
   const username = profile?.username ?? "Player";
   const armedKey = redisKeys.tacticalArmed(subSessionId, user!.id);
   const now = Date.now();
+  let activatedEffect: ActiveEffect | undefined;
 
   switch (slug) {
     case "guardian": {
@@ -70,7 +72,7 @@ export async function POST(request: Request) {
         { assetSlug: slug, expiresAt: now + def.durationMs } satisfies ArmedState,
         Math.ceil(def.durationMs / 1000)
       );
-      await applyTacticalEffectFeedback(subSessionId, user!.id, username, slug);
+      activatedEffect = await applyTacticalEffectFeedback(subSessionId, user!.id, username, slug);
       break;
     }
     case "veil": {
@@ -81,7 +83,7 @@ export async function POST(request: Request) {
           cloak_expires_at: new Date(now + def.durationMs).toISOString(),
         })
         .eq("id", player.id);
-      await applyTacticalEffectFeedback(subSessionId, user!.id, username, slug);
+      activatedEffect = await applyTacticalEffectFeedback(subSessionId, user!.id, username, slug);
       break;
     }
     case "counterstrike": {
@@ -90,7 +92,7 @@ export async function POST(request: Request) {
         { assetSlug: slug, expiresAt: now + def.durationMs } satisfies ArmedState,
         Math.ceil(def.durationMs / 1000)
       );
-      await applyTacticalEffectFeedback(subSessionId, user!.id, username, slug);
+      activatedEffect = await applyTacticalEffectFeedback(subSessionId, user!.id, username, slug);
       break;
     }
     case "intercept": {
@@ -152,7 +154,7 @@ export async function POST(request: Request) {
     targetId,
   });
 
-  return NextResponse.json({ success: true, assetSlug: slug });
+  return NextResponse.json({ success: true, assetSlug: slug, effect: activatedEffect ?? null });
 }
 
 export async function GET(request: Request) {

@@ -799,7 +799,7 @@
 .arena-skills-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: clamp(6px, 1.6vw, 8px);
+  gap: clamp(3px, 0.8vw, 4px);
 }
 
 .arena-skill-tile {
@@ -808,13 +808,13 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  aspect-ratio: 0.85;
-  padding: 6px 4px 8px;
-  border-radius: 12px;
-  border: 1.5px solid var(--skill-border, rgba(107, 114, 128, 0.4));
+  gap: 1px;
+  height: clamp(38px, 10.5vw, 46px);
+  padding: 2px 2px 3px;
+  border-radius: 8px;
+  border: 1px solid var(--skill-border, rgba(107, 114, 128, 0.4));
   background: linear-gradient(160deg, var(--skill-from, #111), var(--skill-to, #0a0a0a));
-  box-shadow: 0 0 14px color-mix(in srgb, var(--skill-border, #a855f7) 25%, transparent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--skill-border, #a855f7) 20%, transparent);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -829,28 +829,27 @@
 }
 
 .arena-skill-tile__icon {
-  font-size: clamp(22px, 6vw, 28px);
+  font-size: clamp(11px, 3vw, 14px);
   line-height: 1;
-  margin-top: 2px;
 }
 
 .arena-skill-tile__name {
-  font-size: clamp(6px, 1.5vw, 7px);
+  font-size: clamp(5px, 1.2vw, 6px);
   font-weight: 800;
   color: rgba(255, 255, 255, 0.92);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
   text-align: center;
-  line-height: 1.15;
+  line-height: 1.1;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .arena-skill-tile__status {
-  font-size: clamp(6px, 1.5vw, 7px);
+  font-size: clamp(5px, 1.2vw, 6px);
   font-weight: 800;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
 }
 
 .arena-skill-tile__status--ready { color: var(--arena-green); }
@@ -859,13 +858,13 @@
 
 .arena-skill-tile__charges {
   position: absolute;
-  top: 4px;
-  right: 5px;
-  min-width: 14px;
-  height: 14px;
+  top: 2px;
+  right: 3px;
+  min-width: 10px;
+  height: 10px;
   border-radius: 999px;
   background: var(--skill-border, #a855f7);
-  font-size: 7px;
+  font-size: 6px;
   font-weight: 900;
   color: #000;
   display: flex;
@@ -988,11 +987,15 @@
   }
 
   .arena-skills-grid {
-    gap: 4px;
+    gap: 3px;
+  }
+
+  .arena-skill-tile {
+    height: clamp(34px, 9.5vw, 40px);
   }
 
   .arena-skill-tile__icon {
-    font-size: clamp(18px, 5vw, 22px);
+    font-size: clamp(10px, 2.8vw, 12px);
   }
 
   .arena-effect-card {

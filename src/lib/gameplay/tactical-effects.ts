@@ -4,11 +4,31 @@ import { TACTICAL_ASSET_DEFS } from "@/lib/armory/tactical-assets";
 import type { ActiveEffect, EffectType } from "@/stores/useEffectsStore";
 import type { TacticalAssetSlug } from "@/types/gameplay";
 
-const SLUG_TO_EFFECT_TYPE: Partial<Record<TacticalAssetSlug, EffectType>> = {
+export const SLUG_TO_EFFECT_TYPE: Partial<Record<TacticalAssetSlug, EffectType>> = {
   guardian: "shield",
   veil: "cloak",
   counterstrike: "insurance",
 };
+
+export function buildActiveEffectFromArmed(
+  assetSlug: TacticalAssetSlug,
+  expiresAtMs: number
+): ActiveEffect | null {
+  const def = TACTICAL_ASSET_DEFS[assetSlug];
+  const effectType = SLUG_TO_EFFECT_TYPE[assetSlug];
+  if (!def || !effectType || expiresAtMs <= Date.now()) return null;
+
+  const startedAt = new Date(expiresAtMs - def.durationMs).toISOString();
+  return {
+    id: `armed-${assetSlug}-${expiresAtMs}`,
+    type: effectType,
+    name: def.displayName,
+    duration_ms: def.durationMs,
+    started_at: startedAt,
+    expires_at: new Date(expiresAtMs).toISOString(),
+    icon: def.icon,
+  };
+}
 
 export async function applyTacticalEffectFeedback(
   subSessionId: string,

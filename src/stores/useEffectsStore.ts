@@ -102,7 +102,10 @@ export const useEffectsStore = create<EffectsStore>((set, get) => ({
 
   addEffect: (effect) =>
     set((s) => {
-      const updated = [...s.effects, effect];
+      const withoutDuplicate = s.effects.filter(
+        (e) => e.id !== effect.id && e.type !== effect.type
+      );
+      const updated = [...withoutDuplicate, effect];
       return { effects: updated, ...deriveFlags(updated) };
     }),
 

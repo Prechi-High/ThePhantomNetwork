@@ -31,12 +31,14 @@ export function useEffectsUpdates(
   userId: string | null,
   subSessionId: string | null,
 ) {
-  const store = useEffectsStore();
   const sseRef      = useRef<EventSource | null>(null);
   const cleanupRef  = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!userId || !subSessionId) return;
+
+    const isForCurrentUser = (eventUserId: unknown) =>
+      !eventUserId || eventUserId === userId;
 
     // ── Initial fetch ────────────────────────────────────────────────────
     const fetchEffects = async () => {
@@ -47,7 +49,7 @@ export function useEffectsUpdates(
         if (!res.ok) return;
         const data = await res.json() as EffectsResponse;
         if (Array.isArray(data.effects)) {
-          store.setEffects(data.effects);
+          useEffectsStore.getState().setEffects(data.effects);
         }
       } catch {/* independent failure — gameplay continues */}
     };
@@ -61,14 +63,17 @@ export function useEffectsUpdates(
     const handleMessage = (e: MessageEvent) => {
       try {
         const event = JSON.parse(e.data) as Record<string, unknown>;
+        const { addEffect, removeEffect } = useEffectsStore.getState();
 
         if (event.type === "effect:activated" && event.payload) {
-          store.addEffect(event.payload as ActiveEffect);
+          if (!isForCurrentUser(event.userId)) return;
+          addEffect(event.payload as ActiveEffect);
           return;
         }
         if (event.type === "effect:expired") {
+          if (!isForCurrentUser(event.userId)) return;
           const payload = event.payload as Record<string, unknown>;
-          if (payload?.effectId) store.removeEffect(payload.effectId as string);
+          if (payload?.effectId) removeEffect(payload.effectId as string);
           return;
         }
         // Fallback: SSE message channel
@@ -76,14 +81,13 @@ export function useEffectsUpdates(
           event.type === "effect_applied" ||
           event.type === "effect_activated"
         ) {
+          if (!isForCurrentUser(event.userId)) return;
           const payload = event.payload as ActiveEffect | undefined;
-          if (payload?.id) store.addEffect(payload);
+          if (payload?.id) addEffect(payload);
         }
       } catch {/* skip malformed event */}
     };
 
-    es.addEventListener("effect:activated", handleMessage);
-    es.addEventListener("effect:expired", handleMessage);
     es.onmessage = handleMessage;
     es.onerror = () => {
       // Degrade silently — cleanup loop keeps expired effects cleared
@@ -92,7 +96,7 @@ export function useEffectsUpdates(
 
     // ── Expiry cleanup loop ──────────────────────────────────────────────
     cleanupRef.current = setInterval(() => {
-      store.clearExpired();
+      useEffectsStore.getState().clearExpired();
     }, CLEANUP_INTERVAL_MS);
 
     return () => {
@@ -100,5 +104,5 @@ export function useEffectsUpdates(
       sseRef.current = null;
       if (cleanupRef.current) clearInterval(cleanupRef.current);
     };
-  }, [userId, subSessionId, store]);
+  }, [userId, subSessionId]);
 }

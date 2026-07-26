@@ -13,7 +13,7 @@ import { usePhaseTimer } from "@/hooks/useRealtimeSession";
 import { useSessionStore } from "@/stores/useSessionStore";
 import { useLiveFeedStore, type FeedEvent } from "@/stores/useLiveFeedStore";
 import { useLiveFeedUpdates } from "@/hooks/useLiveFeedUpdates";
-import { useEffectsStore } from "@/stores/useEffectsStore";
+import { useEffectsStore, type ActiveEffect } from "@/stores/useEffectsStore";
 import { useEffectsUpdates } from "@/hooks/useEffectsUpdates";
 import { useInventoryStore } from "@/stores/useInventoryStore";
 import { useInventoryUpdates } from "@/hooks/useInventoryUpdates";
@@ -213,11 +213,17 @@ export function GameplayHUD({
       if (!subSessionId || !sessionId) return;
       setActivatingSkillId(assetSlug);
       try {
-        await fetch("/api/gameplay/tactical/activate", {
+        const res = await fetch("/api/gameplay/tactical/activate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ subSessionId, sessionId, assetSlug, targetId }),
         });
+        if (res.ok) {
+          const data = await res.json() as { effect?: ActiveEffect | null };
+          if (data.effect?.id) {
+            useEffectsStore.getState().addEffect(data.effect);
+          }
+        }
       } finally {
         setTimeout(() => setActivatingSkillId(null), 700);
       }
