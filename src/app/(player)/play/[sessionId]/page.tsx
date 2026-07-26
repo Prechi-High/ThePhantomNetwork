@@ -30,10 +30,9 @@ import { useParams, useRouter } from "next/navigation";
 
 // ── Gameplay systems ───────────────────────────────────────────────────────
 
-import { GameplayHUD }           from "@/components/gameplay/hud";
+import { GameplayHUD } from "@/components/gameplay/hud";
 import { CinematicCountdown }    from "@/components/gameplay/CinematicCountdown";
 import { PhantomNetworkIntro, type NetworkPlayer } from "@/components/gameplay/PhantomNetworkIntro";
-import { HUDStudioProvider }     from "@/components/gameplay/hud-studio";
 
 // ── Stores (via public module boundary) ───────────────────────────────────
 
@@ -45,10 +44,7 @@ import { useStealStore }     from "@/stores/useStealStore";
 
 import { useRealtimeSession, usePhaseTimer } from "@/hooks/useRealtimeSession";
 import { useServerTime }         from "@/hooks/useServerTime";
-import { useLiveFeedUpdates }    from "@/hooks/useLiveFeedUpdates";
 import { useLeaderboardUpdates } from "@/hooks/useLeaderboardUpdates";
-import { useEffectsUpdates }     from "@/hooks/useEffectsUpdates";
-import { useInventoryUpdates }   from "@/hooks/useInventoryUpdates";
 import { reportClientError }     from "@/lib/monitoring/client-report";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -189,11 +185,7 @@ export default function PlayPage() {
   useServerTime();   // establishes clock offset; used by effects/inventory hooks
 
   // ── ② REALTIME SUBSCRIPTIONS ────────────────────────────────────────────
-  // These are all started here at the top level so hooks run unconditionally
-  useLiveFeedUpdates(subSessionId);
   useLeaderboardUpdates(subSessionId);
-  useEffectsUpdates(currentUserId ?? null, subSessionId);
-  useInventoryUpdates(currentUserId ?? null, subSessionId, sessionId);
 
   // ── ③ APPLY SERVER STATE → STORES ───────────────────────────────────────
   const applyState = useCallback((data: GameplayStateResponse) => {
@@ -542,8 +534,9 @@ export default function PlayPage() {
 
       {/* ── Gameplay HUD ── */}
       {!showNetworkIntro && !showCinematicCountdown && (
-        <HUDStudioProvider>
+        <>
           <GameplayHUD
+            sessionId={sessionId}
             soloMode={sessionMode === "solo"}
             topPlayers={topPlayers}
             squadMembers={squadMembers}
@@ -580,7 +573,7 @@ export default function PlayPage() {
               onCancel={handleStealCancel}
             />
           )}
-        </HUDStudioProvider>
+        </>
       )}
     </>
   );
