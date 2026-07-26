@@ -26,6 +26,7 @@ export function PhaseSlideTransition({ phase, children }: PhaseSlideTransitionPr
     }
 
     if (phase === prevPhaseRef.current) return;
+    if (phase < prevPhaseRef.current) return;
 
     setExitingPhase(prevPhaseRef.current);
     prevPhaseRef.current = phase;

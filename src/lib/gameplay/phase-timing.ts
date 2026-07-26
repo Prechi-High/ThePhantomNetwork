@@ -58,7 +58,10 @@ export function resolvePhaseTiming(input: {
     phaseStartedAt?: number;
   } | null;
 }) {
-  const phase = input.redisState?.phase ?? input.currentPhase ?? 1;
+  const dbPhase = input.currentPhase ?? 1;
+  const redisPhase = input.redisState?.phase;
+  // DB is authoritative; redis can lag during advance — never regress phase.
+  const phase = Math.max(dbPhase, redisPhase ?? 0);
   const round = input.redisState?.round ?? 1;
 
   let phaseStartedAtMs = input.redisState?.phaseStartedAt;
@@ -67,8 +70,12 @@ export function resolvePhaseTiming(input: {
   }
 
   let phaseEndsAt = input.redisState?.phaseEndsAt;
-  if (!phaseEndsAt && phaseStartedAtMs) {
-    phaseEndsAt = computePhaseEndsAt(phase, phaseStartedAtMs, input.phaseConfig);
+  const redisIsStale = redisPhase != null && redisPhase < dbPhase;
+
+  if (redisIsStale || !phaseEndsAt) {
+    if (phaseStartedAtMs) {
+      phaseEndsAt = computePhaseEndsAt(phase, phaseStartedAtMs, input.phaseConfig);
+    }
   }
 
   return { phase, round, phaseStartedAtMs, phaseEndsAt };

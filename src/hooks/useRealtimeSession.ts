@@ -91,6 +91,9 @@ export function useRealtimeSession(
       // ---- Phase ----
       case "phase_change": {
         const phase = Number(event.phase);
+        const currentPhase = useGameplayStore.getState().phase;
+        if (phase < currentPhase) break;
+
         const phaseEndsAt = event.phaseEndsAt ? Number(event.phaseEndsAt) : null;
         const round = event.round ? Number(event.round) : 1;
         setPhase(phase);

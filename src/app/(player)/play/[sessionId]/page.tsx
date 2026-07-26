@@ -198,14 +198,13 @@ export default function PlayPage() {
       setEliminated(data.player.is_eliminated);
       setRevivable(data.player.is_revivable);
     }
-    if (data.phase != null) {
-      if (data.phase > lastKnownPhaseRef.current) {
-        lastKnownPhaseRef.current = data.phase;
-      }
+    if (data.phase != null && data.phase >= lastKnownPhaseRef.current) {
+      lastKnownPhaseRef.current = data.phase;
       setPhase(data.phase);
+      if (data.phaseEndsAt != null) setPhaseEndsAt(data.phaseEndsAt);
+      if (data.phaseStartedAt != null) setPhaseStartedAt(data.phaseStartedAt);
     }
     if (data.round       != null) setRound(data.round);
-    if (data.phaseEndsAt != null) setPhaseEndsAt(data.phaseEndsAt);
     if (data.playerRank  != null) setPlayerRank(data.playerRank);
     if (data.totalPlayers!= null) setTotalPlayers(data.totalPlayers);
     if (data.sessionStatus)       setSessionStatus(data.sessionStatus);
@@ -213,7 +212,6 @@ export default function PlayPage() {
     if (data.totalPoolCents != null) setTotalPoolCents(data.totalPoolCents);
     if (data.topPlayers) setTopPlayers(data.topPlayers);
     if (data.totalPhases != null) setTotalPhases(data.totalPhases);
-    if (data.phaseStartedAt != null) setPhaseStartedAt(data.phaseStartedAt);
     if (data.squadMembers) setSquadMembers(data.squadMembers);
   }, [setPhase, setRound, setPhaseEndsAt, setTokens, setEliminated, setRevivable]);
 
@@ -332,6 +330,7 @@ export default function PlayPage() {
   // ── ⑦a PHASE ADVANCE ON TIMER EXPIRY ─────────────────────────────────────
   useEffect(() => {
     if (lifecycle !== "active" || !subSessionId || !phaseEndsAt) return;
+    if (subSessionStatus === "completed") return;
     if (phaseRemaining > 0) return;
     if (lastAdvanceAttemptRef.current === phase) return;
 
@@ -345,6 +344,11 @@ export default function PlayPage() {
           body: JSON.stringify({ subSessionId }),
         });
         const data = await res.json();
+        if (data.advanced && data.phase != null && data.phase >= lastKnownPhaseRef.current) {
+          lastKnownPhaseRef.current = data.phase;
+          setPhase(data.phase);
+          if (data.phaseEndsAt != null) setPhaseEndsAt(data.phaseEndsAt);
+        }
         if (data.done) {
           setSubSessionStatus(data.subSessionStatus ?? "completed");
           if (data.sessionStatus) setSessionStatus(data.sessionStatus);
@@ -363,7 +367,7 @@ export default function PlayPage() {
     };
 
     advancePhase();
-  }, [lifecycle, subSessionId, phaseEndsAt, phaseRemaining, phase, refreshState, sessionId]);
+  }, [lifecycle, subSessionId, phaseEndsAt, phaseRemaining, phase, refreshState, sessionId, subSessionStatus]);
 
   // Reset advance guard when phase increments
   useEffect(() => {
