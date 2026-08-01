@@ -26,8 +26,9 @@ export function UpcomingSessions({ initialSessions }: UpcomingSessionsProps) {
   const load = useCallback(async () => {
     const result = await sessionNetwork.listSessions();
     if (!result.ok) return;
-    const upcoming = (result.data.sessions ?? []).filter(
-      (s: Session) => s.status === "open" || s.status === "locked"
+    const data = result.data as { sessions?: Session[] };
+    const upcoming = (data.sessions ?? []).filter(
+      (s) => s.status === "open" || s.status === "locked"
     );
     setSessions(upcoming.slice(0, 3));
   }, []);
