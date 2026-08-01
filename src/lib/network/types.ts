@@ -94,7 +94,13 @@ export interface TacticalActivateResponse {
 }
 
 export interface PhaseAdvanceResponse {
+  advanced?: boolean;
+  done?: boolean;
+  reason?: string;
   success?: boolean;
   phase?: number;
+  phaseEndsAt?: number | null;
+  subSessionStatus?: string;
+  sessionStatus?: string;
   error?: string;
 }

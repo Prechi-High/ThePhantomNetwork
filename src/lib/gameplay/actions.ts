@@ -11,6 +11,19 @@ import { reportClientError } from "@/lib/monitoring/client-report";
 import type { StealTarget } from "@/types/gameplay";
 import type { TacticalAssetSlug } from "@/types/gameplay";
 import { useEffectsStore, type ActiveEffect } from "@/stores/useEffectsStore";
+import type { StealTargetsResponse } from "@/lib/network/types";
+
+function mapStealTargets(raw: StealTargetsResponse["targets"]): StealTarget[] {
+  return (raw ?? []).map((t) => ({
+    userId: t.user_id,
+    username: t.username,
+    tokens: t.tokens,
+    reason: t.isRival ? "Rival" : "Target",
+    risk: t.risk,
+    isRival: t.isRival,
+    streak: t.streak,
+  }));
+}
 
 export async function refreshGameplayState(subSessionId: string) {
   const result = await gameplayNetwork.getState(subSessionId);
@@ -27,7 +40,7 @@ export function requestStealTargets(subSessionId: string): void {
   useStealStore.getState().setStealInProgress(true);
   gameplayNetwork.getStealTargets(subSessionId).then((result) => {
     if (result.ok) {
-      const targets = (result.data.targets ?? []) as StealTarget[];
+      const targets = mapStealTargets(result.data.targets);
       useStealStore.getState().setTargets(targets);
       gameplayEvents.emit({
         type: "STEAL_ACTIVATED",
@@ -136,7 +149,7 @@ export function loadTacticalTargets(
   onLoaded: (targets: StealTarget[]) => void
 ): void {
   void gameplayNetwork.getStealTargets(subSessionId).then((result) => {
-    if (result.ok) onLoaded((result.data.targets ?? []) as StealTarget[]);
+    if (result.ok) onLoaded(mapStealTargets(result.data.targets));
     else onLoaded([]);
   });
 }
