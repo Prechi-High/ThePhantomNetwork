@@ -1,6 +1,6 @@
 "use client";
 
-import { MotionCard } from "@/components/motion/MotionCard";
+import { cn } from "@/lib/utils";
 
 interface CardProps {
   children: React.ReactNode;
@@ -9,6 +9,17 @@ interface CardProps {
   hoverable?: boolean;
 }
 
-export function Card(props: CardProps) {
-  return <MotionCard {...props} />;
+export function Card({ children, className, glow, hoverable = false }: CardProps) {
+  return (
+    <div
+      className={cn(
+        "glass rounded-[var(--radius-lg)] p-4 transition-shadow duration-300",
+        glow && "shadow-[var(--shadow-glow-purple)]",
+        hoverable && "hover:shadow-[var(--shadow-glow-purple)]",
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
 }

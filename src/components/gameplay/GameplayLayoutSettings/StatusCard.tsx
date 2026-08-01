@@ -78,7 +78,7 @@ export function StatusCard({ status, loading, error }: StatusCardProps) {
           <span className="font-semibold text-white">{sourceLabel}</span>
         </div>
 
-        {status.metadata.version && (
+        {status.metadata?.version != null && (
           <div className="flex justify-between items-center">
             <span className="text-phantom-muted">Version:</span>
             <span className="font-semibold text-white">
@@ -87,7 +87,7 @@ export function StatusCard({ status, loading, error }: StatusCardProps) {
           </div>
         )}
 
-        {status.metadata.publishedBy && (
+        {status.metadata?.publishedBy && (
           <div className="flex justify-between items-center">
             <span className="text-phantom-muted">Published by:</span>
             <span className="font-semibold text-white">
@@ -99,9 +99,11 @@ export function StatusCard({ status, loading, error }: StatusCardProps) {
         <div className="flex justify-between items-center">
           <span className="text-phantom-muted">Last Updated:</span>
           <span className="font-semibold text-white">
-            {formatDistanceToNow(new Date(status.metadata.lastUpdated), {
-              addSuffix: true,
-            })}
+            {status.metadata?.lastUpdated
+              ? formatDistanceToNow(new Date(status.metadata.lastUpdated), {
+                  addSuffix: true,
+                })
+              : "Unknown"}
           </span>
         </div>
       </div>
