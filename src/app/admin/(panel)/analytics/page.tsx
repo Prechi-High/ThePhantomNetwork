@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { adminNetwork } from "@/lib/network";
 
 export default function AdminAnalyticsPage() {
   const [analytics, setAnalytics] = useState<Record<string, unknown> | null>(null);
@@ -14,32 +15,30 @@ export default function AdminAnalyticsPage() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    fetch("/api/admin/analytics")
-      .then((r) => r.json())
-      .then(setAnalytics);
-    fetch("/api/admin/config")
-      .then((r) => r.json())
-      .then((d) => {
-        setConfig(d.config);
-        if (d.config) {
-          setPlatformFee(String(d.config.default_platform_fee_pct));
-          setEntryFee(String((d.config.default_entry_fee_cents as number) / 100));
-          setCampShare(String(d.config.default_camp_revenue_share_pct));
-          setSwitchLevel(String(d.config.camp_switch_level));
-        }
-      });
+    void adminNetwork.getAnalytics().then((result) => {
+      if (result.ok) {
+        setAnalytics(result.data as Record<string, unknown>);
+      }
+    });
+    void adminNetwork.getConfig().then((result) => {
+      if (!result.ok) return;
+      const d = result.data as { config?: Record<string, unknown> };
+      setConfig(d.config ?? null);
+      if (d.config) {
+        setPlatformFee(String(d.config.default_platform_fee_pct));
+        setEntryFee(String((d.config.default_entry_fee_cents as number) / 100));
+        setCampShare(String(d.config.default_camp_revenue_share_pct));
+        setSwitchLevel(String(d.config.camp_switch_level));
+      }
+    });
   }, []);
 
   const saveConfig = async () => {
-    await fetch("/api/admin/config", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        default_platform_fee_pct: parseFloat(platformFee),
-        default_entry_fee_cents: Math.round(parseFloat(entryFee) * 100),
-        default_camp_revenue_share_pct: parseFloat(campShare),
-        camp_switch_level: parseInt(switchLevel, 10),
-      }),
+    await adminNetwork.patchConfig({
+      default_platform_fee_pct: parseFloat(platformFee),
+      default_entry_fee_cents: Math.round(parseFloat(entryFee) * 100),
+      default_camp_revenue_share_pct: parseFloat(campShare),
+      camp_switch_level: parseInt(switchLevel, 10),
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);

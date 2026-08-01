@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import BottomNav from "@/components/ui/BottomNav";
 import { TACTICAL_ASSET_DEFS } from "@/lib/armory/tactical-assets";
 import { CURRENCY, MESSAGES } from "@/lib/brand/terminology";
+import { sessionNetwork, economyNetwork } from "@/lib/network";
 
 function PrepareContent() {
   const router = useRouter();
@@ -29,13 +30,16 @@ function PrepareContent() {
   useEffect(() => {
     if (!sessionId) return;
     Promise.all([
-      fetch(`/api/sessions/${sessionId}`).then((r) => r.json()),
-      fetch("/api/armory/loadouts").then((r) => r.json()),
-      fetch("/api/armory/inventory").then((r) => r.json()),
+      sessionNetwork.getSession(sessionId),
+      economyNetwork.getArmoryLoadouts(),
+      economyNetwork.getArmoryInventory(),
     ]).then(([sessRes, loadRes, invRes]) => {
-      setSession(sessRes.session);
-      setLegacyCredits(invRes.legacyCredits ?? 0);
-      const active = (loadRes.loadouts ?? []).find((l: { isActive: boolean }) => l.isActive);
+      const sessData = sessRes.ok ? (sessRes.data as { session?: typeof session }) : {};
+      const loadData = loadRes.ok ? (loadRes.data as { loadouts?: Array<{ isActive: boolean; items: typeof loadout }> }) : {};
+      const invData = invRes.ok ? (invRes.data as { legacyCredits?: number }) : {};
+      setSession(sessData.session ?? null);
+      setLegacyCredits(invData.legacyCredits ?? 0);
+      const active = (loadData.loadouts ?? []).find((l) => l.isActive);
       setLoadout(active?.items ?? []);
     });
   }, [sessionId]);
@@ -44,10 +48,9 @@ function PrepareContent() {
     if (!sessionId) return;
     setJoining(true);
     setError(null);
-    const res = await fetch(`/api/sessions/${sessionId}/join`, { method: "POST" });
-    const data = await res.json();
-    if (!res.ok) {
-      setError(data.error ?? "Failed to join");
+    const result = await sessionNetwork.joinSession(sessionId);
+    if (!result.ok) {
+      setError(result.error.message ?? "Failed to join");
       setJoining(false);
       return;
     }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { campsNetwork } from "@/lib/network";
 
 export default function CampDetailPage() {
   const { campId } = useParams<{ campId: string }>();
@@ -11,20 +12,16 @@ export default function CampDetailPage() {
   const [leaderboard, setLeaderboard] = useState<Record<string, unknown>[]>([]);
 
   useEffect(() => {
-    fetch(`/api/camps/${campId}`)
-      .then((r) => r.json())
-      .then((d) => setCamp(d.camp));
-    fetch(`/api/camps/${campId}/leaderboard`)
-      .then((r) => r.json())
-      .then((d) => setLeaderboard(d.leaderboard ?? []));
+    campsNetwork.getCamp(campId).then((result) => {
+      if (result.ok && result.data.camp) setCamp(result.data.camp);
+    });
+    campsNetwork.getCampLeaderboard(campId).then((result) => {
+      if (result.ok) setLeaderboard(result.data.leaderboard ?? []);
+    });
   }, [campId]);
 
   const handleSwitch = async () => {
-    await fetch("/api/camps/switch", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ campId }),
-    });
+    await campsNetwork.switchCamp(campId);
   };
 
   if (!camp) return <p className="text-phantom-muted">Loading...</p>;

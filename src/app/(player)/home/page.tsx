@@ -9,6 +9,7 @@ import Image from "next/image";
 import { Bell, ChevronRight, Users, Trophy, Coins, TrendingUp, Globe, Skull, Sparkles, Zap, Crown } from "lucide-react";
 import BottomNav from "@/components/ui/BottomNav";
 import { ScreenAmbience } from "@/components/motion/ScreenAmbience";
+import { sessionNetwork } from "@/lib/network";
 
 function StatCard({ icon, value, label, colorClass = "text-phantom-purple" }: { icon: React.ReactNode; value: string; label: string; colorClass?: string }) {
   return (
@@ -126,9 +127,10 @@ export default function HomePage() {
   useEffect(() => {
     async function loadSessions() {
       try {
-        const res = await fetch("/api/sessions");
-        const data = await res.json();
-        setSessions(data.sessions ?? []);
+        const result = await sessionNetwork.listSessions();
+        if (result.ok) {
+          setSessions((result.data.sessions ?? []) as typeof sessions);
+        }
       } finally {
         setLoading(false);
       }

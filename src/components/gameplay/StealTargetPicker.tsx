@@ -21,12 +21,6 @@ interface EnrichedTarget extends StealTarget {
   streak?: number;
 }
 
-function computeRisk(t: StealTarget): RiskLevel {
-  if (t.tokens >= 10) return "low";   // high value = worth stealing
-  if (t.tokens >= 5)  return "medium";
-  return "high";
-}
-
 function riskLabel(r: RiskLevel) {
   return r === "low" ? "SAFE" : r === "medium" ? "MODERATE" : "RISKY";
 }
@@ -192,12 +186,12 @@ export function StealTargetPicker({ targets, emptyMessage, onSelect, onCancel }:
   const [confirmed, setConfirmed] = useState(false);
   const [countdown, setCountdown] = useState(15);
 
-  const enriched: EnrichedTarget[] = targets.map(t => ({
+  const enriched: EnrichedTarget[] = targets.map((t) => ({
     ...t,
-    risk: computeRisk(t),
-    isRival: t.tokens > 8,
-    recentlyStole: false,
-    streak: Math.floor(Math.random() * 4),
+    risk: t.risk ?? "medium",
+    isRival: t.isRival ?? false,
+    recentlyStole: t.recentlyStole ?? false,
+    streak: t.streak ?? 0,
   }));
 
   // Auto-cancel countdown

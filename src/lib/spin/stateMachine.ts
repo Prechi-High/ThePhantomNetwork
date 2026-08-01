@@ -633,8 +633,8 @@ type LegacySpinEvent =
   | 'COOLDOWN_END'
   | 'RESET';
 
-/** Maps old event names → new lifecycle state transitions */
-const LEGACY_EVENT_MAP: Record<string, GameplayLifecycleState> = {
+/** Maps legacy spin wheel events → lifecycle states (PremiumSpinWheel, etc.) */
+export const SPIN_LEGACY_EVENT_MAP: Record<string, GameplayLifecycleState> = {
   START_SPIN: 'SPIN_START',
   SPIN_COMPLETE: 'SPIN_ACCELERATION',
   REVEAL_BEGIN: 'SUSPENSE',
@@ -644,6 +644,21 @@ const LEGACY_EVENT_MAP: Record<string, GameplayLifecycleState> = {
   COOLDOWN_END: 'NEXT_SPIN_READY',
   RESET: 'SESSION_LOADING',
 };
+
+export function transitionSpinLegacyEvent(
+  machine: GameplayStateMachine,
+  event: string
+): boolean {
+  const target = SPIN_LEGACY_EVENT_MAP[event];
+  if (!target) {
+    console.warn(`[GameplayStateMachine] Unknown spin event: ${event}`);
+    return false;
+  }
+  return machine.transition(target, `spin: ${event}`);
+}
+
+/** Maps old event names → new lifecycle state transitions */
+const LEGACY_EVENT_MAP: Record<string, GameplayLifecycleState> = SPIN_LEGACY_EVENT_MAP;
 
 /** Maps old state names → new lifecycle states for string comparisons */
 const LEGACY_STATE_MAP: Record<string, GameplayLifecycleState> = {

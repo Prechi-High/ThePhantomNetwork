@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { adminNetwork } from "@/lib/network";
 
 interface Camp {
   id: string;
@@ -21,36 +22,33 @@ export default function AdminCampsPage() {
   const [ownerId, setOwnerId] = useState("");
   const [error, setError] = useState("");
 
-  const load = () => {
-    fetch("/api/admin/camps")
-      .then((r) => r.json())
-      .then((d) => setCamps(d.camps ?? []));
+  const load = async () => {
+    const result = await adminNetwork.getCamps();
+    if (result.ok) {
+      const data = result.data as { camps?: Camp[] };
+      setCamps(data.camps ?? []);
+    }
   };
 
   useEffect(() => {
-    load();
+    void load();
   }, []);
 
   const handleCreate = async () => {
     setError("");
-    const res = await fetch("/api/admin/camps", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name,
-        referral_code: referralCode || undefined,
-        owner_id: ownerId || undefined,
-      }),
+    const result = await adminNetwork.createCamp({
+      name,
+      referral_code: referralCode || undefined,
+      owner_id: ownerId || undefined,
     });
-    const data = await res.json();
-    if (res.ok) {
+    if (result.ok) {
       setName("");
       setReferralCode("");
       setOwnerId("");
-      load();
+      void load();
       return;
     }
-    setError(data.error ?? "Failed to create camp");
+    setError(result.error.message ?? "Failed to create camp");
   };
 
   return (

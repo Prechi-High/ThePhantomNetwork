@@ -51,6 +51,7 @@ interface GameplayStore {
   spinLocked: boolean;
   lastOutcome: SpinOutcome | null;
   pendingTokenDelta: number;
+  pendingServerTokens: number | null;
   canSpin: boolean;
 
   // Phase/round (HUD reactivity)
@@ -82,6 +83,7 @@ interface GameplayStore {
   setSpinning: (spinning: boolean) => void;
   setSpinLocked: (locked: boolean) => void;
   setLastOutcome: (outcome: SpinOutcome | null) => void;
+  setPendingServerTokens: (tokens: number | null) => void;
   setPhase: (phase: number) => void;
   setRound: (round: number) => void;
   setPhaseEndsAt: (ts: number | null) => void;
@@ -106,6 +108,7 @@ const INITIAL_STATE = {
   spinLocked: false,
   lastOutcome: null as SpinOutcome | null,
   pendingTokenDelta: 0,
+  pendingServerTokens: null as number | null,
   canSpin: false,
   phase: 0,
   round: 0,
@@ -140,11 +143,16 @@ export const useGameplayStore = create<GameplayStore>((set, get) => ({
     set({ lastOutcome: outcome, pendingTokenDelta: tokenDelta }),
 
   finishReveal: () => {
+    const serverTotal = get().pendingServerTokens;
     const delta = get().pendingTokenDelta;
     set((s) => ({
-      tokens: Math.round((s.tokens + delta) * 10) / 10,
+      tokens:
+        serverTotal ??
+        Math.round((s.tokens + delta) * 10) / 10,
       pendingTokenDelta: 0,
+      pendingServerTokens: null,
       isSpinning: false,
+      lastOutcome: null,
     }));
     setTimeout(() => set({ spinLocked: false, canSpin: true }), 500);
   },
@@ -156,6 +164,7 @@ export const useGameplayStore = create<GameplayStore>((set, get) => ({
   setSpinning:    (isSpinning)  => set({ isSpinning }),
   setSpinLocked:  (spinLocked)  => set({ spinLocked }),
   setLastOutcome: (lastOutcome) => set({ lastOutcome }),
+  setPendingServerTokens: (pendingServerTokens) => set({ pendingServerTokens }),
   setPhase:       (phase)       => set({ phase }),
   setRound:       (round)       => set({ round }),
   setPhaseEndsAt: (phaseEndsAt) => set({ phaseEndsAt }),

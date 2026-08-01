@@ -1,14 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-
-const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
-  : null;
+import { useWalletActions } from "@/hooks/useWalletActions";
 
 function CheckoutForm({ onSuccess }: { onSuccess?: () => void }) {
   const stripe = useStripe();
@@ -55,53 +51,8 @@ interface WalletDepositProps {
 
 export function WalletDeposit({ onSuccess }: WalletDepositProps) {
   const [amount, setAmount] = useState("10");
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-
-  const handleDeposit = async () => {
-    const cents = Math.round(parseFloat(amount) * 100);
-    if (isNaN(cents) || cents < 100) {
-      setMessage("Minimum deposit is $1.00");
-      return;
-    }
-
-    setLoading(true);
-    setMessage("");
-    setClientSecret(null);
-
-    if (!stripePromise) {
-      const adminRes = await fetch("/api/wallet/dev-credit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ amountCents: cents }),
-      });
-      if (adminRes.ok) {
-        setMessage("Dev credit added!");
-        onSuccess?.();
-      } else {
-        setMessage("Configure Stripe keys in Vercel or use dev mode locally");
-      }
-      setLoading(false);
-      return;
-    }
-
-    const res = await fetch("/api/wallet/deposit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "same-origin",
-      body: JSON.stringify({ amountCents: cents }),
-    });
-    const data = await res.json();
-
-    if (data.clientSecret) {
-      setClientSecret(data.clientSecret);
-    } else {
-      setMessage(data.error ?? "Deposit failed");
-    }
-    setLoading(false);
-  };
+  const { loading, message, clientSecret, stripePromise, deposit, setMessage } =
+    useWalletActions(onSuccess);
 
   return (
     <Card className="space-y-3">
@@ -118,7 +69,7 @@ export function WalletDeposit({ onSuccess }: WalletDepositProps) {
               className="flex-1 rounded-lg border border-phantom-border bg-phantom-bg px-3 py-2"
               placeholder="Amount USD"
             />
-            <Button onClick={handleDeposit} disabled={loading} size="sm">
+            <Button onClick={() => deposit(amount)} disabled={loading} size="sm">
               {loading ? "..." : "Continue"}
             </Button>
           </div>
@@ -128,7 +79,6 @@ export function WalletDeposit({ onSuccess }: WalletDepositProps) {
         <Elements stripe={stripePromise} options={{ clientSecret }}>
           <CheckoutForm
             onSuccess={() => {
-              setClientSecret(null);
               setMessage("Payment successful! Balance updating...");
               onSuccess?.();
             }}

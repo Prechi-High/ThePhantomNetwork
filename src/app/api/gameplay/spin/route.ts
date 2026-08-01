@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/api/auth-helpers";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { rollSpinOutcome, applySpinTokens, type ProvablyFairSpin } from "@/lib/gameplay/spin";
+import { rollSpinOutcome, applySpinTokens, getTokenDelta, type ProvablyFairSpin } from "@/lib/gameplay/spin";
 import { redisPublish, redisGet, redisSet } from "@/lib/redis/client";
 import { redisKeys } from "@/lib/redis/keys";
 import { checkRateLimit, acquireSpinLock } from "@/lib/api/rate-limit";
 import { SPIN_DURATION_MS } from "@/types/gameplay";
 import { PHASE_STATE_TTL_SECONDS, getPhaseDurationMs, getPhaseEntry, LEGACY_PHASE_DURATIONS_MS, isPhaseTimerExpired } from "@/lib/gameplay/phase-timing";
 import type { PhaseConfig } from "@/types/gameplay";
-import { getTargetAngle } from "@/components/gameplay/premium-wheel/config";
+import { getTargetAngle } from "@/lib/gameplay/wheel-config";
 
 export async function POST(request: Request) {
   const { user, error } = await requireAuth();
@@ -126,9 +126,12 @@ export async function POST(request: Request) {
     });
   }
 
+  const tokenDelta = getTokenDelta(fairSpin.winningSector);
+
   return NextResponse.json({
     outcome: fairSpin.winningSector,
     tokens: newTokens,
+    tokenDelta,
     requiresTargetSelection: fairSpin.winningSector === "STEAL",
     spinId: fairSpin.spinId,
     hashedServerSeed: fairSpin.hashedServerSeed,

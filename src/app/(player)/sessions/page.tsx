@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/Badge";
 import Image from "next/image";
 import { ChevronLeft, Bell, Calendar, Clock, Users, Coins, Trophy, Filter, ChevronRight, Bot } from "lucide-react";
 import { CreatePracticeModal } from "@/components/session/CreatePracticeModal";
+import { sessionNetwork } from "@/lib/network";
 
 
 interface Session {
@@ -161,13 +162,9 @@ function SessionItem({ session }: { session: Session }) {
     setJoining(true);
     setJoinError(null);
     try {
-      const res = await fetch(`/api/sessions/${session.id}/join`, {
-        method: "POST",
-        credentials: "same-origin",
-      });
-      if (!res.ok) {
-        const d = await res.json();
-        throw new Error(d.error || "Failed to join session");
+      const result = await sessionNetwork.joinSession(session.id);
+      if (!result.ok) {
+        throw new Error(result.error.message || "Failed to join session");
       }
       window.location.reload();
     } catch (err) {
@@ -360,12 +357,11 @@ export default function SessionsPage() {
   const createSoloSession = async () => {
     setCreatingSolo("public");
     try {
-      const res = await fetch("/api/sessions/solo/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionType: "public", sessionMode: "solo" }),
+      const result = await sessionNetwork.createSolo({
+        sessionType: "public",
+        sessionMode: "solo",
       });
-      const data = await res.json();
+      const data = result.ok ? (result.data as { prepareUrl?: string }) : {};
       if (data.prepareUrl) router.push(data.prepareUrl);
     } finally {
       setCreatingSolo(null);
@@ -375,8 +371,8 @@ export default function SessionsPage() {
   const loadSessions = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/sessions");
-      const d = await res.json();
+      const result = await sessionNetwork.listSessions();
+      const d = result.ok ? (result.data as { sessions?: Session[]; practiceSessions?: Session[] }) : {};
       setSessions(d.sessions ?? []);
       setPracticeSessions(d.practiceSessions ?? []);
     } catch (err) {

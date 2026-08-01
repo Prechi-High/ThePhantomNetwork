@@ -1,4 +1,4 @@
-import { LiveFeed } from "@/components/layout/LiveFeed";
+import { GlobalLiveFeed } from "@/components/layout/LiveFeed";
 import BottomNav from "@/components/ui/BottomNav";
 import { SessionBootstrap } from "@/components/auth/SessionBootstrap";
 import { ClientErrorReporter } from "@/components/monitoring/ClientErrorReporter";
@@ -16,7 +16,7 @@ export default function PlayerLayout({
       <PlayerLayoutShell>
         <SessionBootstrap />
         <ClientErrorReporter />
-        <LiveFeed />
+        <GlobalLiveFeed />
         <ErrorBoundary>{children}</ErrorBoundary>
         <BottomNav />
       </PlayerLayoutShell>

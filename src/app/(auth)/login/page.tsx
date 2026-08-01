@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { createClient } from "@/lib/supabase/client";
 import { establishSession } from "@/lib/auth/establish-session";
 import { useTelegram } from "@/components/providers/TelegramProvider";
+import { authNetwork } from "@/lib/network";
 
 declare global {
   interface Window {
@@ -39,13 +40,14 @@ export default function LoginPage() {
     
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/telegram", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ initData: webApp.initData }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      const result = await authNetwork.loginTelegram(webApp.initData);
+      if (!result.ok) throw new Error(result.error.message);
+      const data = result.data as {
+        session?: { access_token: string; refresh_token: string };
+        onboardingComplete?: boolean;
+        error?: string;
+      };
+      if (data.error) throw new Error(data.error);
 
       if (data.session) {
         await establishSession(data.session.access_token, data.session.refresh_token);
@@ -74,13 +76,9 @@ export default function LoginPage() {
         });
       });
 
-      const captchaRes = await fetch("/api/auth/captcha", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
-      });
+      const captchaResult = await authNetwork.verifyCaptcha(token);
 
-      if (!captchaRes.ok) {
+      if (!captchaResult.ok) {
         setError("Captcha verification failed");
         return;
       }
@@ -99,9 +97,14 @@ export default function LoginPage() {
   const handleDevLogin = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/dev", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      const result = await authNetwork.devLogin();
+      if (!result.ok) throw new Error(result.error.message);
+      const data = result.data as {
+        session: { access_token: string; refresh_token: string };
+        onboardingComplete?: boolean;
+        error?: string;
+      };
+      if (data.error) throw new Error(data.error);
       await establishSession(data.session.access_token, data.session.refresh_token);
       router.push(data.onboardingComplete ? "/home" : "/onboarding");
     } catch (e) {

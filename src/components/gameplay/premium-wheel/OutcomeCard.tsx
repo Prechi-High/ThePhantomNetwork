@@ -7,17 +7,15 @@ import { OUTCOME_CONFIG, EASING, OUTCOME_CATEGORIES } from "@/config/spinConfig"
 interface OutcomeCardProps {
   outcome: SpinOutcome;
   visible: boolean;
-  tokenAmount?: number;
+  /** Server-provided token delta for this spin */
+  tokenAmount: number;
 }
 
-// Token values per outcome (server should send these; these are display defaults)
-const OUTCOME_TOKEN_DISPLAY: Record<SpinOutcome, string> = {
-  ADVANCE: "+3 TOKENS",
-  ACQUIRE: "+1 TOKEN",
-  DISCOVER: "+½ TOKEN",
-  STEAL: "STEAL",
-  VOID: "VOID",
-};
+function formatTokenLabel(outcome: SpinOutcome, tokenAmount: number): string {
+  if (outcome === "STEAL") return "STEAL";
+  if (outcome === "VOID" || tokenAmount <= 0) return "VOID";
+  return `+${tokenAmount} TOKEN${tokenAmount !== 1 ? "S" : ""}`;
+}
 
 const OUTCOME_SUBTITLE: Record<SpinOutcome, string> = {
   ADVANCE: "Momentum Increased",
@@ -41,9 +39,7 @@ const OUTCOME_SUBTITLE: Record<SpinOutcome, string> = {
 export function OutcomeCard({ outcome, visible, tokenAmount }: OutcomeCardProps) {
   const cfg = OUTCOME_CONFIG[outcome];
   const category = OUTCOME_CATEGORIES[outcome];
-  const valueLabel = tokenAmount != null
-    ? (tokenAmount > 0 ? `+${tokenAmount} TOKEN${tokenAmount !== 1 ? "S" : ""}` : "VOID")
-    : OUTCOME_TOKEN_DISPLAY[outcome];
+  const valueLabel = formatTokenLabel(outcome, tokenAmount);
 
   return (
     <AnimatePresence>

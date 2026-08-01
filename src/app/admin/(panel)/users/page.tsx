@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { adminNetwork } from "@/lib/network";
 
 interface UserRow {
   id: string;
@@ -18,23 +19,22 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [query, setQuery] = useState("");
 
-  const load = (q = "") => {
-    fetch(`/api/admin/users?q=${encodeURIComponent(q)}`)
-      .then((r) => r.json())
-      .then((d) => setUsers(d.users ?? []));
+  const load = async (q = "") => {
+    const params = q ? `q=${encodeURIComponent(q)}` : undefined;
+    const result = await adminNetwork.getUsers(params);
+    if (result.ok) {
+      const data = result.data as { users?: UserRow[] };
+      setUsers(data.users ?? []);
+    }
   };
 
   useEffect(() => {
-    load();
+    void load();
   }, []);
 
   const updateUser = async (userId: string, updates: Record<string, unknown>) => {
-    await fetch("/api/admin/users", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, ...updates }),
-    });
-    load(query);
+    await adminNetwork.patchUser({ userId, ...updates });
+    void load(query);
   };
 
   return (

@@ -10,8 +10,10 @@ interface RevivePanelProps {
   contributed: number;
   /** Who has contributed { userId, username, amount } */
   contributors?: Array<{ userId: string; username: string; amount: number }>;
-  /** Seconds remaining before revive window expires */
+  /** Seconds remaining — display only; server drives expiry */
   timeRemaining?: number;
+  /** Server-authoritative: revive window has closed */
+  expired?: boolean;
   onContribute: (amount: number) => void;
   onClose?: () => void;
 }
@@ -44,6 +46,7 @@ export function RevivePanel({
   contributed,
   contributors = [],
   timeRemaining = 30,
+  expired = false,
   onContribute,
   onClose,
 }: RevivePanelProps) {
@@ -52,16 +55,20 @@ export function RevivePanel({
   const isComplete  = fillPct >= 1;
   const [tokens, setTokens]   = useState<Array<{ id: number; color: string }>>([]);
   const [timeLeft, setTimeLeft] = useState(timeRemaining);
-  const [failed, setFailed]   = useState(false);
   const tokenId = useState(0);
 
-  // Countdown
+  // Sync display countdown from server-provided timeRemaining
   useEffect(() => {
-    if (isComplete || failed) return;
-    if (timeLeft <= 0) { setFailed(true); return; }
-    const id = setInterval(() => setTimeLeft(t => t - 1), 1000);
+    setTimeLeft(timeRemaining);
+  }, [timeRemaining]);
+
+  // Display-only tick — expiry is server-driven via `expired` prop
+  useEffect(() => {
+    if (isComplete || expired) return;
+    if (timeLeft <= 0) return;
+    const id = setInterval(() => setTimeLeft(t => Math.max(0, t - 1)), 1000);
     return () => clearInterval(id);
-  }, [timeLeft, isComplete, failed]);
+  }, [timeLeft, isComplete, expired]);
 
   // Emit token travel on contribute
   const handleContribute = (amount: number) => {
@@ -85,7 +92,7 @@ export function RevivePanel({
         style={{
           position: "fixed",
           inset: 0,
-          background: failed
+          background: expired
             ? "rgba(4,2,10,0.96)"
             : "rgba(4,2,10,0.9)",
           backdropFilter: "blur(16px)",
@@ -107,19 +114,19 @@ export function RevivePanel({
           style={{
             width: "100%",
             maxWidth: 360,
-            background: failed
+            background: expired
               ? "linear-gradient(180deg,rgba(8,4,12,0.98),rgba(5,2,8,0.99))"
               : "linear-gradient(180deg,rgba(12,6,24,0.98),rgba(5,2,12,0.99))",
             borderRadius: 24,
             border: isComplete
               ? "1.5px solid rgba(251,191,36,0.6)"
-              : failed
+              : expired
               ? "1.5px solid rgba(107,114,128,0.3)"
               : "1.5px solid rgba(34,197,94,0.3)",
             padding: "24px 20px 28px",
             boxShadow: isComplete
               ? "0 0 40px rgba(251,191,36,0.25)"
-              : failed
+              : expired
               ? "none"
               : `0 0 30px rgba(34,197,94,0.15)`,
             position: "relative",
@@ -145,7 +152,7 @@ export function RevivePanel({
           </AnimatePresence>
 
           {/* ── Heartbeat effect ── */}
-          {!isComplete && !failed && (
+          {!isComplete && !expired && (
             <motion.div
               animate={{ opacity: [0, 0.12, 0] }}
               transition={{ duration: urgentTime ? 0.6 : 1.2, repeat: Infinity }}
@@ -163,14 +170,14 @@ export function RevivePanel({
           <div style={{ textAlign: "center", marginBottom: 20 }}>
             {/* Avatar */}
             <motion.div
-              animate={!isComplete && !failed ? { scale: [1, 1.06, 1] } : undefined}
+              animate={!isComplete && !expired ? { scale: [1, 1.06, 1] } : undefined}
               transition={{ duration: urgentTime ? 0.6 : 1.2, repeat: Infinity }}
               style={{
                 width: 64, height: 64, borderRadius: 20,
-                background: failed
+                background: expired
                   ? "rgba(20,10,30,0.9)"
                   : "linear-gradient(135deg,rgba(49,7,70,0.8),rgba(15,0,30,0.9))",
-                border: failed
+                border: expired
                   ? "1.5px solid rgba(107,114,128,0.3)"
                   : isComplete
                   ? "2px solid #fbbf24"
@@ -179,11 +186,11 @@ export function RevivePanel({
                 fontSize: 32, margin: "0 auto 12px",
                 boxShadow: isComplete
                   ? "0 0 20px rgba(251,191,36,0.4)"
-                  : failed
+                  : expired
                   ? "none"
                   : "0 0 15px rgba(34,197,94,0.2)",
-                filter: failed ? "grayscale(80%)" : "none",
-                opacity: failed ? 0.6 : 1,
+                filter: expired ? "grayscale(80%)" : "none",
+                opacity: expired ? 0.6 : 1,
               }}
             >
               {targetAvatar}
@@ -198,7 +205,7 @@ export function RevivePanel({
                   {targetUsername} is back
                 </div>
               </div>
-            ) : failed ? (
+            ) : expired ? (
               <div>
                 <div style={{ fontSize: 16, fontWeight: 800, color: "rgba(107,114,128,0.8)", marginBottom: 3 }}>
                   {targetUsername}
@@ -223,7 +230,7 @@ export function RevivePanel({
           </div>
 
           {/* ── Revive progress bar ── */}
-          {!failed && (
+          {!expired && (
             <div style={{ marginBottom: 16, position: "relative" }}>
               {/* Token travel container */}
               <div style={{ position: "relative", height: 0 }}>
@@ -264,7 +271,7 @@ export function RevivePanel({
           )}
 
           {/* ── Contributors ── */}
-          {contributors.length > 0 && !failed && (
+          {contributors.length > 0 && !expired && (
             <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
               {contributors.map(c => (
                 <div key={c.userId} style={{ padding: "2px 8px", borderRadius: 9999, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)", display: "flex", alignItems: "center", gap: 4 }}>
@@ -276,7 +283,7 @@ export function RevivePanel({
           )}
 
           {/* ── Countdown ── */}
-          {!isComplete && !failed && (
+          {!isComplete && !expired && (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 16 }}>
               <motion.div
                 animate={{ opacity: [1, 0.3, 1] }}
@@ -290,7 +297,7 @@ export function RevivePanel({
           )}
 
           {/* ── Contribution buttons ── */}
-          {!isComplete && !failed && (
+          {!isComplete && !expired && (
             <div style={{ display: "flex", gap: 8 }}>
               {[1, 2, 3].map((amount) => (
                 <motion.button
@@ -336,7 +343,7 @@ export function RevivePanel({
           )}
 
           {/* ── Close / Dismiss ── */}
-          {(isComplete || failed) && onClose && (
+          {(isComplete || expired) && onClose && (
             <motion.button
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}

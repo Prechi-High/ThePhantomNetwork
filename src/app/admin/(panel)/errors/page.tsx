@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import type { AppErrorRow, ErrorSeverity } from "@/lib/monitoring/types";
 import { cn } from "@/lib/utils";
+import { adminNetwork } from "@/lib/network";
 
 const severityVariant: Record<ErrorSeverity, "gold" | "danger" | "muted"> = {
   critical: "danger",
@@ -20,19 +21,22 @@ export default function AdminErrorsPage() {
   const [filter, setFilter] = useState<ErrorSeverity | "all">("all");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const load = () => {
-    const q = filter === "all" ? "" : `?severity=${filter}`;
-    fetch(`/api/admin/errors${q}`, { credentials: "same-origin" })
-      .then((r) => r.json())
-      .then((d) => {
-        setErrors(d.errors ?? []);
-        setStats(d.stats ?? { total: 0, unresolvedCritical: 0 });
-      });
+  const load = async () => {
+    const params = filter === "all" ? undefined : `severity=${filter}`;
+    const result = await adminNetwork.getErrors(params);
+    if (result.ok) {
+      const d = result.data as {
+        errors?: AppErrorRow[];
+        stats?: { total: number; unresolvedCritical: number };
+      };
+      setErrors(d.errors ?? []);
+      setStats(d.stats ?? { total: 0, unresolvedCritical: 0 });
+    }
   };
 
   useEffect(() => {
-    load();
-    const id = setInterval(load, 15000);
+    void load();
+    const id = setInterval(() => void load(), 15000);
     return () => clearInterval(id);
   }, [filter]);
 
@@ -54,24 +58,14 @@ export default function AdminErrorsPage() {
   };
 
   const resolveError = async (id: string) => {
-    await fetch("/api/admin/errors", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      credentials: "same-origin",
-      body: JSON.stringify({ id }),
-    });
-    load();
+    await adminNetwork.deleteErrors({ id });
+    void load();
   };
 
   const clearAll = async () => {
     if (!confirm("Clear all error logs?")) return;
-    await fetch("/api/admin/errors", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      credentials: "same-origin",
-      body: JSON.stringify({ clearAll: true }),
-    });
-    load();
+    await adminNetwork.deleteErrors({ clearAll: true });
+    void load();
   };
 
   return (

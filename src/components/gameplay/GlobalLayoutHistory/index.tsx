@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
 import { useNotifications } from '@/components/ui/NotificationProvider';
+import { layoutNetwork } from '@/lib/network';
 import { VersionList } from './VersionList';
 import { RestoreConfirmationDialog } from './RestoreConfirmationDialog';
 import type {
@@ -43,23 +44,18 @@ export function GlobalLayoutHistory() {
     setError(null);
 
     try {
-      const response = await fetch('/api/layouts/global/history', {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-      });
+      const result = await layoutNetwork.getGlobalHistory();
 
-      if (!response.ok) {
-        if (response.status === 403) {
+      if (!result.ok) {
+        if (result.error.status === 403) {
           throw new Error('You do not have permission to view layout history');
         }
-        const errorData = await response.json().catch(() => ({}));
         throw new Error(
-          errorData.error || 'Failed to load version history'
+          result.error.message || 'Failed to load version history'
         );
       }
 
-      const data: GetGlobalHistoryResponse = await response.json();
+      const data = result.data as GetGlobalHistoryResponse;
       setVersions(data.versions || []);
     } catch (err) {
       const errorMessage =
@@ -79,27 +75,21 @@ export function GlobalLayoutHistory() {
     try {
       setIsRestoring(true);
 
-      const response = await fetch('/api/layouts/global/restore', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({
-          versionId: selectedVersion.id,
-          changeNotes,
-        }),
+      const result = await layoutNetwork.restoreGlobalLayout({
+        versionId: selectedVersion.id,
+        changeNotes,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+      if (!result.ok) {
         throw new Error(
-          errorData.error || 'Failed to restore layout'
+          result.error.message || 'Failed to restore layout'
         );
       }
 
-      const result = await response.json();
+      const restoreResult = result.data as { newVersion?: number };
 
       notify(
-        `Layout restored as v${result.newVersion}`,
+        `Layout restored as v${restoreResult.newVersion}`,
         'success'
       );
 

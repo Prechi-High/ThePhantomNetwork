@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { SessionCountdown } from "@/components/session/SessionCountdown";
 import { useSessionPoll } from "@/hooks/useSessionPoll";
 import { reportClientError } from "@/lib/monitoring/client-report";
+import { sessionNetwork } from "@/lib/network";
 
 interface SessionDetailResponse {
   session?: {
@@ -36,16 +37,16 @@ export default function SessionDetailPage() {
     setLoadError("");
 
     try {
-      const res = await fetch(`/api/sessions/${sessionId}`, { credentials: "same-origin" });
-      const json = (await res.json()) as SessionDetailResponse;
+      const result = await sessionNetwork.getSession(sessionId);
+      const json = result.ok ? (result.data as SessionDetailResponse) : { error: result.error.message };
 
-      if (!res.ok || !json.session) {
+      if (!result.ok || !json.session) {
         const msg = json.error ?? "Session not found";
         setLoadError(msg);
         reportClientError({
           area: "session",
           message: msg,
-          context: { sessionId, statusCode: res.status },
+          context: { sessionId, statusCode: result.ok ? 200 : result.error.status },
           url: `/sessions/${sessionId}`,
         });
         setData(null);
@@ -79,19 +80,16 @@ export default function SessionDetailPage() {
     setJoinError("");
 
     try {
-      const res = await fetch(`/api/sessions/${sessionId}/join`, {
-        method: "POST",
-        credentials: "same-origin",
-      });
-      const json = await res.json();
+      const result = await sessionNetwork.joinSession(sessionId);
+      const json = result.ok ? (result.data as { error?: string }) : { error: result.error.message };
 
-      if (!res.ok) {
+      if (!result.ok) {
         const msg = json.error ?? "Failed to join session";
         setJoinError(msg);
         reportClientError({
           area: "session",
           message: msg,
-          context: { sessionId, statusCode: res.status, action: "join" },
+          context: { sessionId, statusCode: result.error.status, action: "join" },
         });
         return;
       }

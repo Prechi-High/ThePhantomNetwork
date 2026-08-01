@@ -9,6 +9,7 @@
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "check:architecture": "node scripts/check-no-fetch-in-components.mjs",
     "fetch-audio": "node scripts/fetch-kenney-audio.mjs"
   },
   "dependencies": {

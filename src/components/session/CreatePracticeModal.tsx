@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { PhaseConfigEditor } from "@/components/session/PhaseConfigEditor";
 import { DEFAULT_PHASES, PRACTICE_DEFAULT_TITLE } from "@/lib/session/default-phases";
 import type { PhaseEntry } from "@/types/gameplay";
+import { sessionNetwork } from "@/lib/network";
 
 interface CreatePracticeModalProps {
   open: boolean;
@@ -26,17 +27,17 @@ export function CreatePracticeModal({ open, onClose, onCreated }: CreatePractice
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/sessions/practice/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, botCount, phase_config: phases }),
+      const result = await sessionNetwork.createPractice({
+        title,
+        botCount,
+        phase_config: phases,
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "Failed to start practice");
+      if (!result.ok) {
+        setError(result.error.message ?? "Failed to start practice");
         return;
       }
-      onCreated(data.playUrl);
+      const data = result.data as { playUrl?: string };
+      onCreated(data.playUrl ?? "");
       onClose();
     } catch {
       setError("Failed to start practice");

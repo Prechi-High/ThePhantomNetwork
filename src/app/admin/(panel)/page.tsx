@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { adminNetwork } from "@/lib/network";
 
 interface Analytics {
   revenue: {
@@ -22,9 +23,9 @@ export default function AdminOverviewPage() {
   const [data, setData] = useState<Analytics | null>(null);
 
   useEffect(() => {
-    fetch("/api/admin/analytics")
-      .then((r) => r.json())
-      .then(setData);
+    void adminNetwork.getAnalytics().then((result) => {
+      if (result.ok) setData(result.data as Analytics);
+    });
   }, []);
 
   const fmt = (cents: number) => `$${(cents / 100).toFixed(2)}`;

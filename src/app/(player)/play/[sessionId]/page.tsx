@@ -45,11 +45,21 @@ import { useStealStore }     from "@/stores/useStealStore";
 import { useRealtimeSession, usePhaseTimer } from "@/hooks/useRealtimeSession";
 import { useServerTime }         from "@/hooks/useServerTime";
 import { useLeaderboardUpdates } from "@/hooks/useLeaderboardUpdates";
+import { useSurgePercent } from "@/hooks/useSurgePercent";
 import { reportClientError }     from "@/lib/monitoring/client-report";
-
-// ── Types ──────────────────────────────────────────────────────────────────
-
-import type { StealTarget, SpinOutcome } from "@/types/gameplay";
+import { initGameplaySystems }   from "@/lib/gameplay/bootstrap";
+import {
+  requestSpin,
+  completeSpinCycle,
+  executeStealFlow,
+  requestStealTargets,
+  refreshGameplayState,
+  resolveSteal,
+  fireStealBoost,
+  contributeRevive,
+} from "@/lib/gameplay/actions";
+import { sessionNetwork } from "@/lib/network";
+import type { GameplayStateResponse } from "@/lib/network/types";
 import { StealTargetPicker } from "@/components/gameplay/StealTargetPicker";
 import { interactionController } from "@/lib/motion/InteractionController";
 
@@ -68,41 +78,7 @@ type GameplayLifecycle =
   | "results"
   | "cleanup";
 
-// ── Server state shape ─────────────────────────────────────────────────────
-
-interface GameplayStateResponse {
-  player?: {
-    user_id: string;
-    session_tokens: number;
-    is_eliminated: boolean;
-    is_revivable: boolean;
-  };
-  phase?: number;
-  phaseEndsAt?: number | null;
-  round?: number;
-  maxRoundsPerPhase?: number;
-  playerRank?: number;
-  totalPlayers?: number;
-  squadMembers?: Array<{
-    user_id: string;
-    session_tokens: number;
-    is_eliminated: boolean;
-    is_revivable?: boolean;
-    profiles?: { username: string } | null;
-  }>;
-  leaderboard?: Array<{
-    user_id: string;
-    session_tokens: number;
-    profiles?: { username: string } | null;
-  }>;
-  sessionStatus?: string;
-  subSessionStatus?: string;
-  subSession?: { status?: string };
-  totalPoolCents?: number;
-  topPlayers?: Array<{ rank: number; username: string; tokens: number; userId?: string }>;
-  totalPhases?: number;
-  phaseStartedAt?: number | null;
-}
+import type { StealTarget } from "@/types/gameplay";
 
 // ══════════════════════════════════════════════════════════════════════════════
 // GAME DIRECTOR
@@ -136,28 +112,14 @@ export default function PlayPage() {
     interactionController.setScreen("play");
     interactionController.startArenaAmbience();
   }, []);
-  const lastAdvanceAttemptRef = useRef<number | null>(null);
-  const advanceInFlightRef = useRef(false);
   const phaseTimerAnchorRef = useRef<{ phase: number; endsAt: number } | null>(null);
-
-  // ── Pending spin data (server result awaiting animation) ────────────────
-  const pendingSpinRef = useRef<{
-    outcome: SpinOutcome;
-    tokens: number;
-    tokenDelta: number;
-    requiresTargetSelection: boolean;
-  } | null>(null);
-
-  // ── Token delta from last spin (for animation) ───────────────────────────
-  const [spinTokenAmount, setSpinTokenAmount] = useState(0);
 
   // ── Store slices (minimal) ───────────────────────────────────────────────
   const {
     phase, phaseEndsAt, tokens,
-    isSpinning, spinLocked, lastOutcome,
+    isSpinning, spinLocked, lastOutcome, pendingTokenDelta,
     setPhase, setRound, setPhaseEndsAt,
-    setTokens, setSpinning, setSpinLocked,
-    setLastOutcome, setEliminated, setRevivable,
+    setTokens, setEliminated, setRevivable,
     resetGameplay,
   } = useGameplayStore();
 
@@ -172,21 +134,7 @@ export default function PlayPage() {
   const [stealTargetError, setStealTargetError] = useState<string | null>(null);
   const [reviveTargetId, setReviveTargetId]   = useState<string | null>(null);
 
-  // Tick once per second so surgePercent updates without 250ms re-renders
-  const [surgeTick, setSurgeTick] = useState(0);
-  useEffect(() => {
-    if (!phaseEndsAt) return;
-    const id = setInterval(() => setSurgeTick((t) => t + 1), 1000);
-    return () => clearInterval(id);
-  }, [phaseEndsAt]);
-
-  const surgePercent = useMemo(() => {
-    if (!phaseEndsAt || !phaseStartedAt) return 0;
-    const total = phaseEndsAt - phaseStartedAt;
-    if (total <= 0) return 0;
-    const elapsed = Date.now() - phaseStartedAt;
-    return Math.min(100, Math.max(0, Math.round((elapsed / total) * 100)));
-  }, [phaseEndsAt, phaseStartedAt, surgeTick]);
+  const surgePercent = useSurgePercent(phaseEndsAt, phaseStartedAt);
 
   const rankingPercentile = useMemo(() => {
     if (!playerRank || !totalPlayers) return 0;
@@ -200,10 +148,19 @@ export default function PlayPage() {
   useLeaderboardUpdates(subSessionId);
 
   // ── ③ APPLY SERVER STATE → STORES ───────────────────────────────────────
-  const applyState = useCallback((data: GameplayStateResponse) => {
+  const applyState = useCallback((data: GameplayStateResponse & {
+    totalPoolCents?: number;
+    topPlayers?: Array<{ rank: number; username: string; tokens: number; userId?: string }>;
+    totalPhases?: number;
+    phaseStartedAt?: number | null;
+    squadMembers?: GameplayStateResponse["squadMembers"];
+  }) => {
     if (data.player) {
       setCurrentUserId(data.player.user_id);
-      setTokens(Number(data.player.session_tokens));
+      const spinning = useGameplayStore.getState().isSpinning;
+      if (!spinning) {
+        setTokens(Number(data.player.session_tokens));
+      }
       setEliminated(data.player.is_eliminated);
       setRevivable(data.player.is_revivable);
     }
@@ -239,10 +196,13 @@ export default function PlayPage() {
   const refreshState = useCallback(async () => {
     if (!subSessionId) return;
     try {
-      const res = await fetch(`/api/gameplay/state?subSessionId=${subSessionId}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json() as GameplayStateResponse;
-      applyState(data);
+      const data = await refreshGameplayState(subSessionId);
+      if (data) applyState(data as GameplayStateResponse & {
+        totalPoolCents?: number;
+        topPlayers?: Array<{ rank: number; username: string; tokens: number; userId?: string }>;
+        totalPhases?: number;
+        phaseStartedAt?: number | null;
+      });
       return data;
     } catch (err) {
       reportClientError({
@@ -292,17 +252,18 @@ export default function PlayPage() {
   // Step A: fetch sub-session ID from session
   useEffect(() => {
     setLifecycle("connecting");
-    fetch(`/api/sessions/${sessionId}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.session?.session_mode) setSessionMode(d.session.session_mode);
+    sessionNetwork.getSession(sessionId)
+      .then((result) => {
+        if (result.ok) {
+          const d = result.data as { session?: { session_mode?: string } };
+          if (d.session?.session_mode) setSessionMode(d.session.session_mode as "squad" | "solo");
+        }
       })
       .catch(() => {});
-    fetch(`/api/sessions/${sessionId}/my-sub-session`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.subSessionId) {
-          setSubSessionId(d.subSessionId);
+    sessionNetwork.getMySubSession(sessionId)
+      .then((result) => {
+        if (result.ok && result.data.subSessionId) {
+          setSubSessionId(result.data.subSessionId);
           setLifecycle("synchronizing");
         }
       })
@@ -329,7 +290,6 @@ export default function PlayPage() {
       setLifecycle("booting");
       resetGameplay();
       lastKnownPhaseRef.current = 1;
-      lastAdvanceAttemptRef.current = null;
       phaseTimerAnchorRef.current = null;
 
       const data = await refreshState();
@@ -341,7 +301,7 @@ export default function PlayPage() {
         phaseTimerAnchorRef.current = { phase: bootPhase, endsAt: data.phaseEndsAt };
       }
       setShowCinematicCountdown(true);
-
+      initGameplaySystems(sessionId, subSessionId);
       setLifecycle("ready");
     };
 
@@ -359,65 +319,7 @@ export default function PlayPage() {
   const phaseExpired = phaseEndsAt != null && phaseRemaining <= 0;
   const gameplayLocked = phaseExpired || isSessionComplete;
 
-  useEffect(() => {
-    if (lifecycle !== "active" || !subSessionId || !phaseEndsAt) return;
-    if (isSessionComplete) return;
-    if (phaseRemaining > 0) return;
-    if (advanceInFlightRef.current) return;
-    if (lastAdvanceAttemptRef.current === phase) return;
-
-    const advancePhase = async () => {
-      advanceInFlightRef.current = true;
-      try {
-        const res = await fetch("/api/gameplay/phase/advance", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ subSessionId }),
-        });
-        const data = await res.json();
-
-        if (data.done || data.reason === "already_completed") {
-          setSubSessionStatus(data.subSessionStatus ?? "completed");
-          if (data.sessionStatus) setSessionStatus(data.sessionStatus);
-          lastAdvanceAttemptRef.current = phase ?? 1;
-          return;
-        }
-
-        if (data.advanced && data.phase != null && data.phase >= lastKnownPhaseRef.current) {
-          lastKnownPhaseRef.current = data.phase;
-          setPhase(data.phase);
-          if (data.phaseEndsAt != null) {
-            setPhaseEndsAt(data.phaseEndsAt);
-            phaseTimerAnchorRef.current = { phase: data.phase, endsAt: data.phaseEndsAt };
-          }
-          lastAdvanceAttemptRef.current = phase ?? 1;
-        } else if (data.reason !== "advance_in_progress") {
-          lastAdvanceAttemptRef.current = null;
-        }
-      } catch (err) {
-        lastAdvanceAttemptRef.current = null;
-        reportClientError({
-          area: "gameplay",
-          severity: "high",
-          message: "Failed to advance phase",
-          cause: err instanceof Error ? err.message : String(err),
-          context: { sessionId, subSessionId, phase },
-        });
-      } finally {
-        advanceInFlightRef.current = false;
-        refreshState();
-      }
-    };
-
-    advancePhase();
-  }, [lifecycle, subSessionId, phaseEndsAt, phaseRemaining, phase, refreshState, sessionId, isSessionComplete]);
-
-  // Reset advance guard when phase increments
-  useEffect(() => {
-    if (phase != null && lastAdvanceAttemptRef.current != null && phase > lastAdvanceAttemptRef.current) {
-      lastAdvanceAttemptRef.current = null;
-    }
-  }, [phase]);
+  // Phase transitions are server/cron authoritative — client reacts via realtime + polling only.
 
   // ── ⑦ ADAPTIVE POLLING (urgent near phase end) ──────────────────────────
   useEffect(() => {
@@ -444,145 +346,53 @@ export default function PlayPage() {
   // These are the only places that talk to the API.
   // They dispatch, then let the server response and realtime drive state.
 
-  const handleSpin = useCallback(async () => {
+  const handleSpin = useCallback(() => {
     if (!subSessionId || spinLocked || lifecycle !== "active" || gameplayLocked) return;
-    setSpinning(true);
-    setSpinLocked(true);
-
-    try {
-      const res = await fetch("/api/gameplay/spin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subSessionId }),
-      });
-      const data = await res.json();
-      if (data.outcome) {
-        // Compute tokenDelta from outcome so animation knows how many tokens to show
-        const tokenDelta = data.tokenDelta ??
-          (data.outcome === "ADVANCE" ? 3 :
-           data.outcome === "ACQUIRE" ? 1 :
-           data.outcome === "DISCOVER" ? 0.5 : 0);
-        pendingSpinRef.current = { ...data, tokenDelta };
-        setSpinTokenAmount(tokenDelta);
-        setLastOutcome(data.outcome);
-      } else {
-        // Server rejected — unlock
-        setSpinning(false);
-        setSpinLocked(false);
-      }
-    } catch (err) {
-      setSpinning(false);
-      setSpinLocked(false);
-      reportClientError({
-        area: "gameplay",
-        severity: "high",
-        message: "Spin request failed",
-        cause: err instanceof Error ? err.message : String(err),
-        context: { subSessionId },
-      });
-    }
-  }, [subSessionId, spinLocked, lifecycle, gameplayLocked, setSpinning, setSpinLocked, setLastOutcome]);
+    void requestSpin();
+  }, [subSessionId, spinLocked, lifecycle, gameplayLocked]);
 
   const handleSpinComplete = useCallback(() => {
-    setSpinning(false);
-    setTimeout(() => setSpinLocked(false), 250);
-    // Hard-sync tokens from server after animation resolves
-    if (pendingSpinRef.current?.tokens !== undefined) {
-      setTokens(pendingSpinRef.current.tokens);
-    }
-    pendingSpinRef.current = null;
-    setSpinTokenAmount(0);
-  }, [setSpinning, setSpinLocked, setTokens]);
+    const serverTokens = useGameplayStore.getState().pendingServerTokens;
+    completeSpinCycle(serverTokens ?? undefined);
+  }, []);
 
   const handleTokensAwarded = useCallback((_amount: number) => {
     // Display counter animates in GameplayHUD; store syncs in handleSpinComplete
   }, []);
 
-  const handleStealActivated = useCallback(async () => {
+  const handleStealActivated = useCallback(() => {
     if (!subSessionId) return;
-    try {
-      const res = await fetch("/api/gameplay/steal/targets", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subSessionId }),
-      });
-      const data = await res.json();
-      const nextTargets = data.targets ?? [];
-      setTargets(nextTargets);
-      setStealTargetError(
-        nextTargets.length === 0 ? "No steal targets available right now." : null
-      );
-      setShowStealPicker(true);
-    } catch {
-      setStealTargetError("Could not load steal targets. Try again.");
-      setShowStealPicker(true);
-    }
-  }, [subSessionId, setTargets]);
+    requestStealTargets(subSessionId);
+    setShowStealPicker(true);
+  }, [subSessionId]);
 
-  const handleStealSelect = useCallback(async (target: StealTarget) => {
+  const handleStealSelect = useCallback((target: StealTarget) => {
     if (!subSessionId) return;
-    try {
-      await fetch("/api/gameplay/steal/execute", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subSessionId, victimId: target.userId }),
-      });
-      await fetch("/api/gameplay/steal/execute", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subSessionId, resolve: true }),
-      });
-    } finally {
+    executeStealFlow(subSessionId, target, () => {
       setShowStealPicker(false);
       setStealTargetError(null);
-      resetFireBoost();
-      setStealInProgress(false);
       refreshState();
-    }
-  }, [subSessionId, refreshState, resetFireBoost, setStealInProgress]);
+    });
+  }, [subSessionId, refreshState]);
 
   const handleStealCancel = useCallback(() => {
     setShowStealPicker(false);
     setStealTargetError(null);
   }, []);
 
-  const handleResolveSteal = useCallback(async () => {
-    try {
-      await fetch("/api/gameplay/steal/execute", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subSessionId, resolve: true }),
-      });
-    } finally {
-      resetFireBoost();
-      setStealInProgress(false);
-      refreshState();
-    }
-  }, [subSessionId, resetFireBoost, setStealInProgress, refreshState]);
+  const handleResolveSteal = useCallback(() => {
+    if (!subSessionId) return;
+    resolveSteal(subSessionId, () => refreshState());
+  }, [subSessionId, refreshState]);
 
-  const handleFireBoost = useCallback(async () => {
-    if (!attackerId) return;
-    try {
-      await fetch("/api/gameplay/steal/boost", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subSessionId, attackerId }),
-      });
-    } finally {
-      incrementFireBoost();
-    }
-  }, [subSessionId, attackerId, incrementFireBoost]);
+  const handleFireBoost = useCallback(() => {
+    if (!attackerId || !subSessionId) return;
+    fireStealBoost(subSessionId, attackerId);
+  }, [subSessionId, attackerId]);
 
-  const handleReviveContribute = useCallback(async (amount: number) => {
-    if (!reviveTargetId) return;
-    try {
-      await fetch("/api/gameplay/revive", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subSessionId, targetId: reviveTargetId, amount }),
-      });
-      refreshState();
-    } catch {/* independent failure */}
+  const handleReviveContribute = useCallback((amount: number) => {
+    if (!reviveTargetId || !subSessionId) return;
+    contributeRevive(subSessionId, reviveTargetId, amount, () => refreshState());
   }, [subSessionId, reviveTargetId, refreshState]);
 
   // ── ⑩ SESSION COMPLETE SCREEN ────────────────────────────────────────────
@@ -650,7 +460,7 @@ export default function PlayPage() {
             isSpinning={isSpinning}
             spinLocked={spinLocked || gameplayLocked}
             lastOutcome={lastOutcome}
-            tokenAmount={spinTokenAmount}
+            tokenAmount={pendingTokenDelta}
             surgePercent={surgePercent}
             onSpin={handleSpin}
             onSpinComplete={handleSpinComplete}

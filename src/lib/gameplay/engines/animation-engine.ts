@@ -45,14 +45,13 @@ export class AnimationEngine implements EngineInterface {
   }
 
   private setupListeners(): void {
-    // Spin animation lifecycle
     gameplayEvents.on('SPIN_STARTED', () => {
-      this.queueAnimation({
-        id: 'wheel-spin',
-        type: 'wheel',
-        priority: 100,
-        duration: 6000,
-      });
+      this.queueAnimation({ id: 'wheel-spin', type: 'wheel', priority: 100, duration: 6000 });
+      if (typeof window !== 'undefined') {
+        void import('@/lib/motion/InteractionController').then(({ interactionController }) => {
+          interactionController.playEffect('spin_request');
+        });
+      }
     });
 
     gameplayEvents.on('SPIN_POINTER_LOCK', () => {

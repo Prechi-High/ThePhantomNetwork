@@ -8,6 +8,7 @@ import { AVATARS } from "@/types/gameplay";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { establishSession } from "@/lib/auth/establish-session";
+import { authNetwork } from "@/lib/network";
 
 export default function OnboardingContent() {
   const router = useRouter();
@@ -36,27 +37,23 @@ export default function OnboardingContent() {
     setError("");
 
     try {
-      const res = await fetch("/api/auth/onboarding", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ avatarId, referralCode: referralCode || undefined }),
+      const result = await authNetwork.completeOnboarding({
+        avatarId,
+        referralCode: referralCode || undefined,
       });
 
-      const data = await res.json();
-
-      if (res.ok) {
+      if (result.ok) {
         router.push("/home");
         router.refresh();
         return;
       }
 
-      if (res.status === 401) {
+      if (result.error.status === 401) {
         setError("Session expired. Please log in again.");
         return;
       }
 
-      setError(data.error ?? "Could not complete onboarding. Try again.");
+      setError(result.error.message ?? "Could not complete onboarding. Try again.");
     } catch {
       setError("Network error. Check your connection and try again.");
     } finally {

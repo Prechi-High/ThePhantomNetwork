@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
+import { adminNetwork } from "@/lib/network";
 
 const navItems = [
   { href: "/admin", label: "Overview", exact: true },
@@ -19,9 +20,9 @@ export function AdminNav() {
   const router = useRouter();
 
   const handleLogout = async () => {
-    await fetch("/api/admin/auth/logout", { method: "POST", credentials: "same-origin" });
     router.push("/admin/login");
     router.refresh();
+    await adminNetwork.logout();
   };
 
   return (

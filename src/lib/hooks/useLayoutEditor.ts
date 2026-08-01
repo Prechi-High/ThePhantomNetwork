@@ -7,6 +7,7 @@ import type {
   PostGlobalLayoutResponse,
   DeleteUserLayoutResponse,
 } from '@/lib/types/layout';
+import { layoutNetwork } from '@/lib/network';
 
 /**
  * Custom hook for managing layout editor operations
@@ -27,20 +28,15 @@ export function useLayoutEditor() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/layouts/active', {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-      });
+      const result = await layoutNetwork.getActiveLayout();
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+      if (!result.ok) {
         throw new Error(
-          errorData.error || `Failed to load ${layoutType} layout`
+          result.error.message || `Failed to load ${layoutType} layout`
         );
       }
 
-      const data = await response.json();
+      const data = result.data as { layout: LayoutConfig };
       setLayout(data.layout);
     } catch (err) {
       const errorMessage =
@@ -64,21 +60,15 @@ export function useLayoutEditor() {
       setIsSaving(true);
       setError(null);
 
-      const response = await fetch('/api/layouts/user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ layout: layoutData }),
-      });
+      const result = await layoutNetwork.saveUserLayout({ layout: layoutData });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+      if (!result.ok) {
         throw new Error(
-          errorData.error || 'Failed to save private layout'
+          result.error.message || 'Failed to save private layout'
         );
       }
 
-      const data: PostUserLayoutResponse = await response.json();
+      const data = result.data as PostUserLayoutResponse;
       setLayout(layoutData);
       return data;
     } catch (err) {
@@ -104,24 +94,18 @@ export function useLayoutEditor() {
     try {
       setIsSaving(true);
 
-      const response = await fetch('/api/layouts/global', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({
-          layout: layoutData,
-          changeNotes,
-        }),
+      const result = await layoutNetwork.saveGlobalLayout({
+        layout: layoutData,
+        changeNotes,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+      if (!result.ok) {
         throw new Error(
-          errorData.error || 'Failed to publish global layout'
+          result.error.message || 'Failed to publish global layout'
         );
       }
 
-      const data: PostGlobalLayoutResponse = await response.json();
+      const data = result.data as PostGlobalLayoutResponse;
       setLayout(layoutData);
       return data;
     } catch (err) {
@@ -142,20 +126,15 @@ export function useLayoutEditor() {
     try {
       setIsSaving(true);
 
-      const response = await fetch('/api/layouts/user', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-      });
+      const result = await layoutNetwork.deleteUserLayout({});
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+      if (!result.ok) {
         throw new Error(
-          errorData.error || 'Failed to reset layout to global'
+          result.error.message || 'Failed to reset layout to global'
         );
       }
 
-      const data: DeleteUserLayoutResponse = await response.json();
+      const data = result.data as DeleteUserLayoutResponse;
       setLayout(null);
       return data;
     } catch (err) {

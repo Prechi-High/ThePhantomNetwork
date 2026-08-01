@@ -9,6 +9,7 @@ import { useArmoryStore } from "@/stores/useArmoryStore";
 import { TACTICAL_ASSET_DEFS } from "@/lib/armory/tactical-assets";
 import { CURRENCY, MESSAGES } from "@/lib/brand/terminology";
 import type { TacticalAssetSlug } from "@/types/gameplay";
+import { economyNetwork } from "@/lib/network";
 
 export default function ArmoryPage() {
   const {
@@ -29,16 +30,21 @@ export default function ArmoryPage() {
   const [tab, setTab] = useState<"purchase" | "inventory" | "loadout">("purchase");
 
   const refresh = useCallback(async () => {
-    const [invRes, shopRes, loadRes] = await Promise.all([
-      fetch("/api/armory/inventory").then((r) => r.json()),
-      fetch("/api/armory/purchase").then((r) => r.json()),
-      fetch("/api/armory/loadouts").then((r) => r.json()),
+    const [invResult, shopResult, loadResult] = await Promise.all([
+      economyNetwork.getArmoryInventory(),
+      economyNetwork.getArmoryShop(),
+      economyNetwork.getArmoryLoadouts(),
     ]);
-    setLegacyCredits(invRes.legacyCredits ?? shopRes.legacyCredits ?? 0);
-    setInventory(invRes.inventory ?? []);
-    setShopItems(shopRes.items ?? []);
-    setLoadouts(loadRes.loadouts ?? []);
-    const active = (loadRes.loadouts ?? []).find((l: { isActive: boolean }) => l.isActive);
+    const invRes = invResult.ok ? (invResult.data as Record<string, unknown>) : {};
+    const shopRes = shopResult.ok ? (shopResult.data as Record<string, unknown>) : {};
+    const loadRes = loadResult.ok ? (loadResult.data as Record<string, unknown>) : {};
+    setLegacyCredits((invRes.legacyCredits as number) ?? (shopRes.legacyCredits as number) ?? 0);
+    setInventory((invRes.inventory as typeof inventory) ?? []);
+    setShopItems((shopRes.items as typeof shopItems) ?? []);
+    setLoadouts((loadRes.loadouts as typeof loadouts) ?? []);
+    const active = ((loadRes.loadouts as typeof loadouts) ?? []).find(
+      (l: { isActive: boolean }) => l.isActive
+    );
     if (active) {
       setActiveLoadoutId(active.id);
       const draft: Record<string, number> = {};
@@ -53,11 +59,7 @@ export default function ArmoryPage() {
 
   const handlePurchase = async (itemId: string) => {
     setPurchasing(itemId);
-    await fetch("/api/armory/purchase", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ itemId, quantity: 1 }),
-    });
+    await economyNetwork.purchaseArmory(itemId, 1);
     await refresh();
     setPurchasing(null);
   };
@@ -68,10 +70,10 @@ export default function ArmoryPage() {
     const items = Object.entries(loadoutDraft)
       .filter(([, qty]) => qty > 0)
       .map(([assetSlug, quantity]) => ({ assetSlug, quantity }));
-    await fetch("/api/armory/loadouts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "save", loadoutId: activeLoadoutId, items }),
+    await economyNetwork.saveArmoryLoadout({
+      action: "save",
+      loadoutId: activeLoadoutId,
+      items,
     });
     await refresh();
     setSaving(false);

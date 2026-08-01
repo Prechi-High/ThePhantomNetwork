@@ -10,6 +10,9 @@ import { getAssetDisplayName, getAssetDescription } from "@/lib/brand/terminolog
 import { TACTICAL_ASSET_DEFS } from "@/lib/armory/tactical-assets";
 import { TargetSelectionModal } from "@/components/gameplay/TargetSelectionModal";
 import type { StealTarget, TacticalAssetSlug } from "@/types/gameplay";
+import { activateTacticalAsset, loadTacticalTargets } from "@/lib/gameplay/actions";
+import { gameplayNetwork } from "@/lib/network";
+import { interactionController } from "@/lib/motion/InteractionController";
 
 interface SkillColors {
   border: string;
@@ -197,52 +200,44 @@ export function SkillDockHUD() {
   const [targets, setTargets] = useState<StealTarget[]>([]);
 
   const activateAsset = useCallback(
-    async (assetSlug: TacticalAssetSlug, targetId?: string) => {
+    (assetSlug: TacticalAssetSlug, targetId?: string) => {
       if (!subSessionId || !sessionId) return;
-      await fetch("/api/gameplay/tactical/activate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subSessionId, sessionId, assetSlug, targetId }),
-      });
+      activateTacticalAsset(subSessionId, sessionId, assetSlug, targetId);
     },
     [subSessionId, sessionId]
   );
 
   const handleSkillActivate = useCallback(
-    async (skillId: string) => {
+    (skillId: string) => {
       const slug = skillId as TacticalAssetSlug;
       const def = TACTICAL_ASSET_DEFS[slug];
       if (!def) return;
+      interactionController.playEffect("ui_button_press");
 
       if (def.requiresTarget) {
-        const res = await fetch("/api/gameplay/steal/targets", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ subSessionId }),
+        loadTacticalTargets(subSessionId!, (nextTargets) => {
+          setTargets(nextTargets);
+          setPendingAsset(slug);
+          setTargetModalOpen(true);
         });
-        const data = await res.json();
-        setTargets(data.targets ?? []);
-        setPendingAsset(slug);
-        setTargetModalOpen(true);
         return;
       }
 
-      await activateAsset(slug);
+      activateAsset(slug);
     },
     [subSessionId, activateAsset]
   );
 
   const handleTargetSelect = useCallback(
-    async (targetId: string) => {
-      if (!pendingAsset) return;
+    (targetId: string) => {
+      if (!pendingAsset || !subSessionId) return;
       if (pendingAsset === "intercept" || pendingAsset === "mark" || pendingAsset === "disrupt") {
-        await fetch("/api/gameplay/steal/targets", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ subSessionId, victimId: targetId, preview: true }),
+        void gameplayNetwork.getStealTargets(subSessionId, {
+          victimId: targetId,
+          preview: true,
         });
       }
-      await activateAsset(pendingAsset, targetId);
+      activateAsset(pendingAsset, targetId);
       setTargetModalOpen(false);
       setPendingAsset(null);
     },

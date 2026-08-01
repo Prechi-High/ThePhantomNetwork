@@ -9,8 +9,11 @@
  */
 
 import { gameplayEvents, type GameplayEvent } from '../events';
+import { gameplayRuntime } from '../runtime';
 import type { EngineInterface } from '../runtime';
 import type { SpinOutcome } from '@/types/gameplay';
+import { gameplayNetwork } from '@/lib/network';
+import { reportClientError } from '@/lib/monitoring/client-report';
 
 export interface SpinConfig {
   spinDuration: number;
@@ -36,9 +39,12 @@ export class SpinEngine implements EngineInterface {
   }
 
   private setupListeners(): void {
-    // Start spin sequence when requested
     gameplayEvents.on('SPIN_REQUESTED', (event) => {
+      const payload = event.payload as { subSessionId?: string };
       this.startSpinSequence();
+      if (payload.subSessionId) {
+        this.requestServerSpin(payload.subSessionId);
+      }
     });
 
     // Handle outcome from server
@@ -102,31 +108,47 @@ export class SpinEngine implements EngineInterface {
   // ============================================================================
 
   private startSpinSequence(): void {
-    // Request server spin
-    this.requestServerSpin();
-    
-    // Begin animation timeline
-    setTimeout(() => {
-      gameplayEvents.emit({
-        type: 'SPIN_STARTED',
-        timestamp: Date.now(),
-        source: 'runtime',
-      });
-    }, 100);
-
-    // Schedule acceleration phase
-    setTimeout(() => {
-      gameplayEvents.emit({
-        type: 'SPIN_ACCELERATION',
-        timestamp: Date.now(),
-        source: 'runtime',
-      });
-    }, 300);
+    gameplayEvents.emit({
+      type: 'SPIN_STARTED',
+      timestamp: Date.now(),
+      source: 'runtime',
+    });
   }
 
-  private async requestServerSpin(): Promise<void> {
-    // This will be called by the runtime when it communicates with server
-    // For now, the actual server call happens in the play page
+  private requestServerSpin(subSessionId: string): void {
+    gameplayNetwork.requestSpinBackground(subSessionId, {
+      onSuccess: (data) => {
+        if (data.outcome && data.error === undefined) {
+          gameplayRuntime.receiveOutcome(
+            data.outcome as SpinOutcome,
+            data.tokenDelta ?? 0,
+            data.tokens
+          );
+        } else {
+          gameplayEvents.emit({
+            type: 'SPIN_VALIDATION_FAILED',
+            timestamp: Date.now(),
+            source: 'server',
+            payload: { reason: data.error ?? 'Spin rejected' },
+          });
+        }
+      },
+      onError: (error) => {
+        reportClientError({
+          area: 'gameplay',
+          severity: 'high',
+          message: 'Spin request failed',
+          cause: error.message,
+          context: { subSessionId },
+        });
+        gameplayEvents.emit({
+          type: 'SPIN_VALIDATION_FAILED',
+          timestamp: Date.now(),
+          source: 'server',
+          payload: { reason: error.message },
+        });
+      },
+    });
   }
 
   private scheduleMaxSpeed(): void {

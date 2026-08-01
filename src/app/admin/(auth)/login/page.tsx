@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { adminNetwork } from "@/lib/network";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -17,23 +18,17 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError("");
 
-    const res = await fetch("/api/admin/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "same-origin",
-      body: JSON.stringify({ email, password }),
-    });
+    const result = await adminNetwork.login({ email, password });
 
-    const data = await res.json();
     setLoading(false);
 
-    if (res.ok) {
+    if (result.ok) {
       router.push("/admin");
       router.refresh();
       return;
     }
 
-    setError(data.error ?? "Login failed");
+    setError(result.error.message ?? "Login failed");
   };
 
   return (

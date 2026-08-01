@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { adminNetwork } from "@/lib/network";
 
 interface Session {
   id: string;
@@ -20,25 +21,23 @@ export default function AdminSessionsPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState<string | null>(null);
 
-  const load = () => {
-    fetch("/api/admin/sessions")
-      .then((r) => r.json())
-      .then((d) => setSessions(d.sessions ?? []));
+  const load = async () => {
+    const result = await adminNetwork.getSessions();
+    if (result.ok) {
+      const data = result.data as { sessions?: Session[] };
+      setSessions(data.sessions ?? []);
+    }
   };
 
   useEffect(() => {
-    load();
+    void load();
   }, []);
 
   const runAction = async (sessionId: string, action: "lock" | "start") => {
     setLoading(sessionId + action);
-    await fetch("/api/admin/sessions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionId, action }),
-    });
+    await adminNetwork.createSession({ sessionId, action });
     setLoading(null);
-    load();
+    void load();
   };
 
   return (

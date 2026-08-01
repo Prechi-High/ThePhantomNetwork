@@ -217,16 +217,69 @@ export function SpinAnimator({ isSpinning, outcome, onSpinComplete }: SpinAnimat
   const pointerControls = useAnimation();
   const currentRotationRef = useRef(0);
   const tickTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const anticipationFrameRef = useRef<number | null>(null);
+  const landingStartedRef = useRef(false);
+  const soundsStartedRef = useRef(false);
 
+  // ── Anticipation spin (no outcome yet) ──────────────────────────────────
+  useEffect(() => {
+    if (!isSpinning || outcome) {
+      if (anticipationFrameRef.current != null) {
+        cancelAnimationFrame(anticipationFrameRef.current);
+        anticipationFrameRef.current = null;
+      }
+      return;
+    }
+
+    landingStartedRef.current = false;
+
+    if (!soundsStartedRef.current) {
+      soundsStartedRef.current = true;
+      interactionController.playEffect("spin_request");
+      interactionController.playEffect("spin_acceleration");
+    }
+
+    let lastTs = performance.now();
+    const spinAnticipation = (ts: number) => {
+      const dt = (ts - lastTs) / 1000;
+      lastTs = ts;
+      const speedDegPerSec = 540;
+      currentRotationRef.current =
+        (currentRotationRef.current + speedDegPerSec * dt) % 360;
+      void wheelControls.set({ rotate: currentRotationRef.current });
+      anticipationFrameRef.current = requestAnimationFrame(spinAnticipation);
+    };
+
+    anticipationFrameRef.current = requestAnimationFrame(spinAnticipation);
+
+    return () => {
+      if (anticipationFrameRef.current != null) {
+        cancelAnimationFrame(anticipationFrameRef.current);
+        anticipationFrameRef.current = null;
+      }
+    };
+  }, [isSpinning, outcome, wheelControls]);
+
+  // ── Landing spin (outcome received) ─────────────────────────────────────
   useEffect(() => {
     if (!isSpinning || !outcome) return;
+    if (landingStartedRef.current) return;
+    landingStartedRef.current = true;
+
+    if (anticipationFrameRef.current != null) {
+      cancelAnimationFrame(anticipationFrameRef.current);
+      anticipationFrameRef.current = null;
+    }
 
     const finalRotation = getTargetRotation(outcome);
     const spinDuration  = SPIN_TIMINGS.SPIN_DURATION;
     const startTime     = Date.now();
 
-    interactionController.playEffect("spin_request");
-    interactionController.playEffect("spin_acceleration");
+    if (!soundsStartedRef.current) {
+      soundsStartedRef.current = true;
+      interactionController.playEffect("spin_request");
+      interactionController.playEffect("spin_acceleration");
+    }
 
     const wheelEl = document.querySelector("[data-wheel-rotor]");
     if (wheelEl) {
@@ -243,13 +296,11 @@ export function SpinAnimator({ isSpinning, outcome, onSpinComplete }: SpinAnimat
       );
     }
 
-    // Pointer wiggle
     pointerControls.start({
       rotate: [0, -8, 8, -8, 8, -6, 6, -3, 3, 0],
       transition: { duration: spinDuration / 1000, ease: "easeInOut" },
     });
 
-    // Tick loop
     const scheduleTick = () => {
       const elapsed = Date.now() - startTime;
       if (elapsed >= spinDuration) return;
@@ -261,7 +312,10 @@ export function SpinAnimator({ isSpinning, outcome, onSpinComplete }: SpinAnimat
     };
     tickTimerRef.current = setTimeout(scheduleTick, 100);
 
-    const brakeTimer = setTimeout(() => interactionController.playEffect("spin_brake"), SPIN_TIMINGS.SLOWDOWN_START);
+    const brakeTimer = setTimeout(
+      () => interactionController.playEffect("spin_brake"),
+      SPIN_TIMINGS.SLOWDOWN_START
+    );
 
     wheelControls
       .start({
@@ -284,7 +338,8 @@ export function SpinAnimator({ isSpinning, outcome, onSpinComplete }: SpinAnimat
           rotate: [0, -15, 7, -3, 1, 0],
           transition: { duration: 0.45, ease: "easeOut" },
         });
-        currentRotationRef.current = (currentRotationRef.current + finalRotation) % 360;
+        currentRotationRef.current =
+          (currentRotationRef.current + finalRotation) % 360;
         onSpinComplete();
       });
 
@@ -294,6 +349,13 @@ export function SpinAnimator({ isSpinning, outcome, onSpinComplete }: SpinAnimat
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSpinning, outcome]);
+
+  useEffect(() => {
+    if (!isSpinning) {
+      landingStartedRef.current = false;
+      soundsStartedRef.current = false;
+    }
+  }, [isSpinning]);
 
   const hubSize = 88; // px — size of center hub area
 

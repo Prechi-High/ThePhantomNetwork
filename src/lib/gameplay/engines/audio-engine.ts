@@ -46,26 +46,24 @@ export class AudioEngine implements EngineInterface {
   }
 
   private setupListeners(): void {
-    // Spin sounds
     gameplayEvents.on('SPIN_STARTED', () => {
-      this.play('spin-start');
+      this.playViaMotion('spin_request');
     });
 
     gameplayEvents.on('SPIN_ACCELERATION', () => {
-      this.play('spin-accelerate');
+      this.playViaMotion('spin_acceleration');
     });
 
     gameplayEvents.on('SPIN_DECELERATION', () => {
-      this.play('spin-decelerate');
+      this.playViaMotion('spin_brake');
     });
 
     gameplayEvents.on('SPIN_POINTER_LOCK', () => {
-      this.play('spin-lock');
+      this.playViaMotion('spin_lock');
     });
 
-    // Reveal sounds
     gameplayEvents.on('REVEAL_STARTED', () => {
-      this.play('reveal-buildup');
+      this.playViaMotion('reveal_start');
     });
 
     gameplayEvents.on('OUTCOME_REVEAL', (event) => {
@@ -73,9 +71,8 @@ export class AudioEngine implements EngineInterface {
       this.playOutcomeSound(payload.outcome);
     });
 
-    // Token sounds
     gameplayEvents.on('TOKEN_COLLECTED', () => {
-      this.play('token-tick');
+      this.playViaMotion('token_receive');
     });
 
     gameplayEvents.on('TOKEN_COLLECTION_COMPLETED', () => {
@@ -180,19 +177,23 @@ export class AudioEngine implements EngineInterface {
   // SPECIALIZED SOUNDS
   // ============================================================================
 
-  private async playOutcomeSound(outcome: string): Promise<void> {
-    const soundMap: Record<string, string> = {
-      ADVANCE: 'outcome-advance',
-      ACQUIRE: 'outcome-acquire',
-      DISCOVER: 'outcome-discover',
-      STEAL: 'outcome-steal',
-      VOID: 'outcome-void',
-    };
+  private playViaMotion(effectId: string): void {
+    if (typeof window === "undefined") return;
+    void import("@/lib/motion/InteractionController").then(({ interactionController }) => {
+      interactionController.playEffect(effectId);
+    });
+  }
 
-    const soundId = soundMap[outcome];
-    if (soundId) {
-      await this.play(soundId);
-    }
+  private async playOutcomeSound(outcome: string): Promise<void> {
+    const effectMap: Record<string, string> = {
+      ADVANCE: "outcome_advance",
+      ACQUIRE: "outcome_acquire",
+      DISCOVER: "outcome_discover",
+      STEAL: "outcome_steal",
+      VOID: "outcome_void",
+    };
+    const effectId = effectMap[outcome];
+    if (effectId) this.playViaMotion(effectId);
   }
 
   private async playEffectSound(type: string): Promise<void> {

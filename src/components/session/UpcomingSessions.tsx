@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { SessionCountdown } from "@/components/session/SessionCountdown";
 import { useSessionPoll } from "@/hooks/useSessionPoll";
+import { sessionNetwork } from "@/lib/network";
 
 interface Session {
   id: string;
@@ -23,9 +24,9 @@ export function UpcomingSessions({ initialSessions }: UpcomingSessionsProps) {
   const [sessions, setSessions] = useState(initialSessions);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/sessions");
-    const d = await res.json();
-    const upcoming = (d.sessions ?? []).filter(
+    const result = await sessionNetwork.listSessions();
+    if (!result.ok) return;
+    const upcoming = (result.data.sessions ?? []).filter(
       (s: Session) => s.status === "open" || s.status === "locked"
     );
     setSessions(upcoming.slice(0, 3));

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { SpinOutcome } from "@/types/gameplay";
-import { SpinStateMachine } from "@/lib/spin/stateMachine";
+import { GameplayStateMachine, transitionSpinLegacyEvent } from "@/lib/spin/stateMachine";
 import { SPIN_TIMINGS, REVEAL_TIMINGS, TOKEN_TIMINGS } from "@/config/spinConfig";
 import { SpinAnimator } from "./SpinAnimator";
 import { RevealSequence } from "./RevealSequence";
@@ -43,7 +43,7 @@ export function PremiumSpinWheel({
   onEngagePress,
   disabled = false,
 }: PremiumSpinWheelProps) {
-  const [stateMachine] = useState(() => new SpinStateMachine());
+  const [stateMachine] = useState(() => new GameplayStateMachine());
   const [showReveal, setShowReveal]           = useState(false);
   const [showCard, setShowCard]               = useState(false);
   const [showParticles, setShowParticles]     = useState(false);
@@ -98,7 +98,7 @@ export function PremiumSpinWheel({
   useEffect(() => {
     if (!isSpinning && !processing) {
       clearTimers();
-      stateMachine.reset();
+      stateMachine.forceTransition("NEXT_SPIN_READY", "wheel idle reset");
       setShowReveal(false);
       setShowCard(false);
       setShowParticles(false);
@@ -109,28 +109,21 @@ export function PremiumSpinWheel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSpinning, processing]);
 
-  // ── Launch when spin + outcome arrive ─────────────────────────────────────
+  // ── Launch immediately on spin (Rule 4: no waiting for network) ───────────
   useEffect(() => {
-    if (!isSpinning || !outcome || processing) return;
-    if (!stateMachine.canSpin()) return;
+    if (!isSpinning || processing) return;
 
     setProcessing(true);
 
-    // FIX 5: surface the transition result and log if blocked
-    const transitioned = stateMachine.transition("START_SPIN");
-    if (!transitioned) {
-      console.warn(
-        "[PremiumSpinWheel] stateMachine.transition('START_SPIN') was blocked." +
-        " Current state:", stateMachine.getCurrentState(),
-        "— forcing via reset."
-      );
-      stateMachine.reset();          // reset to IDLE
-      stateMachine.transition("START_SPIN");
+    if (!transitionSpinLegacyEvent(stateMachine, "START_SPIN")) {
+      stateMachine.forceTransition("NEXT_SPIN_READY", "spin retry");
+      transitionSpinLegacyEvent(stateMachine, "START_SPIN");
     }
 
     setScreenDarken(0.3);
+    interactionController.playEffect("ui_button_press");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSpinning, outcome]);
+  }, [isSpinning]);
 
   // ── finishSpin — FIX 3: uses completionTimerRef, not timersRef ──────────
   const finishSpin = useCallback(() => {
@@ -139,7 +132,7 @@ export function PremiumSpinWheel({
     setShowCard(false);
     setShowParticles(false);
     setScreenDarken(0);
-    stateMachine.transition("COOLDOWN_END");
+    stateMachine.transition("NEXT_SPIN_READY", "cooldown");
 
     // Use dedicated ref so reset useEffect can't kill this timer
     if (completionTimerRef.current) clearTimeout(completionTimerRef.current);
@@ -152,18 +145,18 @@ export function PremiumSpinWheel({
 
   // ── Wheel stop callback ───────────────────────────────────────────────────
   const handleWheelStop = useCallback(() => {
-    stateMachine.transition("SPIN_COMPLETE");
+    transitionSpinLegacyEvent(stateMachine, "SPIN_COMPLETE");
     setScreenDarken(0);
 
     schedule(() => {
-      stateMachine.transition("REVEAL_BEGIN");
+      transitionSpinLegacyEvent(stateMachine, "REVEAL_BEGIN");
       setShowReveal(true);
     }, REVEAL_TIMINGS.SUSPENSE_PAUSE);
   }, [stateMachine, schedule]);
 
   // ── Card visible callback ─────────────────────────────────────────────────
   const handleCardShow = useCallback(() => {
-    stateMachine.transition("REVEAL_COMPLETE");
+    transitionSpinLegacyEvent(stateMachine, "REVEAL_COMPLETE");
     setShowCard(true);
     // Outcome FX triggered by RevealSequence at light-burst phase
   }, [stateMachine]);
@@ -253,7 +246,7 @@ export function PremiumSpinWheel({
       {/* Wheel — fixed size; no scale transform (scale shifts surrounding layout) */}
       <div className="relative w-full h-full">
         <SpinAnimator
-          isSpinning={!!outcome && stateMachine.isSpinning()}
+          isSpinning={isSpinning && (stateMachine.isSpinning() || processing)}
           outcome={outcome}
           onSpinComplete={handleWheelStop}
         />

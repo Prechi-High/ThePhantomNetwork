@@ -67,6 +67,10 @@ export function buildStealTargets(
       tokens: c.tokens,
       rank: c.rank,
       reason: reasonForCandidate(c, rivalIds, topTokenIds, recentActiveIds, attackedYouIds),
+      risk: c.tokens >= 10 ? "low" : c.tokens >= 5 ? "medium" : "high",
+      isRival: rivalIds.has(c.userId),
+      streak: attackedYouIds.has(c.userId) ? 2 : recentActiveIds.has(c.userId) ? 1 : 0,
+      recentlyStole: attackedYouIds.has(c.userId),
     });
     if (combined.length >= 5) break;
   }

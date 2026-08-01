@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useLayoutEditor } from '@/lib/hooks/useLayoutEditor';
 import { useUserRole } from '@/lib/hooks/useUserRole';
 import { useNotifications } from '@/components/ui/NotificationProvider';
+import { layoutNetwork } from '@/lib/network';
 import { StatusCard } from './StatusCard';
 import { ActionButtons } from './ActionButtons';
 import { ResetConfirmationDialog } from './ResetConfirmationDialog';
@@ -38,21 +39,15 @@ export function GameplayLayoutSettings() {
     setError(null);
 
     try {
-      const response = await fetch('/api/layouts/active', {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-      });
+      const result = await layoutNetwork.getActiveLayout();
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+      if (!result.ok) {
         throw new Error(
-          errorData.error || 'Failed to load layout status'
+          result.error.message || 'Failed to load layout status'
         );
       }
 
-      const data: LayoutStatus = await response.json();
-      setStatus(data);
+      setStatus(result.data as LayoutStatus);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to load layout status';
@@ -67,16 +62,11 @@ export function GameplayLayoutSettings() {
    */
   async function handleReset() {
     try {
-      const response = await fetch('/api/layouts/user', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-      });
+      const result = await layoutNetwork.deleteUserLayout({});
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+      if (!result.ok) {
         throw new Error(
-          errorData.error || 'Failed to reset layout'
+          result.error.message || 'Failed to reset layout'
         );
       }
 

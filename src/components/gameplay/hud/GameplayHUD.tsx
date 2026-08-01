@@ -8,7 +8,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
-import type { SpinOutcome, StealTarget, TacticalAssetSlug } from "@/types/gameplay";
+import type { SpinOutcome, StealTarget } from "@/types/gameplay";
+import { activateTacticalAsset, loadTacticalTargets } from "@/lib/gameplay/actions";
+import type { TacticalAssetSlug } from "@/types/gameplay";
 import { usePhaseTimer } from "@/hooks/useRealtimeSession";
 import { useSessionStore } from "@/stores/useSessionStore";
 import { useLiveFeedStore, type FeedEvent } from "@/stores/useLiveFeedStore";
@@ -216,54 +218,40 @@ export function GameplayHUD({
   }, [isSpinning, spinLocked, onSpin]);
 
   const activateAsset = useCallback(
-    async (assetSlug: TacticalAssetSlug, targetId?: string) => {
+    (assetSlug: TacticalAssetSlug, targetId?: string) => {
       if (!subSessionId || !sessionId) return;
       setActivatingSkillId(assetSlug);
-      try {
-        const res = await fetch("/api/gameplay/tactical/activate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ subSessionId, sessionId, assetSlug, targetId }),
-        });
-        if (res.ok) {
-          const data = await res.json() as { effect?: ActiveEffect | null };
-          if (data.effect?.id) {
-            useEffectsStore.getState().addEffect(data.effect);
-          }
-        }
-      } finally {
-        setTimeout(() => setActivatingSkillId(null), 700);
-      }
+      activateTacticalAsset(subSessionId, sessionId, assetSlug, targetId);
+      setTimeout(() => setActivatingSkillId(null), 700);
     },
     [subSessionId, sessionId]
   );
 
   const handleSkillActivate = useCallback(
-    async (skillId: string) => {
+    (skillId: string) => {
       const slug = skillId as TacticalAssetSlug;
       const def = TACTICAL_ASSET_DEFS[slug];
       if (!def) return;
+      interactionController.playEffect("ui_button_press");
+      setActivatingSkillId(slug);
       if (def.requiresTarget) {
-        const res = await fetch("/api/gameplay/steal/targets", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ subSessionId }),
+        loadTacticalTargets(subSessionId!, (targets) => {
+          setSkillTargets(targets);
+          setPendingAsset(slug);
+          setTargetModalOpen(true);
+          setActivatingSkillId(null);
         });
-        const data = await res.json();
-        setSkillTargets(data.targets ?? []);
-        setPendingAsset(slug);
-        setTargetModalOpen(true);
         return;
       }
-      await activateAsset(slug);
+      activateAsset(slug);
     },
     [subSessionId, activateAsset]
   );
 
   const handleTargetSelect = useCallback(
-    async (targetId: string) => {
+    (targetId: string) => {
       if (!pendingAsset) return;
-      await activateAsset(pendingAsset, targetId);
+      activateAsset(pendingAsset, targetId);
       setTargetModalOpen(false);
       setPendingAsset(null);
     },

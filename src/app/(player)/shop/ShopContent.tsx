@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { useShopStore } from "@/stores/useShopStore";
 import { ScreenAmbience } from "@/components/motion/ScreenAmbience";
 import { appEvents } from "@/lib/motion/appEvents";
+import { economyNetwork, sessionNetwork } from "@/lib/network";
 
 export default function ShopContent() {
   const router = useRouter();
@@ -17,32 +18,31 @@ export default function ShopContent() {
   const [purchasing, setPurchasing] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/shop")
-      .then((r) => r.json())
-      .then((d) => setItems(d.items ?? []));
+    economyNetwork.getShop().then((result) => {
+      if (result.ok) {
+        const d = result.data as { items?: typeof items };
+        setItems(d.items ?? []);
+      }
+    });
   }, [setItems]);
 
   useEffect(() => {
     if (!sessionId) return;
-    fetch(`/api/sessions/${sessionId}`)
-      .then((r) => r.json())
-      .then((d) => {
+    sessionNetwork.getSession(sessionId).then((result) => {
+      if (result.ok) {
+        const d = result.data as { session?: { status?: string } };
         const status = d.session?.status;
         if (status === "active" || status === "locked") {
           setLocked(true);
           router.replace("/sessions");
         }
-      })
-      .catch(() => {});
+      }
+    }).catch(() => {});
   }, [sessionId, router, setLocked]);
 
   const handlePurchase = async (itemId: string) => {
     setPurchasing(itemId);
-    await fetch("/api/shop/purchase", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ itemId, sessionId }),
-    });
+    await economyNetwork.purchaseShop(itemId, { sessionId });
     appEvents.emit({ type: "PURCHASE_COMPLETE", timestamp: Date.now(), source: "player" });
     setPurchasing(null);
   };

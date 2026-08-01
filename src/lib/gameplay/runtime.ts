@@ -207,6 +207,10 @@ class GameplayRuntime {
     }
 
     this.transitionTo('BUTTON_PRESS', 'Player requested spin');
+
+    this.state.isSpinning = true;
+    this.state.spinLocked = true;
+    this.state.canSpin = false;
     
     gameplayEvents.emit({
       type: 'SPIN_REQUESTED',
@@ -214,6 +218,8 @@ class GameplayRuntime {
       source: 'player',
       payload: { subSessionId: this.state.subSessionId },
     });
+
+    this.transitionTo('SPIN_ACCELERATION', 'Wheel animation started');
 
     return true;
   }
@@ -268,6 +274,22 @@ class GameplayRuntime {
    */
   updateTokens(tokens: number): void {
     this.state.tokens = tokens;
+  }
+
+  /**
+   * Force return to READY after animation cycle (bypasses strict state machine)
+   */
+  forceReady(): void {
+    this.state.isSpinning = false;
+    this.state.spinLocked = false;
+    this.state.canSpin = true;
+    this.state.lastOutcome = null;
+    this.state.currentState = "READY";
+    gameplayEvents.emit({
+      type: "READY_FOR_NEXT_SPIN",
+      timestamp: Date.now(),
+      source: "runtime",
+    });
   }
 
   /**

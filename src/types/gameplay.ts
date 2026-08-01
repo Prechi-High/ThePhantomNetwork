@@ -212,6 +212,11 @@ export interface StealTarget {
   tokens: number;
   reason: string;
   rank?: number;
+  risk?: "low" | "medium" | "high";
+  isRival?: boolean;
+  streak?: number;
+  hasShield?: boolean;
+  recentlyStole?: boolean;
 }
 
 export interface ReviveTarget {

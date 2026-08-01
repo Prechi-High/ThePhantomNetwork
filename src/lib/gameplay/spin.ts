@@ -45,13 +45,17 @@ export const getSectorFromIndex = (index: number): SpinOutcome => {
 };
 
 // Get the token delta for a spin outcome
-const OUTCOME_DELTAS: Record<SpinOutcome, number> = {
+export const OUTCOME_DELTAS: Record<SpinOutcome, number> = {
   ADVANCE: 3,
   ACQUIRE: 1,
   DISCOVER: 0.5,
   STEAL: 0,
   VOID: 0,
 };
+
+export function getTokenDelta(outcome: SpinOutcome): number {
+  return OUTCOME_DELTAS[outcome];
+}
 
 // Full provably fair spin generation
 export const rollSpinOutcome = (

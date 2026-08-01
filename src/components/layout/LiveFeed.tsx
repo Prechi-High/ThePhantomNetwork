@@ -1,35 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
 import { useLiveWorldStore } from "@/stores/useLiveWorldStore";
+import { useGlobalLiveFeed } from "@/hooks/useGlobalLiveFeed";
 
-export function LiveFeed() {
-  const { events, setEvents, addEvent } = useLiveWorldStore();
-
-  useEffect(() => {
-    fetch("/api/live-feed")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.events) setEvents(data.events);
-      })
-      .catch(() => {});
-
-    const es = new EventSource("/api/live-feed/stream");
-    es.onmessage = (e) => {
-      try {
-        const event = JSON.parse(e.data);
-        addEvent({
-          id: crypto.randomUUID(),
-          event_type: event.eventType,
-          message: event.message,
-          created_at: new Date().toISOString(),
-        });
-      } catch {
-        // ignore
-      }
-    };
-    return () => es.close();
-  }, [setEvents, addEvent]);
+export function GlobalLiveFeed() {
+  useGlobalLiveFeed();
+  const events = useLiveWorldStore((s) => s.events);
 
   if (events.length === 0) return null;
 
