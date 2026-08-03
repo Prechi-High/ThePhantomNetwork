@@ -1,19 +1,21 @@
 #!/usr/bin/env node
 /**
- * CI guardrail: UI components must not call fetch directly.
+ * CI guardrail: UI must not call fetch directly.
  * Network belongs in src/lib/network and src/hooks.
  */
 
 import { readFileSync, readdirSync, statSync } from "fs";
 import { join } from "path";
 
-const ROOT = join(process.cwd(), "src", "components");
+const ROOTS = [
+  join(process.cwd(), "src", "components"),
+  join(process.cwd(), "src", "app", "(player)"),
+];
 const violations = [];
-
-/** Allow fetch only when importing from network layer patterns (none expected in components) */
 const FETCH_PATTERN = /\bfetch\s*\(/;
 
 function walk(dir) {
+  if (!statSync(dir, { throwIfNoEntry: false })?.isDirectory()) return;
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
     if (statSync(full).isDirectory()) {
@@ -27,7 +29,7 @@ function walk(dir) {
   }
 }
 
-walk(ROOT);
+for (const root of ROOTS) walk(root);
 
 if (violations.length > 0) {
   console.error("UI fetch violations (use @/lib/network or hooks instead):");
@@ -35,4 +37,4 @@ if (violations.length > 0) {
   process.exit(1);
 }
 
-console.log("OK: no fetch() in src/components");
+console.log("OK: no fetch() in src/components or src/app/(player)");

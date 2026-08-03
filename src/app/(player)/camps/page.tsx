@@ -4,14 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { ScreenAmbience } from "@/components/motion/ScreenAmbience";
+import { campsNetwork } from "@/lib/network";
 
 export default function CampsPage() {
   const [camps, setCamps] = useState<Record<string, unknown>[]>([]);
 
   useEffect(() => {
-    fetch("/api/camps")
-      .then((r) => r.json())
-      .then((d) => setCamps(d.camps ?? []));
+    campsNetwork.listCamps().then((res) => {
+      if (res.ok) setCamps((res.data.camps ?? []) as Record<string, unknown>[]);
+    });
   }, []);
 
   return (

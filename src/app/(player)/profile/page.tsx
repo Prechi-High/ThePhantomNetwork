@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { GameplayLayoutSettings } from "@/components/gameplay/GameplayLayoutSettings";
 import { ScreenAmbience } from "@/components/motion/ScreenAmbience";
+import { authNetwork, economyNetwork } from "@/lib/network";
 
 import {
   Trophy,
@@ -50,17 +51,17 @@ export default function ProfilePage() {
     setError(null);
     
     Promise.all([
-      fetch("/api/profile", { credentials: "same-origin" })
-        .then((r) => {
-          if (!r.ok) throw new Error("Failed to load profile");
-          return r.json();
-        })
-        .then((d) => {
-          setProfile(d.profile);
-        }),
-      fetch("/api/wallet", { credentials: "same-origin" })
-        .then((r) => r.json())
-        .then((d) => setTransactions(d.transactions ?? []))
+      authNetwork.getProfile().then((res) => {
+        if (!res.ok) throw new Error("Failed to load profile");
+        const d = res.data as { profile?: Record<string, unknown> };
+        setProfile(d.profile ?? null);
+      }),
+      economyNetwork.getWallet().then((res) => {
+        if (res.ok) {
+          const d = res.data as { transactions?: Transaction[] };
+          setTransactions(d.transactions ?? []);
+        }
+      }),
     ])
     .catch((err) => {
       setError(err instanceof Error ? err.message : "Failed to load profile");
@@ -111,13 +112,13 @@ export default function ProfilePage() {
           <button className="p-3 rounded-full bg-phantom-surface hover:bg-phantom-surface/80 transition-colors">
             <Upload className="w-5 h-5 text-phantom-muted" />
           </button>
-          <button className="p-3 rounded-full bg-phantom-surface hover:bg-phantom-surface/80 transition-colors">
+          <Link href="/profile/settings" className="p-3 rounded-full bg-phantom-surface hover:bg-phantom-surface/80 transition-colors">
             <Settings className="w-5 h-5 text-phantom-muted" />
-          </button>
-          <button className="relative p-3 rounded-full bg-phantom-surface hover:bg-phantom-surface/80 transition-colors">
+          </Link>
+          <Link href="/notifications" className="relative p-3 rounded-full bg-phantom-surface hover:bg-phantom-surface/80 transition-colors">
             <Bell className="w-5 h-5 text-phantom-muted" />
             <span className="absolute -top-1 -right-1 w-3 h-3 bg-phantom-purple rounded-full animate-pulse"></span>
-          </button>
+          </Link>
         </div>
       </div>
 

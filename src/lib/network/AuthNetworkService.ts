@@ -16,6 +16,28 @@ export const authNetwork = {
     });
   },
 
+  async registerEmail(body: { email: string; password: string; username?: string; captchaToken?: string }) {
+    return apiFetch<{
+      session?: { access_token: string; refresh_token: string };
+      onboardingComplete?: boolean;
+      error?: string;
+    }>("/api/auth/email/register", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+
+  async loginEmail(body: { email: string; password: string }) {
+    return apiFetch<{
+      session?: { access_token: string; refresh_token: string };
+      onboardingComplete?: boolean;
+      error?: string;
+    }>("/api/auth/email/login", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+
   async verifyCaptcha(token: string) {
     return apiFetch<unknown>("/api/auth/captcha", {
       method: "POST",
@@ -47,6 +69,10 @@ export const authNetwork = {
 
   async getProfile() {
     return apiFetch<unknown>("/api/profile");
+  },
+
+  async getProfileSessions() {
+    return apiFetch<unknown>("/api/profile/sessions");
   },
 
   async logout() {

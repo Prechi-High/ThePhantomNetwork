@@ -92,8 +92,8 @@ export const AUDIO_CUE_REGISTRY: Record<string, AudioCueDef> = {
 
 export const AUDIO_STATE_PROFILES: Partial<Record<MotionState, AudioStateProfile>> = {
   Idle: {
-    enter: [{ play: "wheel_idle_hum" }, { play: "arena_hum" }],
-    exit: [{ stop: "wheel_idle_hum", fadeOut: 400 }],
+    enter: [],
+    exit: [{ stop: "wheel_idle_hum", fadeOut: 400 }, { stop: "arena_hum", fadeOut: 400 }],
   },
   SpinStart: {
     enter: [{ play: "spin_start" }, { play: "energy_charge" }],

@@ -2,14 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
+import { authNetwork } from "@/lib/network";
 
 export default function ProfileSessionsPage() {
   const [sessions, setSessions] = useState<Record<string, unknown>[]>([]);
 
   useEffect(() => {
-    fetch("/api/profile/sessions")
-      .then((r) => r.json())
-      .then((d) => setSessions(d.sessions ?? []));
+    authNetwork.getProfileSessions().then((res) => {
+      if (res.ok) {
+        const d = res.data as { sessions?: Record<string, unknown>[] };
+        setSessions(d.sessions ?? []);
+      }
+    });
   }, []);
 
   return (

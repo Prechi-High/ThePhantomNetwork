@@ -13,6 +13,8 @@ function pathnameToScreen(pathname: string): ScreenId | null {
   if (pathname.startsWith("/profile")) return "profile";
   if (pathname.startsWith("/camps")) return "camp";
   if (pathname.startsWith("/squads")) return "squad";
+  if (pathname.startsWith("/legacy")) return "profile";
+  if (pathname.startsWith("/creator")) return "profile";
   if (pathname.startsWith("/world")) return "leaderboard";
   if (pathname.includes("/results")) return "results";
   return null;

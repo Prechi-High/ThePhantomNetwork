@@ -3,14 +3,18 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { worldNetwork } from "@/lib/network";
 
 export default function RivalsPage() {
   const [rivalries, setRivalries] = useState<Record<string, unknown>[]>([]);
 
   useEffect(() => {
-    fetch("/api/rivals")
-      .then((r) => r.json())
-      .then((d) => setRivalries(d.rivalries ?? []));
+    worldNetwork.getRivals().then((res) => {
+      if (res.ok) {
+        const d = res.data as { rivalries?: Record<string, unknown>[] };
+        setRivalries(d.rivalries ?? []);
+      }
+    });
   }, []);
 
   return (

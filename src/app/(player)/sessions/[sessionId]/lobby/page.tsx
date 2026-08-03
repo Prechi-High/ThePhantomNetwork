@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { LiveFeed } from "@/components/gameplay/hud/LiveFeed";
+import { sessionNetwork } from "@/lib/network";
 
 export default function SessionLobbyPage() {
   const params = useParams();
@@ -28,14 +29,16 @@ export default function SessionLobbyPage() {
   ]);
 
   useEffect(() => {
-    fetch(`/api/sessions/${sessionId}`)
-      .then((r) => r.json())
-      .then((d) => setSession(d.session));
-    const interval = setInterval(() => {
-      fetch(`/api/sessions/${sessionId}`)
-        .then((r) => r.json())
-        .then((d) => setSession(d.session));
-    }, 5000);
+    const load = () => {
+      sessionNetwork.getSession(sessionId).then((res) => {
+        if (res.ok) {
+          const d = res.data as { session?: typeof session };
+          if (d.session) setSession(d.session);
+        }
+      });
+    };
+    load();
+    const interval = setInterval(load, 5000);
     return () => clearInterval(interval);
   }, [sessionId]);
 

@@ -10,6 +10,7 @@ import { MESSAGES, CURRENCY } from "@/lib/brand/terminology";
 import { TACTICAL_ASSET_DEFS } from "@/lib/armory/tactical-assets";
 import { ScreenAmbience } from "@/components/motion/ScreenAmbience";
 import { appEvents } from "@/lib/motion/appEvents";
+import { authNetwork, economyNetwork } from "@/lib/network";
 
 interface SessionResult {
   final_rank: number;
@@ -33,11 +34,13 @@ export default function SessionResultsPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/profile/sessions").then((r) => r.json()),
-      fetch(`/api/armory/inventory?sessionId=${sessionId}`).then((r) => r.json()).catch(() => ({})),
+      authNetwork.getProfileSessions(),
+      economyNetwork.getArmoryInventory(sessionId),
     ]).then(([historyRes]) => {
-      const match = (historyRes.sessions ?? []).find(
-        (s: SessionResult & { session_id: string }) => s.session_id === sessionId
+      if (!historyRes.ok) return;
+      const history = historyRes.data as { sessions?: SessionResult[] };
+      const match = (history.sessions ?? []).find(
+        (s) => s.session_id === sessionId
       );
       if (match) setResult(match);
     });

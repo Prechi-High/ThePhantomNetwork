@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
-import { Syne, Inter } from "next/font/google";
+import { Manrope } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { NotificationProvider } from "@/components/ui/NotificationProvider";
 import { TelegramProvider } from "@/components/providers/TelegramProvider";
 
-const syne = Syne({ subsets: ["latin"], variable: "--font-syne" });
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-
+const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope" });
 export const metadata: Metadata = {
   title: "LEGACIES",
   description: "Build your Legacy through strategy, rivalry, and triumph",
@@ -19,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${syne.variable} ${inter.variable}`}>
+    <html lang="en" className={manrope.variable}>
       <body className="min-h-screen antialiased">
         {/* Telegram SDK must be loaded in body for App Router */}
         <Script

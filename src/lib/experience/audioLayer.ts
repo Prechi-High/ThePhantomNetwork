@@ -1,4 +1,7 @@
 /**
+ * @deprecated Use InteractionController + AudioManager (src/lib/motion/) instead.
+ * This legacy ExperienceEngine audio layer is dormant — not wired to player routes.
+ *
  * Audio Layer Architecture — Layered Gameplay Audio
  * Nothing plays independently. Everything mixed through one controller.
  *

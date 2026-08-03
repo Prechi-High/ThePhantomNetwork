@@ -1,14 +1,13 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { SplashScreen } from "@/components/journey/SplashScreen";
 
-export default async function HomePage() {
+export default async function RootPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login");
+    return <SplashScreen nextHref="/login" />;
   }
 
   const { data: profile } = await supabase
@@ -18,8 +17,8 @@ export default async function HomePage() {
     .single();
 
   if (!profile?.onboarding_complete) {
-    redirect("/onboarding");
+    return <SplashScreen nextHref="/onboarding" />;
   }
 
-  redirect("/home");
+  return <SplashScreen nextHref="/home" />;
 }

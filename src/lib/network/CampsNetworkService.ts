@@ -5,6 +5,10 @@
 import { apiFetch } from "./client";
 
 export const campsNetwork = {
+  async listCamps() {
+    return apiFetch<{ camps?: unknown[] }>("/api/camps");
+  },
+
   async getCamp(id: string) {
     return apiFetch<{ camp?: Record<string, unknown> }>(`/api/camps/${id}`);
   },

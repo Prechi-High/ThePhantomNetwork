@@ -48,9 +48,9 @@ export const SCREEN_AUDIO: Record<ScreenId, string[]> = {
   squad: ["arena_hum"],
   leaderboard: ["arena_hum"],
   world: ["home_wind", "home_crackle"],
-  play: ["arena_hum", "wheel_idle_hum"],
+  play: [],
   results: ["legacy_forged"],
-  countdown: ["arena_hum"],
+  countdown: [],
 };
 
 export function getEffect(id: string): EffectDef | undefined {

@@ -7,4 +7,5 @@ export { adminNetwork } from "./AdminNetworkService";
 export { layoutNetwork } from "./LayoutNetworkService";
 export { campsNetwork } from "./CampsNetworkService";
 export { worldNetwork } from "./WorldNetworkService";
+export { squadsNetwork } from "./SquadsNetworkService";
 export * from "./types";

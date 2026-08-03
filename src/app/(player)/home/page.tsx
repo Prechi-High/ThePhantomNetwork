@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/Badge";
 import Link from "next/link";
 import Image from "next/image";
 import { Bell, ChevronRight, Users, Trophy, Coins, TrendingUp, Globe, Skull, Sparkles, Zap, Crown } from "lucide-react";
+import { PlayerPageHeader } from "@/components/layout/PlayerPageHeader";
+import { MESSAGES } from "@/lib/brand/terminology";
 import BottomNav from "@/components/ui/BottomNav";
 import { ScreenAmbience } from "@/components/motion/ScreenAmbience";
 import { sessionNetwork } from "@/lib/network";
@@ -143,7 +145,26 @@ export default function HomePage() {
   return (
     <div className="space-y-8 relative">
       <ScreenAmbience screen="home" />
-      {/* TOP HEADER */}
+      <PlayerPageHeader />
+
+      {/* FOCAL: Next session countdown */}
+      <Card className="border-legacy-gold/30 p-8 text-center">
+        <p className="text-xs uppercase tracking-widest text-legacy-muted">Next official session</p>
+        <div className="my-6 flex justify-center">
+          <Countdown targetDate={targetDate} />
+        </div>
+        {nextSession ? (
+          <Link href={`/sessions/${nextSession.id}`}>
+            <Button size="lg" className="w-full max-w-xs">{MESSAGES.enterBattle}</Button>
+          </Link>
+        ) : (
+          <Link href="/sessions">
+            <Button size="lg" className="w-full max-w-xs">View sessions</Button>
+          </Link>
+        )}
+      </Card>
+
+      {/* TOP HEADER — wallet strip */}
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
         <div className="flex items-center gap-4">
           <div className="relative">

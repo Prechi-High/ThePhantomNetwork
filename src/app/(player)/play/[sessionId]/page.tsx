@@ -110,7 +110,8 @@ export default function PlayPage() {
 
   useEffect(() => {
     interactionController.setScreen("play");
-    interactionController.startArenaAmbience();
+    interactionController.stopSound("arena_hum", 0);
+    interactionController.stopSound("wheel_idle_hum", 0);
   }, []);
   const phaseTimerAnchorRef = useRef<{ phase: number; endsAt: number } | null>(null);
 

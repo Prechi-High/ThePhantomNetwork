@@ -17,6 +17,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { AVATARS } from "@/types/gameplay";
+import { squadsNetwork } from "@/lib/network";
 
 function HowItWorksStep({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) {
   return (
@@ -38,9 +39,12 @@ export default function CommunityPage() {
   const [activeTab, setActiveTab] = useState("recommended");
 
   useEffect(() => {
-    fetch("/api/squads/leaderboard")
-      .then((r) => r.json())
-      .then((d) => setSquads(d.squads ?? []));
+    squadsNetwork.getLeaderboard().then((res) => {
+      if (res.ok) {
+        const d = res.data as { squads?: Record<string, unknown>[] };
+        setSquads(d.squads ?? []);
+      }
+    });
   }, []);
 
   const tabs = ["recommended", "top ranked", "most active", "new squads"];

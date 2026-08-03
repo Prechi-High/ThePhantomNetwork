@@ -170,6 +170,19 @@ export default function WorldPage() {
   return (
     <div className="space-y-8 pb-24 relative">
       <ScreenAmbience screen="leaderboard" />
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-display font-bold text-white">World</h1>
+          <p className="text-sm text-legacy-muted">Live rankings, rivalries, Legacy War</p>
+        </div>
+        <Link href="/world/search">
+          <Button variant="secondary" className="text-sm">Search</Button>
+        </Link>
+      </div>
+      <Card className="border-legacy-gold/20 p-4">
+        <p className="text-xs uppercase text-legacy-muted">Legacy War Reserve</p>
+        <p className="text-lg font-bold text-legacy-gold">5% of every official session · 90-day cycle</p>
+      </Card>
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Link href="/home" className="p-3 rounded-full hover:bg-phantom-surface transition-colors">

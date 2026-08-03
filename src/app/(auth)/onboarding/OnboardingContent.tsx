@@ -43,7 +43,7 @@ export default function OnboardingContent() {
       });
 
       if (result.ok) {
-        router.push("/home");
+        router.push("/welcome");
         router.refresh();
         return;
       }

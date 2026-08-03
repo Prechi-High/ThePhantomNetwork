@@ -37,8 +37,9 @@ export const economyNetwork = {
     });
   },
 
-  async getArmoryInventory() {
-    return apiFetch<unknown>("/api/armory/inventory");
+  async getArmoryInventory(sessionId?: string) {
+    const q = sessionId ? `?sessionId=${sessionId}` : "";
+    return apiFetch<unknown>(`/api/armory/inventory${q}`);
   },
 
   async getArmoryShop() {

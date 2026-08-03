@@ -3,15 +3,16 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Card } from "@/components/ui/Card";
+import { squadsNetwork } from "@/lib/network";
 
 export default function SquadDetailPage() {
   const { squadId } = useParams<{ squadId: string }>();
   const [data, setData] = useState<{ squad: Record<string, unknown>; members: Record<string, unknown>[] } | null>(null);
 
   useEffect(() => {
-    fetch(`/api/squads/${squadId}`)
-      .then((r) => r.json())
-      .then(setData);
+    squadsNetwork.getSquad(squadId).then((res) => {
+      if (res.ok) setData(res.data as typeof data);
+    });
   }, [squadId]);
 
   if (!data) return <p className="text-phantom-muted">Loading...</p>;

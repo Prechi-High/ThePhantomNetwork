@@ -1,48 +1,40 @@
 "use client";
 
-import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Calendar, Shield, Users, User } from "lucide-react";
+import { Home, Calendar, Globe, Video, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { navTabs } from "@/lib/design/tokens";
 
-const navItems = [
-  { href: "/home", label: "HOME", icon: Home },
-  { href: "/sessions", label: "SESSIONS", icon: Calendar },
-  { href: "/armory", label: "ARMORY", icon: Shield },
-  { href: "/squads", label: "SQUAD", icon: Users },
-  { href: "/profile", label: "PROFILE", icon: User },
-];
+const icons = [Home, Calendar, Globe, Video, Crown];
 
 export default function BottomNav() {
   const pathname = usePathname();
 
-  // Gameplay is immersive — no nav chrome during play
   if (pathname.startsWith("/play/")) return null;
+  if (pathname.startsWith("/welcome") || pathname.startsWith("/tutorial")) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-phantom-bg border-t border-phantom-border py-3 px-4 z-50">
-      <div className="flex justify-around">
-        {navItems.map((item) => {
-          const isActive = pathname.startsWith(item.href) || 
-            (item.href === "/home" && pathname === "/");
+    <nav data-bottom-nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-legacy-border bg-legacy-bg/95 py-2 backdrop-blur-md">
+      <div className="mx-auto flex max-w-lg justify-around px-2">
+        {navTabs.map((item, i) => {
+          const Icon = icons[i];
+          const isActive = pathname.startsWith(item.href) || (item.href === "/home" && pathname === "/");
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center gap-1 transition-all",
-                isActive ? "text-phantom-purple" : "text-phantom-muted"
+                "flex flex-col items-center gap-1 px-2 py-1 transition-colors",
+                isActive ? "text-legacy-gold" : "text-legacy-muted hover:text-white"
               )}
             >
-              <item.icon className="w-6 h-6" />
-              <span className="text-[10px] uppercase font-semibold">
-                {item.label}
-              </span>
+              <Icon className="h-5 w-5" />
+              <span className="text-[10px] font-semibold uppercase">{item.label}</span>
             </Link>
           );
         })}
       </div>
-    </div>
+    </nav>
   );
 }

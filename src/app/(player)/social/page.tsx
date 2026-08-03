@@ -3,14 +3,18 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { worldNetwork } from "@/lib/network";
 
 export default function SocialPage() {
   const [playedWith, setPlayedWith] = useState<{ userId: string; username: string; sessions: number }[]>([]);
 
   useEffect(() => {
-    fetch("/api/social/played-with")
-      .then((r) => r.json())
-      .then((d) => setPlayedWith(d.playedWith ?? []));
+    worldNetwork.getPlayedWith().then((res) => {
+      if (res.ok) {
+        const d = res.data as { playedWith?: typeof playedWith };
+        setPlayedWith(d.playedWith ?? []);
+      }
+    });
   }, []);
 
   return (
