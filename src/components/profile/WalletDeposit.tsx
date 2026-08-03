@@ -37,7 +37,7 @@ function CheckoutForm({ onSuccess }: { onSuccess?: () => void }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <PaymentElement />
-      {error && <p className="text-sm text-phantom-danger">{error}</p>}
+      {error && <p className="text-sm text-legacy-danger">{error}</p>}
       <Button type="submit" disabled={!stripe || loading} className="w-full">
         {loading ? "Processing..." : "Pay Now"}
       </Button>
@@ -55,8 +55,8 @@ export function WalletDeposit({ onSuccess }: WalletDepositProps) {
     useWalletActions(onSuccess);
 
   return (
-    <Card className="space-y-3">
-      <p className="text-sm font-medium">Add Funds</p>
+    <Card className="space-y-3 border-legacy-border bg-legacy-card">
+      <p className="text-sm font-medium text-white">Add Funds</p>
       {!clientSecret ? (
         <>
           <div className="flex gap-2">
@@ -66,14 +66,14 @@ export function WalletDeposit({ onSuccess }: WalletDepositProps) {
               step="1"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="flex-1 rounded-lg border border-phantom-border bg-phantom-bg px-3 py-2"
+              className="flex-1 rounded-lg border border-legacy-divider bg-legacy-surface px-3 py-2 text-white"
               placeholder="Amount USD"
             />
             <Button onClick={() => deposit(amount)} disabled={loading} size="sm">
               {loading ? "..." : "Continue"}
             </Button>
           </div>
-          {message && <p className="text-xs text-phantom-muted">{message}</p>}
+          {message && <p className="text-xs text-legacy-muted">{message}</p>}
         </>
       ) : (
         <Elements stripe={stripePromise} options={{ clientSecret }}>

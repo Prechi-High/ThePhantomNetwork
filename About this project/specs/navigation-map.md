@@ -13,18 +13,29 @@ Per V5 Master Screen Architecture — no isolated screens.
 
 | Tab | Route | Internal sections |
 |-----|-------|-------------------|
-| Home | `/home` | Next session CTA, live stats |
-| Sessions | `/sessions` | List, `/sessions/[id]`, `/prepare`, `/lobby`, `/play`, `/results` |
+| Home | `/home` | Countdown hero, ENTER BATTLE |
+| Sessions | `/sessions` | Official list, AI Practice, `/[id]`, `/prepare`, `/lobby`, `/play`, `/results` |
 | World | `/world` | Leaderboard, rivals, `/world/search` |
-| Creator | `/creator` | Record, `/community`, `/social` |
-| Legacy | `/legacy` | Kata, `/squads`, `/camps`, `/shop`, `/armory` |
+| Creator | `/creator` | Record, analytics sheet |
+| Legacy | `/legacy` | Kata, milestones; deep links to `/squads`, `/camps` |
 
 ## Account (header / deep link)
 
-- `/profile` — avatar, badges, wallet
+- `/profile` — identity, wallet deposit/withdraw sheets
 - `/profile/settings` — preferences
-- `/notifications` — 9 categories
-- `/profile/gameplay-layout/*` — layout editor
+- `/profile/sessions` — history
+- `/notifications` — 9 categories with deep links
+
+## Redirects (orphans)
+
+| From | To |
+|------|-----|
+| `/social`, `/community` | `/creator` |
+| `/armory` | `/sessions/prepare` |
+| `/shop` | `/legacy` |
+| `/rivals` | `/world` |
+
+Gameplay layout editor (`/profile/gameplay-layout/*`) is not in player nav; APIs remain for studio tools.
 
 ## Session lifecycle
 
@@ -32,13 +43,23 @@ Per V5 Master Screen Architecture — no isolated screens.
 /sessions → /sessions/[id] → /sessions/prepare → /sessions/[id]/lobby → /play/[id] → /sessions/[id]/results → /legacy
 ```
 
-## Bottom sheets (IDs)
+## Bottom sheets (wired hosts)
 
-deposit, withdraw, join-session, purchase-item, promotion, camp-funding, squad-invite, create-squad, create-camp, share-replay, creator-analytics, notifications, filters, edit-profile, treasury
+| ID | Host |
+|----|------|
+| deposit, withdraw, edit-profile | `/profile` |
+| join-session | `/sessions` |
+| filters | `/world/search` |
+| create-squad | `/squads` |
+| create-camp | `/camps` |
+| share-replay | `/sessions/[id]/results` |
+| creator-analytics | `/creator` |
 
-## Modals (IDs)
+Also see `src/components/overlays/registry.ts` (`SHEET_HOSTS`).
 
-insufficient-balance, insufficient-tokens, promotion, leave-squad, leave-camp, season-end, legacy-war, session-cancelled, reward-ready, camp-takeover
+## Modals / overlays / popups
+
+IDs in registry; gameplay owns countdown/recording overlays. Economy confirm modals (insufficient balance/tokens) surface from join/purchase flows as needed.
 
 ## Deep links
 

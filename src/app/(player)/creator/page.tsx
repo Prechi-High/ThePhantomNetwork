@@ -1,31 +1,66 @@
 "use client";
 
-import Link from "next/link";
-import { Button } from "@/components/ui/Button";
-import { ListRow } from "@/components/design-system";
+import { useState } from "react";
+import {
+  HeroFocus,
+  ListRow,
+  PageShell,
+  PrimaryCTA,
+  SectionLabel,
+  StatPill,
+} from "@/components/design-system";
 import { PlayerPageHeader } from "@/components/layout/PlayerPageHeader";
+import { BottomSheet } from "@/components/ui/BottomSheet";
+import { Button } from "@/components/ui/Button";
 
 export default function CreatorPage() {
+  const [analyticsOpen, setAnalyticsOpen] = useState(false);
+
   return (
-    <div className="space-y-6 pb-8">
+    <PageShell className="space-y-6">
       <PlayerPageHeader username="Creator" />
-      <div>
-        <h1 className="font-display text-2xl font-bold text-white">Creator Hub</h1>
-        <p className="mt-2 text-sm text-legacy-muted">
-          Record gameplay, share externally, and grow Legacy Influence through content.
-        </p>
+
+      <HeroFocus
+        eyebrow="Creator Hub"
+        title="Record. Share. Recruit."
+        subtitle="Gameplay creates content. Content attracts players. Legacy grows."
+      >
+        <PrimaryCTA onClick={() => {}}>Record session replay</PrimaryCTA>
+      </HeroFocus>
+
+      <div className="grid grid-cols-3 gap-2">
+        <StatPill label="CIP" value="—" accent="blue" />
+        <StatPill label="Referrals" value="—" accent="gold" />
+        <StatPill label="Influence" value="—" accent="emerald" />
       </div>
-      <Button className="w-full">Record session replay</Button>
+
       <section className="space-y-2">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-legacy-muted">Share & grow</h2>
-        <ListRow title="Download clip" subtitle="Watermarked export for social" />
-        <ListRow title="Creator analytics" subtitle="Strategist rank required" />
-        <ListRow title="Community feed" subtitle="In-app publishing for Strategists" href="/community" />
+        <SectionLabel>Share & grow</SectionLabel>
+        <ListRow title="Download clip" subtitle="Watermark + outro card" />
+        <ListRow
+          title="Creator analytics"
+          subtitle="Strategist rank required"
+          onClick={() => setAnalyticsOpen(true)}
+        />
+        <ListRow
+          title="Internal feed"
+          subtitle="Publishing unlocks at Strategist"
+        />
       </section>
-      <p className="text-xs text-legacy-muted">
-        Everyone can record and share externally. In-app feed unlocks at Strategist milestone.
-      </p>
-      <Link href="/social" className="text-sm text-legacy-blue hover:underline">Legacy social feed →</Link>
-    </div>
+
+      <section className="rounded-xl border border-legacy-divider bg-legacy-card p-4 text-xs text-legacy-muted">
+        Referral milestones: 5 frame · 10 Legacy Coin · 25 emotes · 50 effect · 100 badge · 250 banner · 500 title.
+        Legacy Influence cannot be purchased.
+      </section>
+
+      <BottomSheet open={analyticsOpen} onOpenChange={setAnalyticsOpen} title="Creator analytics">
+        <p className="text-sm text-legacy-muted mb-4">
+          Views, watch time, shares, referral installs, and CIP — available after Strategist promotion.
+        </p>
+        <Button className="w-full" variant="secondary" onClick={() => setAnalyticsOpen(false)}>
+          Close
+        </Button>
+      </BottomSheet>
+    </PageShell>
   );
 }

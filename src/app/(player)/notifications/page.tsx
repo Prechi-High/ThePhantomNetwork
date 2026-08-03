@@ -1,31 +1,35 @@
 "use client";
 
-import { ListRow } from "@/components/design-system";
+import { ListRow, PageShell, HeroFocus, SectionLabel } from "@/components/design-system";
 import { PlayerPageHeader } from "@/components/layout/PlayerPageHeader";
 
-const CATEGORIES = [
-  "Session",
-  "Squad",
-  "Camp",
-  "Legacy",
-  "Creator",
-  "Wallet",
-  "Social",
-  "System",
-  "War",
-] as const;
+const CATEGORIES: { title: string; href: string; subtitle: string }[] = [
+  { title: "Session", href: "/sessions", subtitle: "Arenas starting & results" },
+  { title: "Squad", href: "/squads", subtitle: "Invites & projects" },
+  { title: "Camp", href: "/camps", subtitle: "Treasury & wars" },
+  { title: "Legacy", href: "/legacy", subtitle: "Promotions & Influence" },
+  { title: "Creator", href: "/creator", subtitle: "Clips & referrals" },
+  { title: "Wallet", href: "/profile", subtitle: "Deposits & withdrawals" },
+  { title: "Social", href: "/creator", subtitle: "Follows & mentions" },
+  { title: "System", href: "/profile/settings", subtitle: "Account alerts" },
+  { title: "War", href: "/world", subtitle: "Legacy War updates" },
+];
 
 export default function NotificationsPage() {
   return (
-    <div className="space-y-6 pb-8">
+    <PageShell className="space-y-6">
       <PlayerPageHeader showNotifications={false} />
-      <h1 className="font-display text-2xl font-bold text-white">Notifications</h1>
-      <p className="text-sm text-legacy-muted">Deep links open the relevant screen directly.</p>
+      <HeroFocus
+        eyebrow="Alerts"
+        title="Notifications"
+        subtitle="Every alert deep-links to its screen."
+      />
       <section className="space-y-2">
-        {CATEGORIES.map((cat) => (
-          <ListRow key={cat} title={cat} subtitle="No new alerts" />
+        <SectionLabel>Categories</SectionLabel>
+        {CATEGORIES.map((c) => (
+          <ListRow key={c.title} title={c.title} subtitle={c.subtitle} href={c.href} />
         ))}
       </section>
-    </div>
+    </PageShell>
   );
 }

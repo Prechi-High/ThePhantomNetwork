@@ -10,7 +10,10 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: "/social", destination: "/creator", permanent: false },
+      { source: "/community", destination: "/creator", permanent: false },
       { source: "/armory", destination: "/sessions/prepare", permanent: false },
+      { source: "/shop", destination: "/legacy", permanent: false },
+      { source: "/rivals", destination: "/world", permanent: false },
     ];
   },
 };

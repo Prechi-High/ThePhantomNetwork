@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card } from "@/components/ui/Card";
+import { ListRow, PageShell, HeroFocus } from "@/components/design-system";
+import { ScreenState } from "@/components/ui/ScreenState";
 import { authNetwork } from "@/lib/network";
 
 export default function ProfileSessionsPage() {
   const [sessions, setSessions] = useState<Record<string, unknown>[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     authNetwork.getProfileSessions().then((res) => {
@@ -13,24 +15,34 @@ export default function ProfileSessionsPage() {
         const d = res.data as { sessions?: Record<string, unknown>[] };
         setSessions(d.sessions ?? []);
       }
-    });
+    }).finally(() => setLoading(false));
   }, []);
 
+  if (loading) {
+    return (
+      <PageShell>
+        <ScreenState variant="loading" />
+      </PageShell>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      <h1 className="font-display text-2xl font-bold">Session History</h1>
+    <PageShell className="space-y-6">
+      <HeroFocus eyebrow="History" title="Session History" subtitle="Past arenas and ranks." />
       {sessions.length === 0 ? (
-        <Card><p className="text-phantom-muted">No sessions yet.</p></Card>
+        <ScreenState variant="empty" title="No sessions yet" message="Enter an official session to begin." />
       ) : (
-        sessions.map((s) => (
-          <Card key={s.id as string}>
-            <p>Rank #{s.final_rank as number}</p>
-            <p className="text-sm text-phantom-muted">
-              {s.final_tokens as number} tokens
-            </p>
-          </Card>
-        ))
+        <div className="space-y-2">
+          {sessions.map((s) => (
+            <ListRow
+              key={String(s.id ?? s.session_id)}
+              title={`Rank #${s.final_rank ?? "—"}`}
+              subtitle={`${s.final_tokens ?? 0} tokens`}
+              href={s.session_id ? `/sessions/${s.session_id}/results` : undefined}
+            />
+          ))}
+        </div>
       )}
-    </div>
+    </PageShell>
   );
 }

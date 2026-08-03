@@ -17,7 +17,7 @@ const accents = {
 export function StatPill({ label, value, accent = "gold", className }: StatPillProps) {
   return (
     <div className={cn("rounded-xl border border-legacy-border bg-legacy-card px-4 py-3 text-center", className)}>
-      <p className={cn("text-lg font-bold tabular-nums", accents[accent])}>{value}</p>
+      <p className={cn("text-sm font-bold leading-tight sm:text-lg", typeof value === "number" && "tabular-nums", accents[accent])}>{value}</p>
       <p className="text-[10px] uppercase tracking-wide text-legacy-muted">{label}</p>
     </div>
   );

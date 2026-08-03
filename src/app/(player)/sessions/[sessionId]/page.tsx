@@ -2,184 +2,93 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
-import { SessionCountdown } from "@/components/session/SessionCountdown";
-import { useSessionPoll } from "@/hooks/useSessionPoll";
-import { reportClientError } from "@/lib/monitoring/client-report";
+import {
+  CountdownHero,
+  HeroFocus,
+  PageShell,
+  PrimaryCTA,
+  SectionLabel,
+} from "@/components/design-system";
+import { ScreenState } from "@/components/ui/ScreenState";
 import { sessionNetwork } from "@/lib/network";
-
-interface SessionDetailResponse {
-  session?: {
-    title: string;
-    status: string;
-    starts_at: string;
-    entry_fee_cents: number;
-    registration_closes_at: string;
-  };
-  poolCents?: number;
-  error?: string;
-}
+import { distributePrizePool } from "@/lib/economy/session-pool";
 
 export default function SessionDetailPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const router = useRouter();
-  const [data, setData] = useState<SessionDetailResponse | null>(null);
-  const [loadError, setLoadError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [joining, setJoining] = useState(false);
-  const [joinError, setJoinError] = useState("");
-
-  const loadSession = async (silent = false) => {
-    if (!sessionId) return;
-    if (!silent) setLoading(true);
-    setLoadError("");
-
-    try {
-      const result = await sessionNetwork.getSession(sessionId);
-      const json = result.ok ? (result.data as SessionDetailResponse) : { error: result.error.message };
-
-      if (!result.ok || !json.session) {
-        const msg = json.error ?? "Session not found";
-        setLoadError(msg);
-        reportClientError({
-          area: "session",
-          message: msg,
-          context: { sessionId, statusCode: result.ok ? 200 : result.error.status },
-          url: `/sessions/${sessionId}`,
-        });
-        setData(null);
-        return;
-      }
-
-      setData(json);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to load session";
-      setLoadError(msg);
-      reportClientError({
-        area: "session",
-        message: msg,
-        stack: err instanceof Error ? err.stack : undefined,
-        context: { sessionId },
-        url: `/sessions/${sessionId}`,
-      });
-    } finally {
-      if (!silent) setLoading(false);
-    }
-  };
+  const [session, setSession] = useState<{
+    title: string;
+    status: string;
+    starts_at: string;
+    entry_fee_cents: number;
+    total_pool_cents: number;
+    registered_count: number;
+    max_players?: number;
+  } | null>(null);
 
   useEffect(() => {
-    loadSession();
+    sessionNetwork.getSession(sessionId).then((res) => {
+      if (res.ok) {
+        const d = res.data as { session?: typeof session };
+        setSession(d.session ?? null);
+      }
+      setLoading(false);
+    });
   }, [sessionId]);
 
-  useSessionPoll(() => loadSession(true), 8000, Boolean(sessionId));
-
-  const handleJoin = async () => {
-    setJoining(true);
-    setJoinError("");
-
-    try {
-      const result = await sessionNetwork.joinSession(sessionId);
-      const json = result.ok ? (result.data as { error?: string }) : { error: result.error.message };
-
-      if (!result.ok) {
-        const msg = json.error ?? "Failed to join session";
-        setJoinError(msg);
-        reportClientError({
-          area: "session",
-          message: msg,
-          context: { sessionId, statusCode: result.error.status, action: "join" },
-        });
-        return;
-      }
-
-      await loadSession();
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Join failed";
-      setJoinError(msg);
-      reportClientError({ area: "session", message: msg, context: { sessionId, action: "join" } });
-    } finally {
-      setJoining(false);
-    }
-  };
-
   if (loading) {
-    return <p className="text-phantom-muted">Loading session...</p>;
-  }
-
-  if (loadError || !data?.session) {
     return (
-      <Card className="space-y-3">
-        <p className="text-phantom-danger">{loadError || "Session unavailable"}</p>
-        <Button variant="secondary" onClick={() => router.push("/sessions")}>
-          Back to Sessions
-        </Button>
-      </Card>
+      <PageShell>
+        <ScreenState variant="loading" />
+      </PageShell>
     );
   }
 
-  const s = data.session;
+  if (!session) {
+    return (
+      <PageShell>
+        <ScreenState variant="error" message="Session not found" />
+      </PageShell>
+    );
+  }
+
+  const pool = distributePrizePool(
+    session.total_pool_cents || session.entry_fee_cents * Math.max(session.registered_count, 1)
+  );
+  const fmt = (c: number) => `$${(c / 100).toFixed(2)}`;
 
   return (
-    <div className="space-y-6">
-      <h1 className="font-display text-2xl font-bold">{s.title}</h1>
+    <PageShell className="space-y-6">
+      <HeroFocus
+        eyebrow={session.status.toUpperCase()}
+        title={session.title}
+        subtitle={`Entry ${fmt(session.entry_fee_cents)} · ${session.registered_count} registered`}
+      >
+        <CountdownHero targetDate={session.starts_at} className="my-5" />
+        <PrimaryCTA href={`/sessions/prepare?sessionId=${sessionId}`}>
+          Prepare for Battle
+        </PrimaryCTA>
+      </HeroFocus>
 
-      <SessionCountdown
-        startsAt={s.starts_at}
-        status={s.status}
-        className="rounded-lg border border-phantom-border bg-phantom-surface/50 py-4"
-      />
+      <section className="space-y-2">
+        <SectionLabel>Prize pool split</SectionLabel>
+        <ul className="space-y-2 rounded-xl border border-legacy-divider bg-legacy-card p-4 text-sm">
+          <li className="flex justify-between text-white"><span>Winning squad 50%</span><span className="text-legacy-gold">{fmt(pool.winningSquad)}</span></li>
+          <li className="flex justify-between text-legacy-muted"><span>Runner-ups 20%</span><span>{fmt(pool.runnerUpSquads)}</span></li>
+          <li className="flex justify-between text-legacy-muted"><span>Platform 20%</span><span>{fmt(pool.platform)}</span></li>
+          <li className="flex justify-between text-legacy-muted"><span>Camp pool 5%</span><span>{fmt(pool.campRewardPool)}</span></li>
+          <li className="flex justify-between text-legacy-muted"><span>Legacy War 5%</span><span>{fmt(pool.legacyWarReserve)}</span></li>
+        </ul>
+      </section>
 
-      <Card glow>
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <span className="text-phantom-muted">Status</span>
-            <Badge>{s.status}</Badge>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-phantom-muted">Starts</span>
-            <span>{new Date(s.starts_at).toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-phantom-muted">Registration closes</span>
-            <span>{new Date(s.registration_closes_at).toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-phantom-muted">Entry Fee</span>
-            <span className="text-phantom-gold">${(s.entry_fee_cents / 100).toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-phantom-muted">Pool</span>
-            <span className="font-mono text-lg text-phantom-gold">
-              ${((data.poolCents ?? 0) / 100).toFixed(2)}
-            </span>
-          </div>
-        </div>
-      </Card>
-
-      {joinError && <p className="text-sm text-phantom-danger">{joinError}</p>}
-
-      {s.status === "open" && (
-        <div className="space-y-2">
-          <Button onClick={handleJoin} disabled={joining} className="w-full">
-            {joining ? "Joining..." : "Join Session"}
-          </Button>
-          <Button
-            variant="secondary"
-            className="w-full"
-            onClick={() => router.push(`/shop?sessionId=${sessionId}`)}
-          >
-            Visit Shop First
-          </Button>
-        </div>
-      )}
-
-      {s.status === "active" && (
-        <Button className="w-full" onClick={() => router.push(`/play/${sessionId}`)}>
-          Enter Gameplay
-        </Button>
-      )}
-    </div>
+      <button
+        type="button"
+        className="w-full text-sm text-legacy-muted"
+        onClick={() => router.push("/sessions")}
+      >
+        ← Sessions
+      </button>
+    </PageShell>
   );
 }

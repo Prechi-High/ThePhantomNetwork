@@ -10,11 +10,11 @@ function pathnameToScreen(pathname: string): ScreenId | null {
   if (pathname.startsWith("/play/")) return "play";
   if (pathname.startsWith("/home") || pathname === "/") return "home";
   if (pathname.startsWith("/shop")) return "shop";
+  if (pathname.startsWith("/legacy")) return "profile";
+  if (pathname.startsWith("/creator")) return "profile";
   if (pathname.startsWith("/profile")) return "profile";
   if (pathname.startsWith("/camps")) return "camp";
   if (pathname.startsWith("/squads")) return "squad";
-  if (pathname.startsWith("/legacy")) return "profile";
-  if (pathname.startsWith("/creator")) return "profile";
   if (pathname.startsWith("/world")) return "leaderboard";
   if (pathname.includes("/results")) return "results";
   return null;
@@ -23,6 +23,10 @@ function pathnameToScreen(pathname: string): ScreenId | null {
 export function PlayerLayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isGameplay = pathname.startsWith("/play/");
+  const isImmersive =
+    isGameplay ||
+    pathname.startsWith("/welcome") ||
+    pathname.startsWith("/tutorial");
   const contentRef = useRef<HTMLDivElement>(null);
   const prevPathRef = useRef(pathname);
   const prevScreenRef = useRef<ScreenId | null>(null);
@@ -51,18 +55,13 @@ export function PlayerLayoutShell({ children }: { children: React.ReactNode }) {
     prevPathRef.current = pathname;
   }, [pathname]);
 
-  if (isGameplay) {
+  if (isImmersive) {
     return <>{children}</>;
   }
 
   return (
-    <div className="min-h-screen pb-24">
-      <main
-        ref={contentRef}
-        className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-6 space-y-8"
-      >
-        {children}
-      </main>
+    <div className="min-h-screen bg-legacy-bg pt-10" ref={contentRef}>
+      {children}
     </div>
   );
 }

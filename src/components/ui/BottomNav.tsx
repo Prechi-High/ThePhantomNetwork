@@ -11,8 +11,15 @@ const icons = [Home, Calendar, Globe, Video, Crown];
 export default function BottomNav() {
   const pathname = usePathname();
 
-  if (pathname.startsWith("/play/")) return null;
-  if (pathname.startsWith("/welcome") || pathname.startsWith("/tutorial")) return null;
+  if (
+    pathname.startsWith("/play/") ||
+    pathname.startsWith("/welcome") ||
+    pathname.startsWith("/tutorial") ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/onboarding")
+  ) {
+    return null;
+  }
 
   return (
     <nav data-bottom-nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-legacy-border bg-legacy-bg/95 py-2 backdrop-blur-md">

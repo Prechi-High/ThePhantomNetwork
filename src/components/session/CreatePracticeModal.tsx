@@ -48,31 +48,31 @@ export function CreatePracticeModal({ open, onClose, onCreated }: CreatePractice
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-black/70 p-4 sm:items-center"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl bg-phantom-bg-elevated border border-phantom-border p-6 space-y-4"
+        className="max-h-[90vh] w-full max-w-2xl space-y-4 overflow-y-auto rounded-xl border border-legacy-border bg-legacy-card p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div>
-          <h2 className="font-display text-xl font-bold">Create AI Practice</h2>
-          <p className="text-sm text-phantom-muted mt-1">
-            Private session — only you can see it. Free entry; Armory loadout required.
+          <h2 className="font-display text-xl font-bold text-white">Create AI Practice</h2>
+          <p className="mt-1 text-sm text-legacy-muted">
+            Private session — only you can see it. Free entry; loadout required.
           </p>
         </div>
 
         <div>
-          <label className="text-sm text-phantom-muted">Session title</label>
+          <label className="text-sm text-legacy-muted">Session title</label>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-phantom-border bg-phantom-bg px-3 py-2"
+            className="mt-1 w-full rounded-lg border border-legacy-divider bg-legacy-surface px-3 py-2 text-white"
           />
         </div>
 
         <div>
-          <label className="text-sm text-phantom-muted">Bot count ({botCount})</label>
+          <label className="text-sm text-legacy-muted">Bot count ({botCount})</label>
           <input
             type="range"
             min={1}
@@ -86,11 +86,11 @@ export function CreatePracticeModal({ open, onClose, onCreated }: CreatePractice
         <PhaseConfigEditor phases={phases} onChange={setPhases} />
 
         {error && (
-          <div className="text-sm text-phantom-danger space-y-2">
+          <div className="space-y-2 text-sm text-legacy-danger">
             <p>{error}</p>
             {error.toLowerCase().includes("loadout") && (
-              <Link href="/armory" className="text-phantom-purple underline">
-                Open Armory
+              <Link href="/sessions/prepare" className="text-legacy-blue underline">
+                Open Prepare
               </Link>
             )}
           </div>

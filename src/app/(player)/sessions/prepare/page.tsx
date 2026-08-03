@@ -2,12 +2,15 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Card } from "@/components/ui/Card";
+import {
+  HeroFocus,
+  PageShell,
+  PrimaryCTA,
+  SectionLabel,
+} from "@/components/design-system";
+import { ScreenState } from "@/components/ui/ScreenState";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
-import BottomNav from "@/components/ui/BottomNav";
-import { TACTICAL_ASSET_DEFS } from "@/lib/armory/tactical-assets";
-import { CURRENCY, MESSAGES } from "@/lib/brand/terminology";
+import { MESSAGES, CURRENCY, getAssetDisplayName } from "@/lib/brand/terminology";
 import { sessionNetwork, economyNetwork } from "@/lib/network";
 
 function PrepareContent() {
@@ -26,26 +29,36 @@ function PrepareContent() {
   const [legacyCredits, setLegacyCredits] = useState(0);
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!sessionId) return;
+    if (!sessionId) {
+      setLoading(false);
+      return;
+    }
     Promise.all([
       sessionNetwork.getSession(sessionId),
       economyNetwork.getArmoryLoadouts(),
       economyNetwork.getArmoryInventory(),
     ]).then(([sessRes, loadRes, invRes]) => {
       const sessData = sessRes.ok ? (sessRes.data as { session?: typeof session }) : {};
-      const loadData = loadRes.ok ? (loadRes.data as { loadouts?: Array<{ isActive: boolean; items: typeof loadout }> }) : {};
+      const loadData = loadRes.ok
+        ? (loadRes.data as { loadouts?: Array<{ isActive: boolean; items: typeof loadout }> })
+        : {};
       const invData = invRes.ok ? (invRes.data as { legacyCredits?: number }) : {};
       setSession(sessData.session ?? null);
       setLegacyCredits(invData.legacyCredits ?? 0);
       const active = (loadData.loadouts ?? []).find((l) => l.isActive);
       setLoadout(active?.items ?? []);
-    });
+    }).finally(() => setLoading(false));
   }, [sessionId]);
 
   const handleEnterBattle = async () => {
     if (!sessionId) return;
+    if (sessionType === "ai_practice") {
+      router.push(`/play/${sessionId}`);
+      return;
+    }
     setJoining(true);
     setError(null);
     const result = await sessionNetwork.joinSession(sessionId);
@@ -57,97 +70,76 @@ function PrepareContent() {
     router.push(`/sessions/${sessionId}/lobby`);
   };
 
+  if (loading) {
+    return (
+      <PageShell>
+        <ScreenState variant="loading" />
+      </PageShell>
+    );
+  }
+
   if (!sessionId) {
     return (
-      <Card>
-        <p className="text-sm text-phantom-muted">Select a session first.</p>
-        <Button className="mt-4" onClick={() => router.push("/sessions")}>
-          Browse Sessions
-        </Button>
-      </Card>
+      <PageShell className="space-y-4">
+        <HeroFocus title="No session selected" subtitle="Pick an arena first." />
+        <PrimaryCTA href="/sessions">Browse Sessions</PrimaryCTA>
+      </PageShell>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold">Final Preparation</h1>
-        <p className="text-sm text-phantom-muted">Review your loadout before entering battle.</p>
-      </div>
+    <PageShell className="space-y-6">
+      <HeroFocus
+        eyebrow={MESSAGES.prepareForBattle}
+        title={session?.title ?? "Loadout"}
+        subtitle={
+          session
+            ? `Entry $${(session.entry_fee_cents / 100).toFixed(2)} · ${CURRENCY.legacy}: ${legacyCredits}`
+            : "Review your loadout before entering."
+        }
+      />
 
-      {session && (
-        <Card className="space-y-3">
-          <div className="flex justify-between">
-            <span className="text-phantom-muted">Session</span>
-            <span className="font-medium">{session.title}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-phantom-muted">Type</span>
-            <Badge variant="purple">{sessionType.replace("_", " ")}</Badge>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-phantom-muted">Entry Fee</span>
-            <span>${(session.entry_fee_cents / 100).toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-phantom-muted">Reward Pool</span>
-            <span className="text-phantom-gold">${(session.total_pool_cents / 100).toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-phantom-muted">{CURRENCY.legacy} Remaining</span>
-            <span>{legacyCredits}</span>
-          </div>
-        </Card>
-      )}
-
-      <Card>
-        <h2 className="font-semibold mb-3">Active Loadout</h2>
+      <section className="space-y-2">
+        <SectionLabel>Active loadout</SectionLabel>
         {loadout.length === 0 ? (
-          <p className="text-sm text-phantom-muted">
-            No loadout equipped. Visit the Armory to prepare.
-          </p>
+          <ScreenState
+            variant="empty"
+            title="No loadout equipped"
+            message="Equip tactical assets before battle."
+            action={
+              <Button variant="secondary" onClick={() => router.push("/armory")}>
+                Open Armory
+              </Button>
+            }
+          />
         ) : (
-          <div className="space-y-2">
+          <ul className="space-y-2">
             {loadout.map((item) => (
-              <div key={item.assetSlug} className="flex justify-between text-sm">
-                <span>
-                  {TACTICAL_ASSET_DEFS[item.assetSlug as keyof typeof TACTICAL_ASSET_DEFS]?.displayName ??
-                    item.assetSlug}
-                </span>
-                <span>×{item.quantity}</span>
-              </div>
+              <li
+                key={item.assetSlug}
+                className="flex justify-between rounded-xl border border-legacy-divider bg-legacy-card px-4 py-3 text-sm"
+              >
+                <span className="text-white">{getAssetDisplayName(item.assetSlug)}</span>
+                <span className="text-legacy-gold">×{item.quantity}</span>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
-      </Card>
+      </section>
 
-      {error && <p className="text-sm text-phantom-danger">{error}</p>}
+      {error && <p className="text-sm text-legacy-crimson">{error}</p>}
 
-      <Button
-        className="w-full"
-        size="lg"
-        disabled={joining || loadout.length === 0}
-        onClick={handleEnterBattle}
-      >
-        {joining ? "Entering..." : MESSAGES.enterBattle}
-      </Button>
-
-      <Button variant="ghost" className="w-full" onClick={() => router.push("/armory")}>
-        Edit Loadout in Armory
-      </Button>
-    </div>
+      <PrimaryCTA onClick={handleEnterBattle} disabled={joining || loadout.length === 0}>
+        {joining ? "Joining..." : MESSAGES.enterBattle}
+      </PrimaryCTA>
+    </PageShell>
   );
 }
 
 export default function PreparePage() {
   return (
-    <div className="min-h-screen bg-phantom-bg pb-24">
-      <div className="container-responsive pt-4">
-        <Suspense fallback={<p className="text-phantom-muted">Loading...</p>}>
-          <PrepareContent />
-        </Suspense>
-      </div>
-      <BottomNav />
-    </div>
+    <Suspense fallback={<PageShell><ScreenState variant="loading" /></PageShell>}>
+      <PrepareContent />
+    </Suspense>
   );
 }

@@ -1,26 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { ListRow } from "@/components/design-system";
-import { PlayerPageHeader } from "@/components/layout/PlayerPageHeader";
+import { ListRow, PageShell, HeroFocus } from "@/components/design-system";
 import { interactionController } from "@/lib/motion/InteractionController";
 
 export default function SettingsPage() {
   return (
-    <div className="space-y-6 pb-8">
-      <PlayerPageHeader />
-      <h1 className="font-display text-2xl font-bold text-white">Settings</h1>
+    <PageShell className="space-y-6">
+      <HeroFocus
+        eyebrow="Settings"
+        title="Preferences"
+        subtitle="Stay in control without leaving the flow."
+      />
       <section className="space-y-2">
         <ListRow
           title="Sound & haptics"
-          subtitle="Master volume and feedback"
+          subtitle="Unmute master feedback"
           onClick={() => interactionController.setMute(false)}
         />
-        <ListRow title="Notification preferences" subtitle="Per-category alerts" href="/notifications" />
-        <ListRow title="Account" subtitle="Username and avatar" href="/profile" />
+        <ListRow
+          title="Mute all"
+          subtitle="Silence audio + haptics"
+          onClick={() => interactionController.setMute(true)}
+        />
+        <ListRow title="Notifications" subtitle="Per-category alerts" href="/notifications" />
+        <ListRow title="Account" subtitle="Profile & wallet" href="/profile" />
         <ListRow title="Legal" subtitle="Terms and privacy" />
       </section>
-      <Link href="/profile" className="text-sm text-legacy-muted hover:text-white">← Back to profile</Link>
-    </div>
+      <Link href="/profile" className="block text-center text-sm text-legacy-muted hover:text-white">
+        ← Profile
+      </Link>
+    </PageShell>
   );
 }

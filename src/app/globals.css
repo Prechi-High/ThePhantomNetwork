@@ -48,10 +48,11 @@
   --font-body: "Manrope", system-ui, sans-serif;
   --radius-lg: 0.75rem;
   --radius-full: 9999px;
-  --shadow-glow-gold: 0 0 30px rgba(212,168,83,0.5);
-  --shadow-glow-purple: 0 0 40px rgba(139, 92, 246, 0.6);
-  --shadow-glow-danger: 0 0 30px rgba(239,68,68,0.5);
+  --shadow-glow-gold: 0 0 30px rgba(245, 185, 66, 0.45);
+  --shadow-glow-purple: 0 0 40px rgba(76, 141, 255, 0.35);
+  --shadow-glow-danger: 0 0 30px rgba(230, 77, 94, 0.5);
   --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --shadow-soft: 0 4px 24px rgba(0, 0, 0, 0.35);
   --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-medium: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }

@@ -2,51 +2,75 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
+import {
+  EmblemAvatar,
+  HeroFocus,
+  PageShell,
+  SectionLabel,
+  StatPill,
+} from "@/components/design-system";
+import { ScreenState } from "@/components/ui/ScreenState";
 import { campsNetwork } from "@/lib/network";
 
 export default function CampDetailPage() {
   const { campId } = useParams<{ campId: string }>();
+  const [loading, setLoading] = useState(true);
   const [camp, setCamp] = useState<Record<string, unknown> | null>(null);
-  const [leaderboard, setLeaderboard] = useState<Record<string, unknown>[]>([]);
 
   useEffect(() => {
-    campsNetwork.getCamp(campId).then((result) => {
-      if (result.ok && result.data.camp) setCamp(result.data.camp);
-    });
-    campsNetwork.getCampLeaderboard(campId).then((result) => {
-      if (result.ok) setLeaderboard(result.data.leaderboard ?? []);
-    });
+    campsNetwork.getCamp(campId).then((res) => {
+      if (res.ok) setCamp((res.data as { camp?: Record<string, unknown> }).camp ?? null);
+    }).finally(() => setLoading(false));
   }, [campId]);
 
-  const handleSwitch = async () => {
-    await campsNetwork.switchCamp(campId);
-  };
+  if (loading) {
+    return (
+      <PageShell>
+        <ScreenState variant="loading" />
+      </PageShell>
+    );
+  }
 
-  if (!camp) return <p className="text-phantom-muted">Loading...</p>;
+  if (!camp) {
+    return (
+      <PageShell>
+        <ScreenState variant="error" message="Camp not found" />
+      </PageShell>
+    );
+  }
+
+  const name = String(camp.name ?? "Camp");
 
   return (
-    <div className="space-y-6">
-      <h1 className="font-display text-2xl font-bold">{camp.name as string}</h1>
-      <Card>
-        <p>{camp.member_count as number} members</p>
-        <p className="text-phantom-gold">{camp.leaderboard_score as number} score</p>
-        {!camp.is_default && (
-          <Button onClick={handleSwitch} variant="secondary" className="mt-3 w-full">
-            Switch to this Camp
-          </Button>
-        )}
-      </Card>
-      <section>
-        <h2 className="mb-3 font-semibold">Leaderboard</h2>
-        {leaderboard.map((p, i) => (
-          <Card key={p.id as string} className="mb-2 flex justify-between">
-            <span>#{i + 1} {p.username as string}</span>
-            <span className="text-phantom-gold">Lv.{p.level as number}</span>
-          </Card>
-        ))}
+    <PageShell className="space-y-6">
+      <HeroFocus
+        eyebrow="Official emblem"
+        title={name}
+        subtitle="Treasury · Projects · Legacy War qualification"
+      >
+        <div className="mt-4 flex justify-center">
+          <EmblemAvatar alt={name} size="lg" emblem />
+        </div>
+      </HeroFocus>
+
+      <div className="grid grid-cols-2 gap-2">
+        <StatPill label="Members" value={Number(camp.member_count ?? 0)} accent="blue" />
+        <StatPill label="Influence" value={Number(camp.leaderboard_score ?? 0)} accent="gold" />
+      </div>
+
+      <section className="space-y-2">
+        <SectionLabel>Treasury</SectionLabel>
+        <div className="rounded-xl border border-legacy-divider bg-legacy-card p-4 text-sm text-legacy-muted">
+          80% Camp / 20% Squad from the 5% session camp pool. Leaders may withdraw up to 10% seasonally after governance.
+        </div>
       </section>
-    </div>
+
+      <section className="space-y-2">
+        <SectionLabel>Legacy War</SectionLabel>
+        <div className="rounded-xl border border-legacy-gold/25 bg-legacy-card p-4 text-sm text-white">
+          All camps qualify. Season performance sets seeding. War every 90 days.
+        </div>
+      </section>
+    </PageShell>
   );
 }

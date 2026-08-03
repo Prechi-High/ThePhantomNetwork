@@ -1,12 +1,28 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { InfluenceBar, KataBadge, ListRow, StatPill } from "@/components/design-system";
+import {
+  HeroFocus,
+  InfluenceBar,
+  KataBadge,
+  ListRow,
+  PageShell,
+  SectionLabel,
+  StatPill,
+} from "@/components/design-system";
 import { PlayerPageHeader } from "@/components/layout/PlayerPageHeader";
 import { ScreenState } from "@/components/ui/ScreenState";
 import { getKataStage, MILESTONE_STAGES } from "@/lib/legacy/milestones";
 import { authNetwork } from "@/lib/network";
+
+const PATHFINDER_REQUIREMENTS = [
+  "Complete 50 sessions",
+  "Win 15 sessions",
+  "Revive teammates 25 times",
+  "30 sessions without quitting early",
+  "Invite 3 active players",
+  "Active on 14 different days",
+];
 
 export default function LegacyPage() {
   const [loading, setLoading] = useState(true);
@@ -16,44 +32,70 @@ export default function LegacyPage() {
 
   useEffect(() => {
     authNetwork.getProfile().then((res) => {
-      if (!res.ok) return;
-      const body = res.data as { profile?: { username?: string; avatar_url?: string; legacy_influence?: number } };
-      const p = body.profile;
-      setUsername(p?.username ?? "Player");
-      setAvatarUrl(p?.avatar_url ?? null);
-      setInfluence(Number(p?.legacy_influence ?? 0));
+      if (res.ok) {
+        const body = res.data as {
+          profile?: { username?: string; avatar_url?: string; legacy_influence?: number };
+        };
+        const p = body.profile;
+        setUsername(p?.username ?? "Player");
+        setAvatarUrl(p?.avatar_url ?? null);
+        setInfluence(Number(p?.legacy_influence ?? 0));
+      }
     }).finally(() => setLoading(false));
   }, []);
 
   const stage = getKataStage(influence);
-  const thresholds = MILESTONE_STAGES[stage.name];
-  const nextThreshold = thresholds.promotionThreshold;
+  const nextThreshold = MILESTONE_STAGES[stage.name].promotionThreshold;
 
-  if (loading) return <ScreenState variant="loading" />;
+  if (loading) {
+    return (
+      <PageShell>
+        <ScreenState variant="loading" />
+      </PageShell>
+    );
+  }
 
   return (
-    <div className="space-y-6 pb-8">
+    <PageShell className="space-y-6">
       <PlayerPageHeader avatarUrl={avatarUrl} username={username} />
-      <div className="text-center">
-        <KataBadge stage={stage.name} stageNumber={stage.stageNumber} />
-        <h1 className="mt-4 font-display text-2xl font-bold text-white">Your Legacy</h1>
-        <p className="mt-2 text-sm text-legacy-muted">Permanent progression — sessions end, Legacy remains.</p>
+
+      <HeroFocus
+        eyebrow="Permanent progression"
+        title="Your Legacy"
+        subtitle="Sessions end. Legacy remains. Influence cannot be bought."
+      >
+        <div className="mt-4 flex justify-center">
+          <KataBadge stage={stage.name} stageNumber={stage.stageNumber} />
+        </div>
+        <div className="mx-auto mt-4 max-w-sm">
+          <InfluenceBar current={influence} nextThreshold={nextThreshold} />
+        </div>
+      </HeroFocus>
+
+      <div className="grid grid-cols-2 gap-2">
+        <StatPill label="Kata" value={stage.name} accent="gold" />
+        <StatPill label="Stage" value={stage.stageNumber} accent="blue" />
       </div>
-      <InfluenceBar current={influence} nextThreshold={nextThreshold} />
-      <div className="grid grid-cols-2 gap-3">
-        <StatPill label="Sessions" value="—" accent="blue" />
-        <StatPill label="Victories" value="—" accent="gold" />
-      </div>
+
       <section className="space-y-2">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-legacy-muted">Identity</h2>
+        <SectionLabel>Promotion path (Pathfinder)</SectionLabel>
+        <ul className="space-y-1 rounded-xl border border-legacy-divider bg-legacy-card p-4 text-xs text-legacy-muted">
+          {PATHFINDER_REQUIREMENTS.map((r) => (
+            <li key={r}>· {r}</li>
+          ))}
+        </ul>
+        <p className="text-[10px] text-legacy-muted">
+          Strategist and Legacy requirements stay locked until eligible.
+        </p>
+      </section>
+
+      <section className="space-y-2">
+        <SectionLabel>Identity</SectionLabel>
         <ListRow title="Squad" subtitle="Your faction in battle" href="/squads" />
         <ListRow title="Camp" subtitle="Your civilization" href="/camps" />
-        <ListRow title="Armory" subtitle="Prepare loadouts" href="/sessions/prepare" />
-        <ListRow title="Shop" subtitle="Cosmetics & items" href="/shop" />
+        <ListRow title="Cosmetics" subtitle="Shop & prestige" href="/shop" />
+        <ListRow title="Profile" subtitle="Story & badges" href="/profile" />
       </section>
-      <Link href="/profile" className="block text-center text-sm text-legacy-blue hover:underline">
-        View full profile →
-      </Link>
-    </div>
+    </PageShell>
   );
 }

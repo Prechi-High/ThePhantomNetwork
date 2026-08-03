@@ -13,9 +13,9 @@ export function Card({ children, className, glow, hoverable = false }: CardProps
   return (
     <div
       className={cn(
-        "glass rounded-[var(--radius-lg)] p-4 transition-shadow duration-300",
-        glow && "shadow-[var(--shadow-glow-purple)]",
-        hoverable && "hover:shadow-[var(--shadow-glow-purple)]",
+        "rounded-2xl border border-legacy-divider bg-legacy-card p-4 shadow-[0_4px_24px_rgba(0,0,0,0.35)]",
+        glow && "border-legacy-gold/30 shadow-[0_0_30px_rgba(245,185,66,0.25)]",
+        hoverable && "transition-colors hover:bg-legacy-surface-hover",
         className
       )}
     >

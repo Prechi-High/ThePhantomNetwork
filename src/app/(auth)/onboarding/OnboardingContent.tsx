@@ -2,13 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import { AVATARS } from "@/types/gameplay";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { establishSession } from "@/lib/auth/establish-session";
 import { authNetwork } from "@/lib/network";
+import { HeroFocus, PageShell, PrimaryCTA } from "@/components/design-system";
 
 export default function OnboardingContent() {
   const router = useRouter();
@@ -35,72 +34,66 @@ export default function OnboardingContent() {
   const handleComplete = async () => {
     setLoading(true);
     setError("");
-
     try {
       const result = await authNetwork.completeOnboarding({
         avatarId,
         referralCode: referralCode || undefined,
       });
-
       if (result.ok) {
         router.push("/welcome");
         router.refresh();
         return;
       }
-
       if (result.error.status === 401) {
         setError("Session expired. Please log in again.");
         return;
       }
-
-      setError(result.error.message ?? "Could not complete onboarding. Try again.");
+      setError(result.error.message ?? "Could not complete onboarding.");
     } catch {
-      setError("Network error. Check your connection and try again.");
+      setError("Network error. Try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-4">
-      <h1 className="mb-6 font-display text-3xl font-bold">Choose Your Identity</h1>
-
-      <Card className="w-full max-w-md space-y-6">
-        <div className="grid grid-cols-4 gap-3">
+    <div className="flex min-h-screen items-center bg-legacy-bg">
+      <PageShell withNav={false} className="w-full space-y-6">
+        <HeroFocus
+          eyebrow="Identity"
+          title="Choose Your Avatar"
+          subtitle="Your camp is assigned automatically. Optional referral joins you to a community."
+        />
+        <div className="grid grid-cols-4 gap-2">
           {AVATARS.map((avatar) => (
             <button
               key={avatar.id}
+              type="button"
               onClick={() => setAvatarId(avatar.id)}
               className={cn(
-                "flex flex-col items-center rounded-lg border p-3 transition-colors",
+                "flex flex-col items-center rounded-xl border p-3 transition-colors",
                 avatarId === avatar.id
-                  ? "border-phantom-gold bg-phantom-gold/10"
-                  : "border-phantom-border hover:border-phantom-muted"
+                  ? "border-legacy-gold bg-legacy-gold/10"
+                  : "border-legacy-divider bg-legacy-card hover:border-legacy-muted"
               )}
             >
               <span className="text-2xl">{avatar.emoji}</span>
-              <span className="mt-1 text-xs">{avatar.label}</span>
+              <span className="mt-1 text-[10px] text-legacy-muted">{avatar.label}</span>
             </button>
           ))}
         </div>
-
-        <div>
-          <label className="text-sm text-phantom-muted">Referral Code (optional)</label>
-          <input
-            type="text"
-            value={referralCode}
-            onChange={(e) => setReferralCode(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-phantom-border bg-phantom-bg px-3 py-2 text-sm"
-            placeholder="Enter camp referral code"
-          />
-        </div>
-
-        {error && <p className="text-sm text-phantom-danger">{error}</p>}
-
-        <Button onClick={handleComplete} disabled={loading} className="w-full">
-          {loading ? "Entering..." : "Enter LEGACIES"}
-        </Button>
-      </Card>
+        <input
+          type="text"
+          value={referralCode}
+          onChange={(e) => setReferralCode(e.target.value)}
+          className="w-full rounded-xl border border-legacy-divider bg-legacy-surface px-4 py-3 text-sm text-white placeholder:text-legacy-muted"
+          placeholder="Camp referral code (optional)"
+        />
+        {error && <p className="text-sm text-legacy-crimson">{error}</p>}
+        <PrimaryCTA onClick={handleComplete} disabled={loading}>
+          {loading ? "Entering..." : "Continue"}
+        </PrimaryCTA>
+      </PageShell>
     </div>
   );
 }

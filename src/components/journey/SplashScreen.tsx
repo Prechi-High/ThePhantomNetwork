@@ -9,15 +9,17 @@ interface SplashScreenProps {
   durationMs?: number;
 }
 
-export function SplashScreen({ nextHref, durationMs = 1500 }: SplashScreenProps) {
+export function SplashScreen({ nextHref, durationMs = 1600 }: SplashScreenProps) {
   const router = useRouter();
-  const [visible, setVisible] = useState(true);
+  const [fade, setFade] = useState(false);
 
   useEffect(() => {
+    const fadeT = setTimeout(() => setFade(true), durationMs - 280);
     const t = setTimeout(() => {
-      setVisible(false);
-      const welcomeSeen = typeof window !== "undefined" && localStorage.getItem("legacies_welcome_seen") === "1";
-      const tutorialDone = typeof window !== "undefined" && localStorage.getItem("legacies_tutorial_complete") === "1";
+      const welcomeSeen =
+        typeof window !== "undefined" && localStorage.getItem("legacies_welcome_seen") === "1";
+      const tutorialDone =
+        typeof window !== "undefined" && localStorage.getItem("legacies_tutorial_complete") === "1";
       if (nextHref === "/home" && !welcomeSeen) {
         router.replace("/welcome");
       } else if (nextHref === "/home" && welcomeSeen && !tutorialDone) {
@@ -26,15 +28,29 @@ export function SplashScreen({ nextHref, durationMs = 1500 }: SplashScreenProps)
         router.replace(nextHref);
       }
     }, durationMs);
-    return () => clearTimeout(t);
+    return () => {
+      clearTimeout(t);
+      clearTimeout(fadeT);
+    };
   }, [nextHref, durationMs, router]);
 
-  if (!visible) return null;
-
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-legacy-bg">
-      <h1 className="font-display text-4xl font-bold tracking-tight text-legacy-gold">{APP_NAME}</h1>
-      <p className="mt-3 max-w-xs text-center text-sm text-legacy-muted">{APP_TAGLINE}</p>
+    <div
+      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-legacy-bg transition-opacity duration-300 ${
+        fade ? "opacity-0" : "opacity-100"
+      }`}
+    >
+      <div
+        className="absolute inset-0 opacity-50"
+        style={{
+          background:
+            "radial-gradient(ellipse at 50% 40%, rgba(245,185,66,0.2) 0%, transparent 50%)",
+        }}
+      />
+      <h1 className="relative font-display text-5xl font-bold tracking-tight text-legacy-gold">
+        {APP_NAME}
+      </h1>
+      <p className="relative mt-4 max-w-xs text-center text-sm text-legacy-muted">{APP_TAGLINE}</p>
     </div>
   );
 }
