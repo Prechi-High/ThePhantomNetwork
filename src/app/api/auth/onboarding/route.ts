@@ -3,19 +3,39 @@ import { requireAuth } from "@/lib/api/auth-helpers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { AVATARS } from "@/types/gameplay";
 
+const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
+
 export async function POST(request: Request) {
   const { user, error } = await requireAuth();
   if (error) return error;
 
-  const { avatarId, referralCode } = await request.json();
+  const { avatarId, referralCode, username, campId: requestedCampId } = await request.json();
 
   if (!avatarId || !AVATARS.some((a) => a.id === avatarId)) {
     return NextResponse.json({ error: "Invalid avatar" }, { status: 400 });
   }
 
+  if (!username || typeof username !== "string" || !USERNAME_RE.test(username.trim())) {
+    return NextResponse.json(
+      { error: "Username must be 3–20 characters (letters, numbers, underscore)" },
+      { status: 400 }
+    );
+  }
+
   const admin = createAdminClient();
 
-  let campId: string | null = null;
+  const { data: existingUsername } = await admin
+    .from("profiles")
+    .select("id")
+    .ilike("username", username.trim())
+    .neq("id", user!.id)
+    .maybeSingle();
+
+  if (existingUsername) {
+    return NextResponse.json({ error: "Username already taken" }, { status: 409 });
+  }
+
+  let campId: string | null = requestedCampId ?? null;
 
   if (referralCode) {
     const { data: camp } = await admin
@@ -23,7 +43,14 @@ export async function POST(request: Request) {
       .select("id")
       .eq("referral_code", referralCode)
       .single();
-    campId = camp?.id ?? null;
+    campId = camp?.id ?? campId;
+  }
+
+  if (campId) {
+    const { data: campExists } = await admin.from("camps").select("id").eq("id", campId).maybeSingle();
+    if (!campExists) {
+      return NextResponse.json({ error: "Invalid camp" }, { status: 400 });
+    }
   }
 
   if (!campId) {
@@ -36,6 +63,7 @@ export async function POST(request: Request) {
   }
 
   const profilePayload = {
+    username: username.trim(),
     avatar_id: avatarId,
     camp_id: campId,
     onboarding_complete: true,
@@ -50,13 +78,8 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (!updated) {
-    const username =
-      (user!.user_metadata?.username as string | undefined) ??
-      `phantom_${user!.id.slice(0, 8)}`;
-
     const { error: insertError } = await admin.from("profiles").insert({
       id: user!.id,
-      username,
       ...profilePayload,
     });
 

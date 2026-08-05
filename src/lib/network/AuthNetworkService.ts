@@ -56,11 +56,22 @@ export const authNetwork = {
     });
   },
 
-  async completeOnboarding(body: Record<string, unknown>) {
+  async completeOnboarding(body: {
+    avatarId: string;
+    username: string;
+    campId?: string;
+    referralCode?: string;
+  }) {
     return apiFetch<unknown>("/api/auth/onboarding", {
       method: "POST",
       body: JSON.stringify(body),
     });
+  },
+
+  async checkUsername(username: string) {
+    return apiFetch<{ available: boolean; error?: string }>(
+      `/api/profile/username/check?username=${encodeURIComponent(username)}`
+    );
   },
 
   async getCampOwnerCamp() {

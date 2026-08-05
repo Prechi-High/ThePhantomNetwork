@@ -1,6 +1,17 @@
--- Default Legacies Camp, avatars config, armory items, badges
+-- Default Clashpoint faction camps
 INSERT INTO camps (name, slug, is_default, referral_code, camp_switch_level)
-VALUES ('Legacies Camp', 'legacies-camp', true, 'LEGACIES', 5);
+VALUES
+  ('Infernus', 'infernus', false, 'INFERNUS', 5),
+  ('Northridge', 'northridge', false, 'NORTHRIDGE', 5),
+  ('Solara', 'solara', true, 'SOLARA', 5),
+  ('Veridian', 'veridian', false, 'VERIDIAN', 5),
+  ('Nocturis', 'nocturis', false, 'NOCTURIS', 5)
+ON CONFLICT (slug) DO NOTHING;
+
+-- Legacy default (kept for backwards compatibility)
+INSERT INTO camps (name, slug, is_default, referral_code, camp_switch_level)
+VALUES ('Legacies Camp', 'legacies-camp', false, 'LEGACIES', 5)
+ON CONFLICT (slug) DO NOTHING;
 
 -- Tactical assets (Legacy Credits economy — applied after migration 005)
 INSERT INTO shop_items (slug, name, description, economy, price_cents, metadata) VALUES

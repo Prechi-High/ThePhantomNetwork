@@ -32,7 +32,7 @@ function getSupabaseConfig() {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (isPublicPath(pathname) || isAdminPath(pathname)) {
+  if (pathname === "/" || isPublicPath(pathname) || isAdminPath(pathname)) {
     return NextResponse.next();
   }
 

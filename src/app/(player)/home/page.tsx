@@ -1,19 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import {
-  CountdownHero,
-  HeroFocus,
-  LiveTicker,
-  PageShell,
-  PrimaryCTA,
-  SectionLabel,
-} from "@/components/design-system";
-import { PlayerPageHeader } from "@/components/layout/PlayerPageHeader";
+import { PageShell } from "@/components/design-system";
 import { ScreenState } from "@/components/ui/ScreenState";
-import { MESSAGES } from "@/lib/brand/terminology";
-import { sessionNetwork, worldNetwork, authNetwork } from "@/lib/network";
+import {
+  HomeLiveSessionsRow,
+  HomeMetricsRow,
+  HomeNextSessionCard,
+  HomeOpportunitiesCard,
+  HomeProfileHeader,
+  HomeSpinWidget,
+  HomeSquadCard,
+  HomeTopCampsStrip,
+  HomeWorldActivityFeed,
+} from "@/components/home";
+import { authNetwork, economyNetwork, sessionNetwork, worldNetwork } from "@/lib/network";
+import { apiFetch } from "@/lib/network/client";
 
 interface SessionRow {
   id: string;
@@ -21,38 +23,85 @@ interface SessionRow {
   status: string;
   starts_at: string;
   is_featured?: boolean;
+  entry_fee_cents?: number;
+  registered_count?: number;
+  max_players?: number;
+  total_pool_cents?: number;
+}
+
+interface ProfileData {
+  username?: string;
+  avatar_url?: string;
+  level?: number;
+  prestige_score?: number;
+  wallet_balance_cents?: number;
 }
 
 export default function HomePage() {
   const [loading, setLoading] = useState(true);
+  const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [nextSession, setNextSession] = useState<SessionRow | null>(null);
   const [ticker, setTicker] = useState<string[]>([]);
-  const [username, setUsername] = useState("Player");
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [profile, setProfile] = useState<ProfileData>({ username: "Player" });
+  const [squad, setSquad] = useState<{
+    name: string;
+    memberCount: number;
+    rank?: number;
+    influence?: number;
+  } | null>(null);
+  const [campMomentum, setCampMomentum] = useState<
+    Array<{ campName: string; campSlug?: string; momentum: number }>
+  >([]);
 
   useEffect(() => {
     Promise.all([
       sessionNetwork.listSessions(),
       worldNetwork.getLiveFeed(),
       authNetwork.getProfile(),
-    ]).then(([sessRes, feedRes, profileRes]) => {
+      economyNetwork.getWallet(),
+      worldNetwork.getSummary(),
+      apiFetch<{ squad?: { name?: string; rank?: number; influence_score?: number }; members?: unknown[] }>(
+        "/api/squads/me"
+      ),
+    ]).then(([sessRes, feedRes, profileRes, walletRes, summaryRes, squadRes]) => {
       if (sessRes.ok) {
-        const sessions = ((sessRes.data as { sessions?: SessionRow[] }).sessions ?? []).filter(
+        const all = ((sessRes.data as { sessions?: SessionRow[] }).sessions ?? []).filter(
           (s) => s.status === "open" || s.status === "locked" || s.status === "active"
         );
-        const featured = sessions.find((s) => s.is_featured) ?? sessions[0] ?? null;
-        setNextSession(featured);
+        setSessions(all);
+        setNextSession(all.find((s) => s.is_featured) ?? all[0] ?? null);
       }
       if (feedRes.ok) {
         const events = (feedRes.data as { events?: Array<{ message?: string; type?: string }> }).events ?? [];
-        setTicker(
-          events.slice(0, 3).map((e) => e.message ?? e.type ?? "World activity")
-        );
+        setTicker(events.slice(0, 5).map((e) => e.message ?? e.type ?? "World activity"));
       }
       if (profileRes.ok) {
-        const p = (profileRes.data as { profile?: { username?: string; avatar_url?: string } }).profile;
-        setUsername(p?.username ?? "Player");
-        setAvatarUrl(p?.avatar_url ?? null);
+        const p = (profileRes.data as { profile?: ProfileData }).profile ?? {};
+        setProfile(p);
+        if (walletRes.ok && walletRes.data.balance != null) {
+          setProfile((prev) => ({
+            ...prev,
+            wallet_balance_cents: walletRes.data.balance,
+          }));
+        }
+      }
+      if (summaryRes.ok && summaryRes.data.campMomentum) {
+        setCampMomentum(
+          summaryRes.data.campMomentum.map((c) => ({
+            campName: c.campName,
+            campSlug: c.campName.toLowerCase(),
+            momentum: c.momentum || c.weeklyTokens || 1,
+          }))
+        );
+      }
+      if (squadRes.ok && squadRes.data.squad) {
+        const s = squadRes.data.squad;
+        setSquad({
+          name: s.name ?? "Your Squad",
+          memberCount: (squadRes.data.members ?? []).length,
+          rank: s.rank,
+          influence: s.influence_score,
+        });
       }
     }).finally(() => setLoading(false));
   }, []);
@@ -65,53 +114,51 @@ export default function HomePage() {
     );
   }
 
+  const level = profile.level ?? 1;
+  const xp = (level * 1200) % 2000 || 1200;
+
   return (
-    <PageShell className="space-y-6">
-      <PlayerPageHeader username={username} avatarUrl={avatarUrl} />
-
-      <HeroFocus
-        eyebrow="Next official session"
-        title={nextSession?.title ?? "No session open"}
-        subtitle="One battle. Survive. Forge your Legacy."
-      >
-        <CountdownHero
-          targetDate={nextSession?.starts_at ?? null}
-          className="my-6"
-        />
-        {nextSession ? (
-          <PrimaryCTA href={`/sessions/${nextSession.id}`}>
-            {MESSAGES.enterBattle}
-          </PrimaryCTA>
-        ) : (
-          <PrimaryCTA href="/sessions">View sessions</PrimaryCTA>
-        )}
-      </HeroFocus>
-
-      <LiveTicker
-        items={
-          ticker.length
-            ? ticker
-            : ["Players entering the arena", "Official sessions every 4 hours", "Legacy War reserve growing"]
-        }
+    <PageShell className="space-y-5 pb-28">
+      <HomeProfileHeader
+        username={profile.username ?? "Player"}
+        avatarUrl={profile.avatar_url}
+        level={level}
+        xp={xp}
+        xpMax={2000}
       />
 
-      <section className="space-y-2">
-        <SectionLabel>Your faction</SectionLabel>
-        <div className="grid grid-cols-2 gap-2">
-          <Link
-            href="/squads"
-            className="rounded-xl border border-legacy-divider bg-legacy-card px-4 py-3 text-center text-sm font-medium text-white hover:border-legacy-gold/40"
-          >
-            Squad
-          </Link>
-          <Link
-            href="/camps"
-            className="rounded-xl border border-legacy-divider bg-legacy-card px-4 py-3 text-center text-sm font-medium text-white hover:border-legacy-gold/40"
-          >
-            Camp
-          </Link>
-        </div>
-      </section>
+      <HomeMetricsRow
+        tokens={4820}
+        influence={profile.prestige_score ?? 0}
+        earningsCents={profile.wallet_balance_cents ?? 0}
+      />
+
+      <HomeNextSessionCard session={nextSession} />
+
+      <HomeLiveSessionsRow sessions={sessions} />
+
+      <div className="grid grid-cols-2 gap-2">
+        <HomeSpinWidget />
+        <HomeSquadCard
+          squad={
+            squad
+              ? {
+                  ...squad,
+                  growth: "+2.8%",
+                  objective: "Capture Iron Pass",
+                  objectivePct: 62,
+                }
+              : null
+          }
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <HomeOpportunitiesCard />
+        <HomeWorldActivityFeed items={ticker} />
+      </div>
+
+      <HomeTopCampsStrip camps={campMomentum} />
     </PageShell>
   );
 }

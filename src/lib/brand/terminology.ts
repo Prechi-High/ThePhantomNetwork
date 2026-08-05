@@ -1,10 +1,11 @@
 /**
- * LEGACIES — canonical brand terminology.
+ * CLASHPOINT — canonical brand terminology.
  * Internal slugs stay stable; UI reads display names from here.
  */
 
-export const APP_NAME = "LEGACIES";
-export const APP_TAGLINE = "Build your Legacy through strategy, rivalry, and triumph";
+export const APP_NAME = "CLASHPOINT";
+export const APP_TAGLINE = "Every decision becomes part of your story";
+export const CURRENT_SEASON = 18;
 
 export const CURRENCY = {
   session: "Session Tokens",
