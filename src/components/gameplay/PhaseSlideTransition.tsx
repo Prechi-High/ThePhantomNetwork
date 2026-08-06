@@ -2,6 +2,7 @@
 
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { interactionController } from "@/lib/motion/InteractionController";
 
 interface PhaseSlideTransitionProps {
   phase: number;
@@ -24,6 +25,7 @@ export function PhaseSlideTransition({ phase, children }: PhaseSlideTransitionPr
 
     prevPhaseRef.current = phase;
     setCurtainPhase(phase);
+    if (phase > 1) interactionController.playSound("phase_end");
 
     const timer = setTimeout(() => setCurtainPhase(null), SLIDE_DURATION * 1000 + 80);
     return () => clearTimeout(timer);

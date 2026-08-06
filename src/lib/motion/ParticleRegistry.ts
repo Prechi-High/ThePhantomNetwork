@@ -31,6 +31,7 @@ export const SCREEN_AMBIENCE: Record<ScreenId, string[]> = {
   squad: ["energy_pulse", "magic_sparks"],
   leaderboard: ["golden_shards", "dust"],
   world: ["fog", "embers"],
+  sessions: [],
   play: ["energy_pulse", "dust"],
   results: ["golden_shards", "victory_burst"],
   countdown: ["countdown_spark", "energy_pulse"],

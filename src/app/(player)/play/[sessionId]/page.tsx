@@ -95,6 +95,7 @@ export default function PlayPage() {
 
   // ── UI state (only what page.tsx must own) ───────────────────────────────
   const [currentUserId, setCurrentUserId]   = useState<string>();
+  const [mySquadId, setMySquadId]           = useState<string | null>(null);
   const [totalPoolCents, setTotalPoolCents] = useState<number | null>(null);
   const [playerRank, setPlayerRank]         = useState(0);
   const [totalPlayers, setTotalPlayers]     = useState(0);
@@ -110,8 +111,9 @@ export default function PlayPage() {
 
   useEffect(() => {
     interactionController.setScreen("play");
-    interactionController.stopSound("arena_hum", 0);
-    interactionController.stopSound("wheel_idle_hum", 0);
+    for (const cue of ["arena_hum", "wheel_idle_hum", "home_wind", "banner_cloth", "home_crackle"] as const) {
+      interactionController.stopSound(cue, 0);
+    }
   }, []);
   const phaseTimerAnchorRef = useRef<{ phase: number; endsAt: number } | null>(null);
 
@@ -146,7 +148,7 @@ export default function PlayPage() {
   useServerTime();   // establishes clock offset; used by effects/inventory hooks
 
   // ── ② REALTIME SUBSCRIPTIONS ────────────────────────────────────────────
-  useLeaderboardUpdates(subSessionId);
+  useLeaderboardUpdates(subSessionId, mySquadId);
 
   // ── ③ APPLY SERVER STATE → STORES ───────────────────────────────────────
   const applyState = useCallback((data: GameplayStateResponse & {
@@ -158,6 +160,8 @@ export default function PlayPage() {
   }) => {
     if (data.player) {
       setCurrentUserId(data.player.user_id);
+      const playerSquadId = (data.player as { squad_id?: string | null }).squad_id;
+      if (playerSquadId !== undefined) setMySquadId(playerSquadId);
       const spinning = useGameplayStore.getState().isSpinning;
       if (!spinning) {
         setTokens(Number(data.player.session_tokens));
@@ -237,7 +241,7 @@ export default function PlayPage() {
     setSessionStatus("completed");
   }, []);
 
-  useRealtimeSession(subSessionId, handlePhaseChange, refreshState, handleSessionComplete);
+  useRealtimeSession(subSessionId, handlePhaseChange, refreshState, handleSessionComplete, currentUserId);
 
   const isSessionComplete =
     sessionStatus === "completed" || subSessionStatus === "completed";

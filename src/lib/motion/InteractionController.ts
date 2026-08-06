@@ -183,6 +183,7 @@ export class InteractionControllerClass {
     // Outcome FX are timed via RevealSequence / handleCardShow — not on early OUTCOME_RECEIVED
     on("PHASE_STARTED", (event) => {
       const phase = (event.payload as { phase?: number })?.phase;
+      if (phase && phase > 1) this.playSound("phase_end");
       if (phase) this.setPhase(phase);
     });
   }

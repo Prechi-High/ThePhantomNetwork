@@ -36,6 +36,7 @@ export type ScreenId =
   | "squad"
   | "leaderboard"
   | "world"
+  | "sessions"
   | "play"
   | "results"
   | "countdown";

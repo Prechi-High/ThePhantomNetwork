@@ -18,7 +18,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useGameplayStore } from "@/stores/useGameplayStore";
 import { useStealStore } from "@/stores/useStealStore";
 import { useSessionStore } from "@/stores/useSessionStore";
-
+import { interactionController } from "@/lib/motion/InteractionController";
 // ── Connection state ───────────────────────────────────────────────────────
 
 export type ConnectionState =
@@ -48,8 +48,8 @@ export function useRealtimeSession(
   onPhaseChange?: (payload: PhaseChangePayload) => void,
   onTokensUpdated?: () => void,
   onSessionComplete?: () => void,
-) {
-  const [connectionState, setConnectionState] = useState<ConnectionState>("disconnected");
+  currentUserId?: string | null,
+) {  const [connectionState, setConnectionState] = useState<ConnectionState>("disconnected");
   const [latencyMs, setLatencyMs] = useState(0);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
 
@@ -134,6 +134,12 @@ export function useRealtimeSession(
         resetFireBoost();
         break;
 
+      case "steal_prep_warning":
+        if (currentUserId && event.victimId === currentUserId) {
+          interactionController.playEffect("steal_under_attack");
+        }
+        break;
+
       // ---- Latency ping ----
       case "pong":
         if (event.sentAt) setLatencyMs(Date.now() - Number(event.sentAt));
@@ -142,9 +148,8 @@ export function useRealtimeSession(
   }, [
     setTokens, setPhase, setRound, setPhaseEndsAt, setLastOutcome,
     setEliminated, setStealInProgress, incrementFireBoost, resetFireBoost,
-    advancePhase, setPlayerCounts, onPhaseChange, onTokensUpdated, onSessionComplete,
+    advancePhase, setPlayerCounts, onPhaseChange, onTokensUpdated, onSessionComplete, currentUserId,
   ]);
-
   // ── Batch flush ──────────────────────────────────────────────────────────
 
   const flushBatch = useCallback(() => {

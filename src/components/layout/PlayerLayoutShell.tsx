@@ -8,6 +8,7 @@ import type { ScreenId } from "@/lib/motion/types";
 
 function pathnameToScreen(pathname: string): ScreenId | null {
   if (pathname.startsWith("/play/")) return "play";
+  if (pathname.startsWith("/sessions")) return "sessions";
   if (pathname.startsWith("/home") || pathname === "/") return "home";
   if (pathname.startsWith("/shop")) return "shop";
   if (pathname.startsWith("/legacy")) return "profile";

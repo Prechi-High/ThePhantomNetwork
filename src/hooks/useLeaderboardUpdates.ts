@@ -21,13 +21,31 @@ import {
   type LeaderboardEntry,
   type SquadLeaderboardEntry,
 } from "@/stores/useLeaderboardStore";
+import { interactionController } from "@/lib/motion/InteractionController";
 
 const POLL_INTERVAL_MS = 5_000;
 
-export function useLeaderboardUpdates(subSessionId: string | null) {
+function maybePlaySquadTakesLead(
+  mySquadId: string | null | undefined,
+  squadId: string,
+  newRank: number,
+  prevRank: number | null
+): void {
+  if (!mySquadId || squadId !== mySquadId) return;
+  if (newRank === 1 && prevRank !== 1) {
+    interactionController.playEffect("squad_takes_lead");
+  }
+}
+
+export function useLeaderboardUpdates(
+  subSessionId: string | null,
+  mySquadId?: string | null
+) {
   const store = useLeaderboardStore();
-  const sseRef       = useRef<EventSource | null>(null);
+  const sseRef = useRef<EventSource | null>(null);
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mySquadIdRef = useRef(mySquadId ?? null);
+  mySquadIdRef.current = mySquadId ?? null;
 
   // ── Bulk fetch (initial + polling fallback) ────────────────────────────
 
@@ -49,7 +67,18 @@ export function useLeaderboardUpdates(subSessionId: string | null) {
       if (sRes.status === "fulfilled" && sRes.value.ok) {
         const data = await sRes.value.json() as { squad_leaderboard?: SquadLeaderboardEntry[] };
         if (Array.isArray(data.squad_leaderboard)) {
+          const squadId = mySquadIdRef.current;
+          const prevRank = squadId
+            ? store.squad.find((e) => e.squad_id === squadId)?.rank ?? null
+            : null;
           store.updateSquad(data.squad_leaderboard);
+          if (squadId) {
+            const newRank =
+              data.squad_leaderboard.find((e) => e.squad_id === squadId)?.rank ?? null;
+            if (newRank != null) {
+              maybePlaySquadTakesLead(squadId, squadId, newRank, prevRank);
+            }
+          }
         }
       }
 
@@ -79,7 +108,14 @@ export function useLeaderboardUpdates(subSessionId: string | null) {
         }
         case "squad_leaderboard:rank_changed": {
           const p = event.payload as Record<string, unknown>;
-          if (p?.squad_id) store.updateSquadRank(p.squad_id as string, Number(p.new_rank));
+          if (p?.squad_id) {
+            const squadId = p.squad_id as string;
+            const newRank = Number(p.new_rank);
+            const prevRank =
+              store.squad.find((e) => e.squad_id === squadId)?.rank ?? null;
+            store.updateSquadRank(squadId, newRank);
+            maybePlaySquadTakesLead(mySquadIdRef.current, squadId, newRank, prevRank);
+          }
           break;
         }
         case "squad_leaderboard:tokens_changed": {

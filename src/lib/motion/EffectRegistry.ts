@@ -38,6 +38,8 @@ export const EFFECT_REGISTRY: Record<string, EffectDef> = {
   prestige_sweep: { id: "prestige_sweep", sounds: ["prestige_sweep"], visualFx: ["glow"] },
 
   wheel_idle: { id: "wheel_idle", state: "Idle" },
+  steal_under_attack: { id: "steal_under_attack", sounds: ["steal_under_attack"] },
+  squad_takes_lead: { id: "squad_takes_lead", sounds: ["top_squad"] },
 };
 
 export const SCREEN_AUDIO: Record<ScreenId, string[]> = {
@@ -48,6 +50,7 @@ export const SCREEN_AUDIO: Record<ScreenId, string[]> = {
   squad: ["arena_hum"],
   leaderboard: ["arena_hum"],
   world: ["home_wind", "home_crackle"],
+  sessions: [],
   play: [],
   results: ["legacy_forged"],
   countdown: [],
